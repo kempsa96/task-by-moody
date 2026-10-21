@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610202028">
+<meta name="tbm-build" content="202610211430">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script src="supabase.js?v=202610202028"></script>
-<script src="tbm-cloud.js?v=202610202028"></script>
+<script src="supabase.js?v=202610211430"></script>
+<script src="tbm-cloud.js?v=202610211430"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -406,7 +406,16 @@ dialog::backdrop{background:rgb(10 12 16 / .45)}
 .field label,.lbl{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700}
 .field input,.field select{padding:9px 10px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ac{position:relative}.acl{position:absolute;left:0;right:0;top:calc(100% + 4px);z-index:20;background:var(--surface);border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 30px rgb(0 0 0/.14);overflow:hidden;max-height:240px;overflow-y:auto}
+.acl button{display:block;width:100%;text-align:left;border:0;background:none;padding:9px 12px;font:inherit;font-size:14px;color:var(--fg);cursor:pointer;border-bottom:1px solid var(--line)}.acl button:last-child{border-bottom:0}.acl button:hover{background:var(--surface-2)}
+.acx{padding:9px 12px;font-size:13px;color:var(--muted)}
+.trip{display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:14px;background:var(--surface-2)}
+.tmodes{display:flex;gap:6px;flex-wrap:wrap}.tmode{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:6px 12px;font:inherit;font-size:13px;font-weight:600;cursor:pointer}.tmode.on{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.tres{font-size:14px;line-height:1.45}.tres .muted,.tres.muted{color:var(--muted)}
+.tlinks{display:flex;gap:14px;font-size:13px;font-weight:600}.tlinks a{color:var(--accent);text-decoration:none}
 .row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:10px}
+.row>*,.row3>*{min-width:0}.field input,.field select{min-width:0;width:100%;box-sizing:border-box}
+@media (max-width:560px){.row3{grid-template-columns:1fr 1fr}.row3>.field:first-child{grid-column:1/-1}}
 .swatches{display:flex;flex-wrap:wrap;gap:8px}
 .sw{width:28px;height:28px;border-radius:7px;background:var(--c);border:2px solid transparent;cursor:pointer}
 .sw[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 2px var(--surface) inset}
@@ -927,7 +936,7 @@ function bufRanges(b,k,list){
   let z=b.start;for(let n=0;n<5;n++){const hit=pauses.find(x=>x.start<z&&x.end>z-bx);if(!hit)break;z=hit.start}
   return {before:bx?[Math.max(0,z-bx),z]:null,after:by?[a,Math.min(1440,a+by)]:null};
 }
-const bufOptions=v=>[0,15,30,45,60,90,120].map(m=>`<option value="${m}" ${m===v?'selected':''}>${m?dur(m):'Nessuno'}</option>`).join('');
+const bufOptions=v=>[...new Set([0,15,30,45,60,90,120,...(v!=null?[+v]:[])])].sort((a,b)=>a-b).map(m=>`<option value="${m}" ${m===v?'selected':''}>${m?dur(m):'Nessuno'}</option>`).join('');
 const isPause=b=>b.id==='lunch'||b.kind==='pause'||/^pausa\b/i.test(b.title||'');
 const ICON_PIN='<svg class="bicon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5l4 4-2 1-2.5 2.5.5 3-1.5 1.5-3-3-3.5 3.5M5.5 9.5l-3-3L4 5l3 .5L9.5 3z"/></svg>';
 const blockIcon=b=>b.id==='lunch'||/pranzo/i.test(b.title||'')?ICON_LUNCH:isPause(b)?ICON_PAUSE:ICON_PIN;
@@ -1246,15 +1255,18 @@ window.tbmForceReminders=()=>queueReminders(true);
 function buildReminders(){
   const n=S.settings.notif||{},ev=n.ev!==false,tk=n.task!==false,dy=n.day!==false,lead=n.lead??10;
   const now=Date.now(),lim=now+36*3600000,out=[],q=x=>'«'+x+'»';
-  const add=(id,ms,title,body)=>{if(ms>now+20000&&ms<lim)out.push({id,at:new Date(ms).toISOString(),title,body:body||''})};
+  const add=(id,ms,title,body,url)=>{if(ms>now+20000&&ms<lim)out.push({id,at:new Date(ms).toISOString(),title,body:body||'',...(url?{url}:{})})};
+  const tripPlain=b=>{const t=b.travel;if(!t)return '';const ic=(TMODES.find(x=>x[0]===t.mode)||TMODES[0])[1];return `${ic} ${dur(t.minutes)}${t.lines&&t.lines.length?' · linee '+t.lines.join(' → '):''}`};
+  const mapsOf=b=>b.place&&b.place.lat!=null?gmapsUrl(b.from||homePlace(),b.place,b.travel?.mode||S.settings.travelMode||'transit'):null;
   const k0=key(new Date());
   for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k);
     if(ev)bl.forEach(b=>{if(eventDone(b,k)==='no')return;const t=b.title||'Evento';
       if(isPause(b)){add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`${b.id==='lunch'||/pranzo/i.test(t)?'🍽':'☕'} ${t}`,`Fino alle ${hm(b.end)}. Riposati!`);return}
       const br=bufRanges(b,k,bl),when=`${hm(b.start)}–${hm(b.end)}`;
       if(br.before){
-        if(lead>0)add(`g1:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0])-lead*60000,`🚗 Tra ${lead} min devi partire`,`${q(t)} inizia alle ${hm(b.start)}`);
-        add(`g0:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0]),`🚗 È ora di partire`,`${q(t)} · ${when}`);
+        const tp=tripPlain(b),where=b.place?` · 📍 ${b.place.label.split(',')[0]}`:'',url=mapsOf(b);
+        if(lead>0)add(`g1:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0])-lead*60000,`🚗 Tra ${lead} min devi partire`,`${q(t)} inizia alle ${hm(b.start)}${where}`,url);
+        add(`g0:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0]),`🚗 È ora di partire`,`${q(t)} · ${when}${where}${tp?'\n'+tp+(url?' · tocca per il percorso':''):''}`,url);
       }else add(`e:${b.id}:${k}:${b.start}`,msOf(k,b.start)-lead*60000,lead>0?`📌 Tra ${lead} min: ${t}`:`📌 Adesso: ${t}`,when);
     });
     if(dy&&dayIsOn(k)){const [a,z]=hoursFor(k),r=dayRec(k)||{};
@@ -1370,7 +1382,7 @@ function renderCal(){
     });
     blks.forEach(b=>{
       const evd=isPause(b)?null:eventDone(b,k);
-      body+=`<div class="blk${isPause(b)?' pause':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}</b><em>${evd==='no'?'non svolto · ':''}${hm(b.start)}–${hm(b.end)}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
+      body+=`<div class="blk${isPause(b)?' pause':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}</b><em>${evd==='no'?'non svolto · ':''}${hm(b.start)}–${hm(b.end)}${b.place?` · 📍 ${esc(b.place.label.split(',')[0])}`:''}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
     });
     const joined={},joinedLi={},skip=new Set();
     segs.forEach((x,si)=>{const t=taskById(x.id);(t?.log||[]).forEach((L,li)=>{if(L.d===k&&Math.abs(x.start-L.e)<=3&&!skip.has(x.id+':'+li)){skip.add(x.id+':'+li);joined[si]=L.s;joinedLi[si]=li}})});
@@ -1974,6 +1986,70 @@ function moveBlock(b,occ,date,start,end){
     askScope('Sposta evento',()=>{const ex={...(b.exceptions||{})};ex[occ]={start,end};put('blocks',{...b,exceptions:ex})},()=>applyAll(b,occ,nb));
   }else askScope('Sposta evento',()=>applyOnly(b,occ,nb),()=>applyAll(b,occ,nb));
 }
+/* ---------- dove + tragitto ---------- */
+const TMODES=[['transit','🚇','Mezzi'],['car','🚗','Auto'],['walk','🚶','A piedi'],['bike','🚲','Bici']];
+const GM={transit:'transit',car:'driving',walk:'walking',bike:'bicycling'},AM={transit:'r',car:'d',walk:'w',bike:'c'};
+const ll=p=>`${p.lat},${p.lon}`;
+const gmapsUrl=(f,t,m)=>`https://www.google.com/maps/dir/?api=1${f?'&origin='+ll(f):''}&destination=${ll(t)}&travelmode=${GM[m]||'transit'}`;
+const amapsUrl=(f,t,m)=>`https://maps.apple.com/?${f?'saddr='+ll(f)+'&':''}daddr=${ll(t)}&dirflg=${AM[m]||'r'}`;
+const homePlace=()=>S.settings.home||null;
+const r5=m=>Math.ceil(m/5)*5;
+function suggestBuf(t,mode){if(!t)return null;const m=t.minutes||0;
+  if(mode==='transit')return r5((t.leaveBefore||m)+5);if(mode==='car')return r5(m*1.3+10);return r5(m+5)}
+function tripText(t,mode){if(!t)return'';const ic=(TMODES.find(x=>x[0]===mode)||TMODES[0])[1];
+  if(t.walkOnly)return `🚶 ${dur(t.minutes)} a piedi (meglio che i mezzi)`;
+  return `${ic} ${dur(t.minutes)}${t.km?` · ${String(t.km).replace('.',',')} km`:''}${t.lines&&t.lines.length?` · linee ${t.lines.map(esc).join(' → ')}`:''}${mode==='car'?' · senza traffico':''}`}
+function placeField(id,label,val,ph){return `<div class="field"><label for="${id}">${label}</label><div class="ac"><input id="${id}" autocomplete="off" value="${esc(val||'')}" placeholder="${ph}"><div class="acl" id="${id}L" hidden></div></div></div>`}
+function tripFields(b){
+  const mode=b.travel?.mode||S.settings.travelMode||'transit',from=b.from||homePlace();
+  return `${placeField('bPlace','Dove (facoltativo)',b.place?.label,'es. NABA, Via Segantini')}
+    <div class="trip" id="bTrip" ${b.place?'':'hidden'}>
+      ${placeField('bFrom','Parto da',from?.label,'es. Casa, Corso Genova 7')}
+      <div class="tmodes" role="radiogroup" aria-label="Come ci vai">${TMODES.map(([k,i,l])=>`<button type="button" class="tmode${k===mode?' on':''}" data-m="${k}" role="radio" aria-checked="${k===mode}">${i} ${l}</button>`).join('')}</div>
+      <div class="tres" id="bTres"></div>
+      <div class="tlinks" id="bTlinks"></div>
+    </div>`}
+function wireAc(input,list,onPick){
+  let t=null,seq=0;
+  const close=()=>{list.hidden=true};
+  input.addEventListener('input',()=>{clearTimeout(t);const q=input.value.trim();input.dataset.picked='';if(q.length<3){close();return}
+    if(!window.tbmRoute){close();return}
+    t=setTimeout(async()=>{const my=++seq;list.hidden=false;list.innerHTML='<div class="acx">Cerco…</div>';
+      try{const r=await window.tbmRoute.geo(q);if(my!==seq)return;
+        list.innerHTML=r.length?r.map((x,i)=>`<button type="button" data-i="${i}">📍 ${esc(x.label)}</button>`).join(''):'<div class="acx">Nessun risultato</div>';
+        list.querySelectorAll('button').forEach(bn=>bn.onmousedown=e=>{e.preventDefault();const x=r[+bn.dataset.i];input.value=x.label;input.dataset.picked='1';close();onPick(x)})}
+      catch(e){list.innerHTML='<div class="acx">Ricerca non disponibile</div>'}},350)});
+  input.addEventListener('blur',()=>setTimeout(close,150));
+  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!list.hidden){const f=list.querySelector('button');if(f){e.preventDefault();f.dispatchEvent(new MouseEvent('mousedown'))}}});
+}
+function wireTrip(b,when){
+  let place=b.place||null,from=b.from||homePlace(),mode=b.travel?.mode||S.settings.travelMode||'transit',travel=b.travel||null,touched=false,seq=0;
+  const box=$('#bTrip'),res=$('#bTres'),links=$('#bTlinks'),bef=$('#bBefore'),aft=$('#bAfter');
+  bef.addEventListener('change',()=>touched=true);
+  const setSel=(sel,v)=>{if(![...sel.options].some(o=>+o.value===v)){sel.insertAdjacentHTML('beforeend',`<option value="${v}">${dur(v)}</option>`);[...sel.options].sort((a,b)=>+a.value-+b.value).forEach(o=>sel.appendChild(o))}sel.value=String(v)};
+  const showLinks=()=>{links.innerHTML=place?`<a href="${gmapsUrl(from,place,mode)}" target="_blank" rel="noopener">Google Maps ↗</a><a href="${amapsUrl(from,place,mode)}" target="_blank" rel="noopener">Mappe Apple ↗</a>`:''};
+  const calc=async()=>{showLinks();
+    if(!place){res.textContent='';return}
+    if(!from||from.lat==null){res.innerHTML='Scrivi da dove parti e sceglilo dall’elenco per calcolare il tragitto.';return}
+    if(place.lat==null){res.innerHTML='Scegli il luogo dall’elenco per calcolare il tragitto.';return}
+    if(!window.tbmRoute){res.textContent='Il calcolo del tragitto funziona nell’app.';return}
+    const my=++seq,w=when();res.innerHTML='<span class="muted">Calcolo il tragitto…</span>';
+    try{const t=await window.tbmRoute.route({from,to:place,mode,arrive:new Date(msOf(w.date,w.start)).toISOString()});if(my!==seq)return;
+      travel={mode,minutes:t.minutes,km:t.km||null,lines:t.lines||[],leaveBefore:t.leaveBefore||null,walkOnly:!!t.walkOnly};
+      const sug=suggestBuf(travel,mode);
+      res.innerHTML=`<b>${tripText(travel,mode)}</b><br>Ti lascio <b>${dur(sug)}</b> per arrivare tranquillo${t.estimated?' <span class="muted">(orari stimati)</span>':''}`;
+      if(!touched){setSel(bef,sug);if(+aft.value===(S.settings.bufAfter??15)||aft.dataset.auto){setSel(aft,r5(travel.minutes+5));aft.dataset.auto='1'}}
+    }catch(e){if(my!==seq)return;res.innerHTML='Non riesco a calcolare il tragitto adesso: imposta il tempo a mano qui sotto.'}};
+  wireAc($('#bPlace'),$('#bPlaceL'),x=>{place=x;box.hidden=false;calc()});
+  wireAc($('#bFrom'),$('#bFromL'),x=>{from=x;calc()});
+  $('#bPlace').addEventListener('change',()=>{if(!$('#bPlace').value.trim()){place=null;box.hidden=true;travel=null}});
+  box.querySelectorAll('.tmode').forEach(bn=>bn.onclick=()=>{mode=bn.dataset.m;box.querySelectorAll('.tmode').forEach(x=>{x.classList.toggle('on',x===bn);x.setAttribute('aria-checked',x===bn)});touched=false;calc()});
+  if(place){showLinks();if(travel)res.innerHTML=`<b>${tripText(travel,mode)}</b>`}
+  ['#bS','#bDate'].forEach(sel=>$(sel).addEventListener('change',()=>{if(place&&mode==='transit')calc()}));
+  return {value:()=>{const v=$('#bPlace').value.trim();if(!v)return {place:null,from:null,travel:null};
+    const pl=place&&place.label===v?place:{label:v,lat:place?.lat??null,lon:place?.lon??null};
+    const h=homePlace();return {place:pl.lat!=null?pl:{label:v},from:from&&(!h||from.label!==h.label)?from:null,travel}}};
+}
 function openBlock(b,occ){
   const isNew=!b.id,dup=!!b._dup;
   if(isNew){const t=b;b={id:uid(),title:t.title||'',color:t.color||'#7C8796',date:t.date,start:t.start,end:t.end,repeat:{freq:'none',interval:1,endType:'never'}};
@@ -1991,12 +2067,14 @@ function openBlock(b,occ){
     <div class="row" id="bEndR"><div class="field"><label for="bEnd">Fine</label><select id="bEnd"><option value="never" ${r.endType==='never'?'selected':''}>Mai</option><option value="count" ${r.endType==='count'?'selected':''}>Dopo un numero di volte</option><option value="until" ${r.endType==='until'?'selected':''}>Fino al giorno</option></select></div>
     <div class="field" id="bCountF"><label for="bCount">Volte</label><input id="bCount" type="number" min="1" max="999" value="${r.count||5}"></div>
     <div class="field" id="bUntilF"><label for="bUntil">Fino al</label><input id="bUntil" type="date" value="${r.until||addDays(occ,30)}"></div></div>
+    ${isPause(b)?'':tripFields(b)}
     ${isPause(b)?'':`<div class="row"><div class="field"><label for="bBefore">Prima (viaggio / preparazione)</label><select id="bBefore">${bufOptions(bufOf(b)[0])}</select></div>
     <div class="field"><label for="bAfter">Dopo (rientro)</label><select id="bAfter">${bufOptions(bufOf(b)[1])}</select></div></div>`}
     <div class="field"><span class="lbl">Colore</span>${swatches(b.color)}</div>
     <p class="note">${rec?`Si ripete ${repLabel(b)}. `:''}Le attività che cadono in questo orario slittano o si dividono in due parti. Puoi anche trascinare l'evento sul calendario per spostarlo.</p>
     <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="bDel">Elimina</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${dup?'Crea duplicato':isNew?'Aggiungi':'Salva'}</button></div>`;
   const getC=wireSwatches();
+  const trip=isPause(b)?null:wireTrip(b,()=>({date:$('#bDate').value||occ,start:toMin($('#bS').value||'09:00')}));
   const sync=()=>{const f=$('#bRep').value;$('#bIvF').hidden=!['daily','weekly','monthly','yearly'].includes(f);$('#bEndR').hidden=f==='none';
     const en=$('#bEnd').value;$('#bCountF').hidden=en!=='count';$('#bUntilF').hidden=en!=='until'};
   $('#bRep').onchange=sync;$('#bEnd').onchange=sync;sync();
@@ -2011,6 +2089,7 @@ function openBlock(b,occ){
     const repeat={freq:f,interval:Math.max(1,+$('#bIv').value||1),endType:f==='none'?'never':et,count:et==='count'?Math.max(1,+$('#bCount').value||1):null,until:et==='until'?$('#bUntil').value||null:null};
     const nb={title:$('#bTitle').value.trim()||'Evento',color:getC(),date:$('#bDate').value||occ,start:st,end:en};
     if($('#bBefore')){nb.before=+$('#bBefore').value;nb.after=+$('#bAfter').value}
+    if(trip)Object.assign(nb,trip.value());
     if(isNew||!rec){put('blocks',{...b,...nb,repeat,exceptions:b.exceptions||{},...(isNew?{created:Date.now()}:{})});dlg.close();return}
     const nr=x=>JSON.stringify({freq:x.freq,interval:x.interval||1,endType:x.endType||'never',count:x.endType==='count'?x.count:null,until:x.endType==='until'?x.until:null});
     const repChanged=nr(repeat)!==nr(b.repeat);
@@ -2242,6 +2321,8 @@ function openSettings(){
     <p class="note">La pausa si ripete nei giorni lavorativi. Per spostarla solo un giorno trascinala sul calendario e scegli "Solo questo".</p>
     <div class="row"><div class="field"><label for="sBufB">Eventi: tempo prima</label><select id="sBufB">${bufOptions(s.bufBefore??15)}</select></div>
     <div class="field"><label for="sBufA">Eventi: tempo dopo</label><select id="sBufA">${bufOptions(s.bufAfter??15)}</select></div></div>
+    <div class="row">${placeField('sHome','Casa (partenza predefinita)',s.home?.label,'es. Corso Genova 7, Milano')}
+    <div class="field"><label for="sMode">Di solito ti sposti</label><select id="sMode">${TMODES.map(([k,i,l])=>`<option value="${k}" ${(s.travelMode||'transit')===k?'selected':''}>${i} ${l}</option>`).join('')}</select></div></div>
     <p class="note">Spazio libero per viaggio o preparazione intorno a ogni evento. Puoi cambiarlo per il singolo evento nella sua scheda o trascinando il bordo sul calendario.</p>
     <p class="note">${mode==='cloud'?'I dati sono sincronizzati: li trovi uguali sul computer e sull’iPhone.':'I dati sono salvati solo in questo browser.'}</p>
     ${window.tbmPush?(()=>{const n=s.notif||{};return `<div class="cedit"><span class="lbl">Notifiche</span>
@@ -2269,6 +2350,7 @@ function openSettings(){
   }
   $('#dePreview').onclick=()=>{dlg.close();setTimeout(()=>showDayEnd(true),150)};
   $('#wlPreview').onclick=()=>{dlg.close();const k=key(new Date());const st=S.settings;if(st.days&&st.days[k]){st.days={...st.days};delete st.days[k]}showWelcome()};
+  let home=s.home||null;wireAc($('#sHome'),$('#sHomeL'),x=>{home=x});
   const lsync=()=>{$('#sLcustom').hidden=$('#sLunch').value!=='custom'};$('#sLunch').onchange=lsync;lsync();
   form.onsubmit=e=>{e.preventDefault();
     let ws=toMin($('#sWs').value),we=toMin($('#sWe').value);if(we<=ws)we=ws+60;
@@ -2278,6 +2360,7 @@ function openSettings(){
     else{const [a,b]=lv.split('-').map(Number);if(!L||L.start!==a||L.end!==b)setLunch(a,b)}
     const days=[...form.querySelectorAll('.days input:checked')].map(i=>+i.value);
     Object.assign(s,{workStart:ws,workEnd:we,workDays:days.length?days:[1,2,3,4,5],bufBefore:+$('#sBufB').value,bufAfter:+$('#sBufA').value});
+    {const hv=$('#sHome').value.trim();s.home=!hv?null:home&&home.label===hv?home:(s.home&&s.home.label===hv?s.home:{label:hv,lat:null,lon:null});s.travelMode=$('#sMode').value}
     if($('#nfEv'))s.notif={ev:$('#nfEv').checked,task:$('#nfTk').checked,day:$('#nfDy').checked,lead:+$('#nfLead').value};
     saveSettings();dlg.close();scrollToWork()};
   show();

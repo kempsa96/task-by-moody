@@ -1,5 +1,5 @@
 /* Task by Moody — service worker: notifiche + funzionamento offline */
-const CACHE = 'tbm-v1';
+const CACHE = 'tbm-v2';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
@@ -25,6 +25,8 @@ self.addEventListener('push', (e) => {
 
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || './';
+  if (/^https:\/\//.test(url) && !url.startsWith(self.registration.scope)) { e.waitUntil(self.clients.openWindow(url)); return; }
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
     for (const c of list) { if ('focus' in c) return c.focus(); }
     return self.clients.openWindow('./');

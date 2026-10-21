@@ -148,14 +148,14 @@
     if (remBusy) return;
     remBusy = (function run() {
       var want = remLast; remLast = null;
-      return sb.from('reminders').select('id,at,title,body').eq('user_id', uid).is('sent_at', null).gte('at', new Date().toISOString())
+      return sb.from('reminders').select('id,at,title,body,url').eq('user_id', uid).is('sent_at', null).gte('at', new Date().toISOString())
         .then(function (r) {
           if (r.error) throw r.error;
           var have = {}; r.data.forEach(function (x) { have[x.id] = x; });
           var wantIds = {}; want.forEach(function (x) { wantIds[x.id] = 1; });
           var del = r.data.filter(function (x) { return !wantIds[x.id]; }).map(function (x) { return x.id; });
-          var up = want.filter(function (x) { var h = have[x.id]; return !h || new Date(h.at).getTime() !== new Date(x.at).getTime() || h.title !== x.title || (h.body || '') !== x.body; })
-            .map(function (x) { return { user_id: uid, id: x.id, at: x.at, title: x.title, body: x.body }; });
+          var up = want.filter(function (x) { var h = have[x.id]; return !h || new Date(h.at).getTime() !== new Date(x.at).getTime() || h.title !== x.title || (h.body || '') !== x.body || (h.url || null) !== (x.url || null); })
+            .map(function (x) { return { user_id: uid, id: x.id, at: x.at, title: x.title, body: x.body, url: x.url || null }; });
           var ps = [];
           if (del.length) ps.push(sb.from('reminders').delete().eq('user_id', uid).is('sent_at', null).in('id', del));
           if (up.length) ps.push(sb.from('reminders').upsert(up));
@@ -164,6 +164,23 @@
         .catch(function (e) { console.warn('promemoria', e); })
         .then(function () { if (remLast) return run(); });
     })().finally(function () { remBusy = null; });
+  };
+
+  /* ---------- luoghi e tragitti (funzione "route" su Supabase) ---------- */
+  var routeCache = {};
+  function invoke(body) {
+    return sb.functions.invoke('route', { body: body }).then(function (r) {
+      if (r.error) throw r.error; if (r.data && r.data.error) throw new Error(r.data.error); return r.data;
+    });
+  }
+  window.tbmRoute = {
+    geo: function (q) { var near = null; return invoke({ action: 'geo', q: q, near: near }).then(function (d) { return d.results || []; }); },
+    route: function (o) {
+      var k = JSON.stringify([o.mode, o.from.lat, o.from.lon, o.to.lat, o.to.lon, o.mode === 'transit' ? o.arrive : '']);
+      if (routeCache[k]) return Promise.resolve(routeCache[k]);
+      return invoke({ action: 'route', from: { lat: o.from.lat, lon: o.from.lon }, to: { lat: o.to.lat, lon: o.to.lon }, mode: o.mode, arrive: o.arrive })
+        .then(function (d) { routeCache[k] = d; return d; });
+    }
   };
 
   /* ---------- notifiche ---------- */
