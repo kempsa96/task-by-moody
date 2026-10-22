@@ -797,6 +797,14 @@ function setLunch(start,end){
   if(start==null){if(old)del('blocks','lunch');return}
   put('blocks',{id:'lunch',title:'Pausa pranzo',color:'#7C8796',date:old?.date||addDays(key(new Date()),-1),start,end,onlyWorking:true,repeat:{freq:'workdays',interval:1,endType:'never'},exceptions:old?.exceptions||{}});
 }
+/* preparazione del mattino: uno spazio che precede l'inizio della giornata, spostabile come la pausa pranzo */
+const prepMin=()=>{const b=S.blocks.prep;return b?b.end-b.start:0};
+function setPrep(min,ws){
+  const old=S.blocks.prep;
+  if(!min){if(old)del('blocks','prep');return}
+  const end=ws??S.settings.workStart,start=Math.max(0,end-min);
+  put('blocks',{id:'prep',kind:'pause',title:'Preparazione',color:'#8E8E93',date:old?.date||addDays(key(new Date()),-1),start,end:Math.max(end,start+15),onlyWorking:true,repeat:{freq:'workdays',interval:1,endType:'never'},exceptions:old?.exceptions||{}});
+}
 function setPresence(k,on){
   const s=S.settings;s.daysOff=s.daysOff.filter(x=>x!==k);s.daysOn=(s.daysOn||[]).filter(x=>x!==k);
   if(on&&!isWorkWeekday(k))s.daysOn.push(k);
@@ -921,9 +929,10 @@ function bufRanges(b,k,list){
   return {before:bx?[Math.max(0,z-bx),z]:null,after:by?[a,Math.min(1440,a+by)]:null};
 }
 const bufOptions=v=>[...new Set([0,15,30,45,60,90,120,...(v!=null?[+v]:[])])].sort((a,b)=>a-b).map(m=>`<option value="${m}" ${m===v?'selected':''}>${m?dur(m):'Nessuno'}</option>`).join('');
-const isPause=b=>b.id==='lunch'||b.kind==='pause'||/^pausa\b/i.test(b.title||'');
+const isPause=b=>b.id==='lunch'||b.id==='prep'||b.kind==='pause'||/^pausa\b/i.test(b.title||'');
 const ICON_PIN='<svg class="bicon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.5 1.5l4 4-2 1-2.5 2.5.5 3-1.5 1.5-3-3-3.5 3.5M5.5 9.5l-3-3L4 5l3 .5L9.5 3z"/></svg>';
-const blockIcon=b=>b.id==='lunch'||/pranzo/i.test(b.title||'')?ICON_LUNCH:isPause(b)?ICON_PAUSE:ICON_PIN;
+const ICON_PREP='<svg class="bicon" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 12.5h13M4 12.5a4 4 0 0 1 8 0M8 3v2M3.2 6.2l1.3 1.3M12.8 6.2l-1.3 1.3"/></svg>';
+const blockIcon=b=>b.id==='prep'?ICON_PREP:b.id==='lunch'||/pranzo/i.test(b.title||'')?ICON_LUNCH:isPause(b)?ICON_PAUSE:ICON_PIN;
 function startPause(minutes){
   track(true);
   const now=new Date(),k=key(now),st=nowMin();
@@ -1209,6 +1218,7 @@ function migrate(){
   if(mode==='cloud'&&!(loadedSet.has('blocks')&&loadedSet.has('settings')))return;
   migrated=true;
   allTasks().forEach(t=>{if(t.log&&t.log.length&&JSON.stringify(normLog(t.log))!==JSON.stringify(t.log))writeLog(t,normLog(t.log))});
+  if(!S.settings.prepDone&&!S.blocks.prep&&!readOnly){S.settings.prepDone=true;silently(()=>{setPrep(45);saveSettings()})}
   if(S.settings.lunch&&!S.blocks.lunch){setLunch(S.settings.lunchStart,S.settings.lunchEnd);S.settings.lunch=false;saveSettings()}
 }
 let miniMonth=null,miniMin=false;try{miniMin=localStorage.getItem('tbm.miniMin')==='1'}catch(e){}
@@ -1245,7 +1255,7 @@ function buildReminders(){
   const k0=key(new Date());
   for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k);
     if(ev)bl.forEach(b=>{if(eventDone(b,k)==='no')return;const t=b.title||'Evento';
-      if(isPause(b)){add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`${b.id==='lunch'||/pranzo/i.test(t)?'🍽':'☕'} ${t}`,`Fino alle ${hm(b.end)}. Riposati!`);return}
+      if(isPause(b)){add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`${b.id==='prep'?'🌅':b.id==='lunch'||/pranzo/i.test(t)?'🍽':'☕'} ${t}`,`Fino alle ${hm(b.end)}. Riposati!`);return}
       const br=bufRanges(b,k,bl),when=`${hm(b.start)}–${hm(b.end)}`;
       if(br.before){
         const tp=tripPlain(b),where=b.place?` · 📍 ${b.place.label.split(',')[0]}`:'',url=mapsOf(b);
@@ -1646,8 +1656,8 @@ function renderPlayer(){
   const st=playerState(),{k,nm,r,blk,seg,next,pend}=st;
   let art='',kick='',title='',sub='',ctr='',bar='',c='var(--muted)',idle=false;
   if(blk){
-    const pz=isPause(blk);c=pz?'#8E8E93':blk.color;kick=pz?'In pausa':'Evento in corso';title=blk.title||'Evento';sub=`${hm(blk.start)}–${hm(blk.end)}`;
-    art=pz?'☕':'📌';
+    const pz=isPause(blk);c=pz?'#8E8E93':blk.color;kick=blk.id==='prep'?'Preparazione':pz?'In pausa':'Evento in corso';title=blk.title||'Evento';sub=`${hm(blk.start)}–${hm(blk.end)}`;
+    art=blk.id==='prep'?'🌅':pz?'☕':'📌';
     const p=(nm-blk.start)/(blk.end-blk.start);
     bar=`<div class="pl-bar"><span>${dur(nm-blk.start)||'0m'}</span><div class="pl-track"><div class="pl-fill" style="--c:${c};width:${p*100}%"></div></div><span>−${dur(blk.end-nm)}</span></div>`;
     ctr=pz?`<button class="pl-b" data-pl="addpause">+15m</button><button class="pl-b main" data-pl="resume" title="Riprendi ora">${PI.play}</button><button class="pl-b" data-pl="chat">Chiedi</button>`:`<span class="pl-p">${next?`Poi: ${esc(taskById(next.id)?.title||'')}`:''}</span>`;
@@ -1710,7 +1720,9 @@ $('#player').addEventListener('click',e=>{
   if(a==='start'){$('#dayBtn').dataset.mode='start';$('#dayBtn').click();return}
   if(a==='pause'){e.stopPropagation();togglePausePop(b);return}
   if(a==='addpause'){startPause(15);return}
-  if(a==='resume'&&st.blk){track(true);const x=S.blocks[st.blk.id];if(!x)return;if(x.start>=st.nm-1)del('blocks',x.id);else put('blocks',{...x,end:st.nm});return}
+  if(a==='resume'&&st.blk){track(true);const x=S.blocks[st.blk.id];if(!x)return;
+    if(isRec(x)){const ex={...(x.exceptions||{})};ex[st.k]=st.blk.start>=st.nm-1?'skip':{start:st.blk.start,end:st.nm};put('blocks',{...x,exceptions:ex});return}
+    if(x.start>=st.nm-1)del('blocks',x.id);else put('blocks',{...x,end:st.nm});return}
   if(!st.seg)return;const id=st.seg.id;
   if(a==='add15'||a==='add30'){track(true);resolveTask(id,a==='add15'?'15':'30');return}
   if(a==='sub15'||a==='sub30'){track(true);const t=taskById(id);if(!t)return;const x=a==='sub15'?15:30,el2=logged(t);const nm2=Math.max(5,el2+1,(t.minutes||15)-x);
@@ -2304,7 +2316,7 @@ function restoreBackup(d){
 }
 const LUNCH=[[720,780],[750,810],[780,840],[810,870]];
 function openSettings(){
-  const s=S.settings,L=S.blocks.lunch;
+  const s=S.settings,L=S.blocks.lunch,oldWs=s.workStart;
   const lunchVal=!L?'none':LUNCH.some(([a,b])=>a===L.start&&b===L.end)?L.start+'-'+L.end:'custom';
   form.innerHTML=`<h3>Impostazioni</h3>
     <div class="row"><div class="field"><label for="sWs">Inizio giornata</label><input id="sWs" type="time" step="900" value="${hm(s.workStart)}"></div>
@@ -2313,6 +2325,8 @@ function openSettings(){
     <div class="field"><label for="sLunch">Pausa pranzo</label><select id="sLunch">${[['none','Nessuna pausa'],...LUNCH.map(([a,b])=>[a+'-'+b,hm(a)+' – '+hm(b)]),['custom','Personalizzata…']].map(([v,l])=>`<option value="${v}" ${v===lunchVal?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="row" id="sLcustom"><div class="field"><label for="sLs">Dalle</label><input id="sLs" type="time" step="900" value="${hm(L?L.start:780)}"></div>
     <div class="field"><label for="sLe">Alle</label><input id="sLe" type="time" step="900" value="${hm(L?L.end:840)}"></div></div>
+    <div class="field"><label for="sPrep">Preparazione del mattino</label><select id="sPrep">${[[0,'Nessuna'],[15,'15 minuti'],[30,'30 minuti'],[45,'45 minuti'],[60,'1 ora'],[90,'1 ora e mezza']].map(([v,l])=>`<option value="${v}" ${v===prepMin()?'selected':''}>${l}</option>`).join('')}</select></div>
+    <p class="note">La preparazione precede l’inizio della giornata (sveglia, colazione, tragitto…). Puoi spostarla sul calendario, per esempio se un giorno inizi a lavorare prima e ti prepari dopo.</p>
     <p class="note">La pausa si ripete nei giorni lavorativi. Per spostarla solo un giorno trascinala sul calendario e scegli "Solo questo".</p>
     <div class="row"><div class="field"><label for="sBufB">Eventi: tempo prima</label><select id="sBufB">${bufOptions(s.bufBefore??15)}</select></div>
     <div class="field"><label for="sBufA">Eventi: tempo dopo</label><select id="sBufA">${bufOptions(s.bufAfter??15)}</select></div></div>
@@ -2357,6 +2371,7 @@ function openSettings(){
     Object.assign(s,{workStart:ws,workEnd:we,workDays:days.length?days:[1,2,3,4,5],bufBefore:+$('#sBufB').value,bufAfter:+$('#sBufA').value});
     {const hv=$('#sHome').value.trim();s.home=!hv?null:home&&home.label===hv?home:(s.home&&s.home.label===hv?s.home:{label:hv,lat:null,lon:null});s.travelMode=$('#sMode').value}
     if($('#nfEv'))s.notif={ev:$('#nfEv').checked,task:$('#nfTk').checked,day:$('#nfDy').checked,lead:+$('#nfLead').value};
+    {const pm=+$('#sPrep').value;if(pm!==prepMin()||(pm&&ws!==oldWs))setPrep(pm,ws)}
     saveSettings();dlg.close();scrollToWork()};
   show();
 }
