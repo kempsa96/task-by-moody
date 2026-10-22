@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610211430">
+<meta name="tbm-build" content="202610220823">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script src="supabase.js?v=202610211430"></script>
-<script src="tbm-cloud.js?v=202610211430"></script>
+<script src="supabase.js?v=202610220823"></script>
+<script src="tbm-cloud.js?v=202610220823"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -521,6 +521,8 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
 /* ---------- hover dinamico ---------- */
 .cal-grid{transition:grid-template-columns .38s cubic-bezier(.2,.8,.2,1)}
 .dayh{transition:background .25s}
+#undoBtn:disabled,#redoBtn:disabled{opacity:.35;cursor:default}
+.pevs{display:flex;flex-direction:column;gap:2px;padding:4px 2px 8px}.pevs .lbl{margin:4px 2px}
 .dayh.hov{background:color-mix(in srgb,var(--accent) 5%,transparent)}
 .daycol.hov:not(.off) .work{background:color-mix(in srgb,var(--accent) 3%,var(--surface))}
 @media (hover:hover) and (prefers-reduced-motion:no-preference){
@@ -696,6 +698,7 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3.2"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
     </button>
     <button class="btn icon ghost" id="undoBtn" aria-label="Annulla ultima modifica" title="Annulla (Ctrl+Z)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button>
+    <button class="btn icon ghost" id="redoBtn" aria-label="Ripristina la modifica annullata" title="Ripristina (Ctrl+Y)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button>
     <button class="btn primary" id="addBtn" aria-haspopup="menu">+ Nuovo</button>
     </div>
   </header>
@@ -1247,7 +1250,7 @@ function renderMini(){
   el.innerHTML=`<div class="mini-h"><b data-mini="today" title="Vai a oggi">${esc(label)}</b><button data-mini="prev" aria-label="Mese precedente">‹</button><button data-mini="next" aria-label="Mese successivo">›</button><button data-mini="min" class="mini-x" aria-label="Riduci a icona" title="Riduci a icona"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3v3.5H13M3 9.5h3.5V13M9.5 6.5 14 2M6.5 9.5 2 14"/></svg></button></div>
     <div class="mini-g">${['L','M','M','G','V','S','D'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>`;
 }
-function render(){migrate();schedule();renderRange();renderProjects();renderCal();renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();queueReminders()}
+function render(){migrate();schedule();renderRange();renderProjects();renderCal();renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();queueReminders()}
 /* ---------- promemoria per le notifiche (solo nella versione app, quando window.tbmReminders esiste) ---------- */
 let remT=null,remSig='';
 function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if(force){remSig='';clearTimeout(remT);remT=null}if(remT)return;remT=setTimeout(()=>{remT=null;try{const L=buildReminders(),sig=JSON.stringify(L);if(sig!==remSig){remSig=sig;window.tbmReminders(L)}}catch(e){console.error(e)}},force?300:4000)}
@@ -1299,10 +1302,11 @@ function renderImp(){
   }
   const L=S.blocks.lunch;
   el.innerHTML=(items.length?items.map(b=>{const base=S.blocks[b.id];return `<li><button class="imp" data-act="editBlock" data-id="${b.id}" data-occ="${b.occ}" style="--c:${b.color}">
-      <span class="dot"></span><span class="imp-t">${blockIcon(base)?blockIcon(base)+' ':''}${isRec(base)?'↻ ':''}${esc(b.title||'Evento')}<small>${b.occ===today?'oggi':shortDate(b.occ)}${isRec(base)?' · '+esc(repLabel(base)):''}</small></span><span class="imp-h">${hm(b.start)}</span></button></li>`}).join('')
+      <span class="dot"></span><span class="imp-t">${blockIcon(base)?blockIcon(base)+' ':''}${isRec(base)?'↻ ':''}${esc(b.title||'Evento')}<small>${b.occ===today?'oggi':shortDate(b.occ)}${isRec(base)?' · '+esc(repLabel(base)):''}${base.projectId&&S.projects[base.projectId]?' · '+esc(S.projects[base.projectId].name):''}</small></span><span class="imp-h">${hm(b.start)}</span></button></li>`}).join('')
     :`<li class="imp-empty">Nessun evento in arrivo. Usa + per aggiungerne uno.</li>`)
     +(L?`<li><button class="imp" data-act="editBlock" data-id="lunch" data-occ="${today}" style="--c:${L.color}"><span class="dot"></span><span class="imp-t">${ICON_LUNCH} ↻ Pausa pranzo<small>nei giorni lavorativi</small></span><span class="imp-h">${hm(L.start)}</span></button></li>`:'');
 }
+function renderUndo(){const u=$('#undoBtn'),r=$('#redoBtn');if(u)u.disabled=!undoStack.length&&!batchOpen;if(r)r.disabled=!redoStack.length}
 function renderRange(){
   const v=visibleDays();
   $('#range').textContent=v.length===1?shortDate(v[0]):`${shortDate(v[0])} – ${shortDate(v[v.length-1])}`;
@@ -1335,6 +1339,9 @@ function renderProjects(){
       <input id="nt-${fp.id}" list="tplList" placeholder="Nuova attività in ${esc(fp.name)}" aria-label="Nuova attività" data-enter="${fp.id}" data-tpl="${fp.id}">
       <select id="nd-${fp.id}" aria-label="Durata">${durOptions(60)}</select>
       <button class="btn primary" data-act="addTask" data-id="${fp.id}">Aggiungi</button></div>`;
+  if(fp){const today=key(new Date()),evs=[];
+    for(let i=0;i<90&&evs.length<8;i++){const k=addDays(today,i);blocksOn(k).forEach(b=>{const base=S.blocks[b.id];if(base&&base.projectId===fp.id&&!(isRec(base)&&evs.some(x=>x.id===b.id)))evs.push({...b,occ:k})})}
+    if(evs.length)html+=`<div class="pevs"><span class="lbl">Eventi del progetto</span>${evs.map(b=>`<button class="imp" data-act="editBlock" data-id="${b.id}" data-occ="${b.occ}" style="--c:${b.color}"><span class="dot"></span><span class="imp-t">${blockIcon(S.blocks[b.id])+' '}${esc(b.title||'Evento')}<small>${b.occ===today?'oggi':shortDate(b.occ)}</small></span><span class="imp-h">${hm(b.start)}</span></button>`).join('')}</div>`}
   html+=doneProjects.map(p=>`<div class="donebar" style="margin:0"><span>«${esc(p.name)}»: tutte le attività fatte</span><button class="btn" data-act="archive" data-id="${p.id}">Archivia progetto</button></div>`).join('');
   if(!items.length&&!fp){
     el.innerHTML=html+`<div class="empty"><strong>Niente da fare</strong><span>Aggiungi una task, un progetto con le sue attività o un evento: il calendario si riempie da solo.</span><button class="btn primary" data-act="newmenu">+ Nuovo</button></div><datalist id="tplList">${TEMPLATES.map(([n])=>`<option value="${esc(n)}">`).join('')}</datalist>`;
@@ -1382,7 +1389,7 @@ function renderCal(){
     });
     blks.forEach(b=>{
       const evd=isPause(b)?null:eventDone(b,k);
-      body+=`<div class="blk${isPause(b)?' pause':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}</b><em>${evd==='no'?'non svolto · ':''}${hm(b.start)}–${hm(b.end)}${b.place?` · 📍 ${esc(b.place.label.split(',')[0])}`:''}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
+      body+=`<div class="blk${isPause(b)?' pause':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}</b><em>${evd==='no'?'non svolto · ':''}${hm(b.start)}–${hm(b.end)}${b.place?` · 📍 ${esc(b.place.label.split(',')[0])}`:''}${b.projectId&&S.projects[b.projectId]?` · ${esc(S.projects[b.projectId].name)}`:''}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
     });
     const joined={},joinedLi={},skip=new Set();
     segs.forEach((x,si)=>{const t=taskById(x.id);(t?.log||[]).forEach((L,li)=>{if(L.d===k&&Math.abs(x.start-L.e)<=3&&!skip.has(x.id+':'+li)){skip.add(x.id+':'+li);joined[si]=L.s;joinedLi[si]=li}})});
@@ -1580,7 +1587,7 @@ $('#addBtn').onclick=e=>{
   showCtx(r.right-200,r.bottom+6,newMenuItems());
 };
 $('#listImp').onclick=()=>openBlockList();
-$('#undoBtn').onclick=doUndo;
+$('#undoBtn').onclick=doUndo;$('#redoBtn').onclick=doRedo;
 $('#calInner').addEventListener('click',e=>{const b=e.target.closest('[data-wk]');if(!b)return;e.stopPropagation();viewStart=addDays(viewStart,+b.dataset.wk);miniMonth=null;render();
   const g=document.querySelector('#calInner .cal-grid:not(.cal-head)');if(g&&!matchMedia('(prefers-reduced-motion: reduce)').matches){g.classList.remove('slide-l','slide-r');void g.offsetWidth;g.classList.add(+b.dataset.wk>0?'slide-l':'slide-r')}});
 /* mini calendario trascinabile e che si sposta quando c'è la chat */
@@ -2000,6 +2007,10 @@ function tripText(t,mode){if(!t)return'';const ic=(TMODES.find(x=>x[0]===mode)||
   if(t.walkOnly)return `🚶 ${dur(t.minutes)} a piedi (meglio che i mezzi)`;
   return `${ic} ${dur(t.minutes)}${t.km?` · ${String(t.km).replace('.',',')} km`:''}${t.lines&&t.lines.length?` · linee ${t.lines.map(esc).join(' → ')}`:''}${mode==='car'?' · senza traffico':''}`}
 function placeField(id,label,val,ph){return `<div class="field"><label for="${id}">${label}</label><div class="ac"><input id="${id}" autocomplete="off" value="${esc(val||'')}" placeholder="${ph}"><div class="acl" id="${id}L" hidden></div></div></div>`}
+function projectField(b){
+  const ps=realProjects().sort((x,y)=>x.name.localeCompare(y.name)),cur=b.projectId&&S.projects[b.projectId];
+  const list=cur&&!ps.some(x=>x.id===cur.id)?[...ps,cur]:ps;
+  return `<div class="field"><label for="bProj">Fa parte di un progetto (facoltativo)</label><select id="bProj"><option value="">Nessun progetto</option>${list.map(x=>`<option value="${x.id}" ${x.id===b.projectId?'selected':''}>${esc(x.name)}${x.client?' · '+esc(x.client):''}</option>`).join('')}</select></div>`}
 function tripFields(b){
   const mode=b.travel?.mode||S.settings.travelMode||'transit',from=b.from||homePlace();
   return `${placeField('bPlace','Dove (facoltativo)',b.place?.label,'es. NABA, Via Segantini')}
@@ -2053,7 +2064,7 @@ function wireTrip(b,when){
 function openBlock(b,occ){
   const isNew=!b.id,dup=!!b._dup;
   if(isNew){const t=b;b={id:uid(),title:t.title||'',color:t.color||'#7C8796',date:t.date,start:t.start,end:t.end,repeat:{freq:'none',interval:1,endType:'never'}};
-    if(dup){['before','after','kind'].forEach(f=>{if(t[f]!=null)b[f]=t[f]})}}
+    if(dup){['before','after','kind','projectId','place','from','travel'].forEach(f=>{if(t[f]!=null)b[f]=t[f]})}}
   const rec=isRec(b);occ=occ||b.date;
   const cur=isNew?b:(blocksOn(occ).find(x=>x.id===b.id)||b);
   const r={freq:'none',interval:1,endType:'never',...(b.repeat||{})};
@@ -2067,6 +2078,7 @@ function openBlock(b,occ){
     <div class="row" id="bEndR"><div class="field"><label for="bEnd">Fine</label><select id="bEnd"><option value="never" ${r.endType==='never'?'selected':''}>Mai</option><option value="count" ${r.endType==='count'?'selected':''}>Dopo un numero di volte</option><option value="until" ${r.endType==='until'?'selected':''}>Fino al giorno</option></select></div>
     <div class="field" id="bCountF"><label for="bCount">Volte</label><input id="bCount" type="number" min="1" max="999" value="${r.count||5}"></div>
     <div class="field" id="bUntilF"><label for="bUntil">Fino al</label><input id="bUntil" type="date" value="${r.until||addDays(occ,30)}"></div></div>
+    ${isPause(b)?'':projectField(b)}
     ${isPause(b)?'':tripFields(b)}
     ${isPause(b)?'':`<div class="row"><div class="field"><label for="bBefore">Prima (viaggio / preparazione)</label><select id="bBefore">${bufOptions(bufOf(b)[0])}</select></div>
     <div class="field"><label for="bAfter">Dopo (rientro)</label><select id="bAfter">${bufOptions(bufOf(b)[1])}</select></div></div>`}
@@ -2074,6 +2086,7 @@ function openBlock(b,occ){
     <p class="note">${rec?`Si ripete ${repLabel(b)}. `:''}Le attività che cadono in questo orario slittano o si dividono in due parti. Puoi anche trascinare l'evento sul calendario per spostarlo.</p>
     <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="bDel">Elimina</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${dup?'Crea duplicato':isNew?'Aggiungi':'Salva'}</button></div>`;
   const getC=wireSwatches();
+  if($('#bProj'))$('#bProj').onchange=()=>{const pr=S.projects[$('#bProj').value];if(pr&&pr.color)getC.set(pr.color);const t=$('#bTitle');if(pr&&!t.value.trim())t.value=pr.name};
   const trip=isPause(b)?null:wireTrip(b,()=>({date:$('#bDate').value||occ,start:toMin($('#bS').value||'09:00')}));
   const sync=()=>{const f=$('#bRep').value;$('#bIvF').hidden=!['daily','weekly','monthly','yearly'].includes(f);$('#bEndR').hidden=f==='none';
     const en=$('#bEnd').value;$('#bCountF').hidden=en!=='count';$('#bUntilF').hidden=en!=='until'};
@@ -2090,6 +2103,7 @@ function openBlock(b,occ){
     const nb={title:$('#bTitle').value.trim()||'Evento',color:getC(),date:$('#bDate').value||occ,start:st,end:en};
     if($('#bBefore')){nb.before=+$('#bBefore').value;nb.after=+$('#bAfter').value}
     if(trip)Object.assign(nb,trip.value());
+    if($('#bProj'))nb.projectId=$('#bProj').value||null;
     if(isNew||!rec){put('blocks',{...b,...nb,repeat,exceptions:b.exceptions||{},...(isNew?{created:Date.now()}:{})});dlg.close();return}
     const nr=x=>JSON.stringify({freq:x.freq,interval:x.interval||1,endType:x.endType||'never',count:x.endType==='count'?x.count:null,until:x.endType==='until'?x.until:null});
     const repChanged=nr(repeat)!==nr(b.repeat);
@@ -2100,7 +2114,7 @@ function openBlock(b,occ){
   if(dup)setTimeout(()=>{const d=$('#bDate');if(d){d.focus();try{d.showPicker&&d.showPicker()}catch(e){}}},80);
 }
 function duplicateBlock(b,occ){const cur=blocksOn(occ).find(x=>x.id===b.id)||b;
-  openBlock({_dup:true,title:b.title,color:b.color,before:b.before,after:b.after,kind:b.kind,date:addDays(occ,1),start:cur.start,end:cur.end},null)}
+  openBlock({_dup:true,title:b.title,color:b.color,before:b.before,after:b.after,kind:b.kind,projectId:b.projectId,place:b.place,from:b.from,travel:b.travel,date:addDays(occ,1),start:cur.start,end:cur.end},null)}
 /* ---------- inizio e fine giornata ---------- */
 let welcomeOpen=false;
 const dayRec=k=>(S.settings.days||{})[k];
