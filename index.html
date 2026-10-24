@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610241956">
+<meta name="tbm-build" content="202610242001">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script src="supabase.js?v=202610241956"></script>
-<script src="tbm-cloud.js?v=202610241956"></script>
+<script src="supabase.js?v=202610242001"></script>
+<script src="tbm-cloud.js?v=202610242001"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -332,6 +332,7 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .cchip:hover{border-color:var(--fg)}
 .cchip.more{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
 .chat-f{border-top:0!important}
+.copts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;white-space:normal}.copts .chip{color:var(--fg);font-weight:600;padding:5px 11px;font-size:13px}.copts .chip.act{color:var(--accent)}
 .msg .confirm{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .msg .confirm .btn{padding:5px 10px;font-size:13px}
 .cedit{display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px}
@@ -2861,6 +2862,12 @@ const HELP=`Scrivimi cosa fare, per esempio:
 • priorità alta a spot prodotto
 • fatto montaggio spot
 • cancella dentista
+Conti:
+• aggiungi un lavoro a ottobre per NABA, laboratorio Media Lab, 1000 euro (se manca qualcosa te lo chiedo)
+• quanto mi devono? · cosa devo fatturare?
+• quanto ho fatturato a ottobre? · quanto ho guadagnato quest'anno?
+• DNCA ha pagato · fattura 31/2026 incassata
+• emetti fattura NABA · nuovo preventivo per Rilastil
 Ogni azione si può annullare.`;
 
 /* linguaggio parlato -> comando */
@@ -2891,6 +2898,7 @@ function runCommand(raw){
   if(!n)return null;
   if(/^(aiuto|help|\?|cosa (puoi|sai) fare|comandi|esempi)/.test(n))return {text:HELP};
   if(readOnly)return {text:'Questa pagina è in sola lettura: non posso fare modifiche.',err:1};
+  {const fr=finCommand(raw,n);if(fr)return fr}
   const hasTime=/\b(dalle|alle|ore)\s*\d|\b\d{1,2}[:.]\d{2}\b|\b\d{1,2}\s*-\s*\d{1,2}\b/.test(n);
 
   // presenza
@@ -3090,9 +3098,176 @@ function restore(old){
   }
   if(JSON.stringify(S.settings)!==JSON.stringify(old.settings)){S.settings=old.settings;saveSettings()}
 }
+/* ---------- chat: lavori, fatture e conti, con domande per completare ---------- */
+const MRE=/\b(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\b(?:\s+(?:del\s+)?(\d{4}))?/;
+const MIDX={gennaio:0,febbraio:1,marzo:2,aprile:3,maggio:4,giugno:5,luglio:6,agosto:7,settembre:8,ottobre:9,novembre:10,dicembre:11};
+const ymOf=(y,m)=>{const d=new Date(y,m,1);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`};
+const ymLabel=ym=>`${MESI[+ym.slice(5)-1]} ${ym.slice(0,4)}`;
+function parseMonth(n){
+  const now=new Date(),m=MRE.exec(n);
+  if(m){let y=m[2]?+m[2]:now.getFullYear();const mi=MIDX[m[1]];if(!m[2]&&mi-now.getMonth()>6)y--;return {ym:ymOf(y,mi),match:m[0]}}
+  if(/\b(questo mese|mese corrente|questo)\b/.test(n))return {ym:ymOf(now.getFullYear(),now.getMonth()),match:(/\bquesto mese|mese corrente\b/.exec(n)||[''])[0]};
+  if(/\b(mese scorso|scorso mese|scorso)\b/.test(n))return {ym:ymOf(now.getFullYear(),now.getMonth()-1),match:(/\bmese scorso|scorso mese\b/.exec(n)||[''])[0]};
+  if(/\b(mese prossimo|prossimo mese|prossimo)\b/.test(n))return {ym:ymOf(now.getFullYear(),now.getMonth()+1),match:(/\bmese prossimo|prossimo mese\b/.exec(n)||[''])[0]};
+  const k=/^\s*(\d{1,2})\s*$/.exec(n);if(k&&+k[1]>=1&&+k[1]<=12)return {ym:ymOf(now.getFullYear(),+k[1]-1),match:k[0]};
+  return null;
+}
+function parseAmount(n){
+  const re=/(?:(fatturat[oi]|importo|compenso|cifra|da|di|per|totale|paga(?:to)?|prezzo)\s+(?:di\s+|da\s+)?)?(\d{1,3}(?:[.\s]\d{3})+|\d+)(?:,(\d{1,2}))?\s*(k|mila)?\s*(€|euro|eur)?/g;let m,best=null;
+  while((m=re.exec(n))){
+    const after=n.slice(m.index+m[0].length,m.index+m[0].length+14);
+    if(/^\s*(gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre|\/|:|ore|h\b|min)/.test(after))continue;
+    let v=+(m[2].replace(/[.\s]/g,'')+(m[3]?'.'+m[3]:''));if(m[4])v*=1000;
+    const strong=!!(m[5]||m[4]||/fatturat|importo|compenso|cifra|totale|prezzo|paga/.test(m[1]||''));
+    if(!strong&&v<50)continue;
+    if(!best||strong>best.strong||(strong===best.strong&&v>best.v))best={v,strong,match:m[0]};
+  }
+  if(!best)return null;
+  const cash=/\b(contanti|in nero|cash|non fatturat\w*|senza fattura)\b/.test(n);
+  return {v:best.v,cash,match:best.match};
+}
+function parseStatus(n){
+  if(/\b(incassat\w*|pagat[oaie]|ha pagato|hanno pagato|saldat\w*)\b/.test(n))return 'pagato';
+  if(/\b(gia fatturat\w*|fattura (emessa|inviata|fatta|mandata)|attesa (di )?pagamento|in attesa|aspetto il pagamento)\b/.test(n))return 'attesa';
+  if(/\bda fatturare\b/.test(n))return 'fatt';
+  if(/\bin corso\b/.test(n))return 'corso';
+  if(/\b(previst\w*|da fare|futuro)\b/.test(n))return 'prev';
+  return null;
+}
+const STATUS_WORDS=/\b(gia fatturat\w*|fattura (emessa|inviata|fatta|mandata)|attesa (di )?pagamento|in attesa|da fatturare|in corso|previst\w*|incassat\w*|pagat[oaie]|saldat\w*)\b/g;
+function findClient(n){
+  const cs=Object.values(S.clients).sort((a,b)=>b.name.length-a.name.length),cn=compact(n);
+  for(const c of cs){const k=N(c.name);if(new RegExp(`(^|[^a-z0-9])${k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}([^a-z0-9]|$)`).test(n))return {c,match:k}}
+  for(const c of cs){const k=compact(c.name);if(k.length>=4&&cn.includes(k))return {c,match:null}}
+  return null;
+}
+function newClientName(raw,n){
+  const m=/\b(?:il cliente(?: e)?|cliente(?: e)?|per il cliente|per)\s+([a-z0-9][^,]*?)(?=\s*(?:,|$|\bdescrizione\b|\bfatturat|\bimporto\b|\bda \d|\bdi \d|\bper \d|\b\d|\bin corso\b|\bda fatturare\b|\bincassat|\bpagat|\bnel mese\b|\ba (?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\b|\bad? \w+ (?:mese)\b))/.exec(n);
+  if(!m)return null;let v=raw.substr(m.index+m[0].length-m[1].length,m[1].length).trim();
+  v=v.replace(/^(il|la|lo|l'|i|gli|le)\s+/i,'').trim();
+  if(!v||v.length<2||/^(un|una|il|la|lavoro|ottobre|questo)$/i.test(v))return null;
+  return {name:v.replace(/^\w/,x=>x.toUpperCase()),match:m[0]};
+}
+function cleanTitle(raw,n,cut){
+  const d=/\bdescrizione\s*[:,]?\s*/.exec(n);
+  if(d){const st=d.index+d[0].length;const rest=n.slice(st);const e=rest.search(/,|\s+(?:fatturat|importo|per \d|da \d|di \d|\d+\s*(?:€|euro))|\s+\b(?:in corso|da fatturare|incassat|pagat)/);const len=e<0?rest.length:e;const v=raw.substr(st,len).trim();return v?v.replace(/^\w/,x=>x.toUpperCase()):null}
+  let s=n;cut.filter(Boolean).forEach(x=>{s=s.replace(x,' ')});
+  s=s.replace(/^\s*(?:ok|okay)?\s*(?:aggiungi|aggiungimi|inserisci|metti|segna|crea|registra|nuovo|nuova)?\s*(?:mi\s+)?(?:un|una)?\s*(?:nuovo\s+)?(?:lavoro|lavori|entrata|incasso)\b/,' ')
+    .replace(STATUS_WORDS,' ').replace(/\b(dove|praticamente|il cliente e|cliente e|cliente|per esempio|che|e|eccetera|ecc|di questo|di|del|a|ad|al|nel|mese|per|con|in|euro|fatturato|fatturati|importo|contanti|questo|scorso|prossimo)\b/g,' ')
+    .replace(/[,.;:]+/g,' ').replace(/\s+/g,' ').trim();
+  if(s.replace(/[^a-z]/g,'').length<3)return null;
+  // riprendo le maiuscole dal testo originale
+  const i=n.indexOf(s);const v=i>=0?raw.substr(i,s.length):s;return v.replace(/^\w/,x=>x.toUpperCase());
+}
+let WIZ=null;
+const wizClient=d=>d.clientId?S.clients[d.clientId]:null;
+const wizClientName=d=>wizClient(d)?.name||d.clientNew||'';
+function wizProjects(d){const c=d.clientId;return c?Object.values(S.projects).filter(p=>!isSolo(p)&&!p.archived&&p.clientId===c):[]}
+function wizAsk(){
+  const d=WIZ.d,a=WIZ.asked,now=new Date();
+  if(!d.month){a.month=1;return {text:'Per quale mese?',opts:[-1,0,1].map(o=>{const ym=ymOf(now.getFullYear(),now.getMonth()+o);return [ymLabel(ym),MESI[+ym.slice(5)-1].toLowerCase()+' '+ym.slice(0,4)]})}}
+  if(!d.clientId&&!d.clientNew){a.client=1;const recent=[...new Set(Object.values(S.jobs).sort((x,y)=>(y.created||0)-(x.created||0)).map(j=>j.clientId).filter(id=>S.clients[id]))];
+    const list=[...recent,...Object.keys(S.clients).filter(id=>!recent.includes(id))].slice(0,6);return {text:'Per quale cliente? Scegli o scrivi il nome (se è nuovo lo creo io).',opts:list.map(id=>[S.clients[id].name,S.clients[id].name])}}
+  if(d.title==null&&!a.title){a.title=1;const ps=wizProjects(d);return {text:'Che lavoro è? Scrivi una breve descrizione.',opts:ps.slice(0,5).map(p=>[p.name,p.name])}}
+  if(d.amount==null&&d.cash==null){a.amount=1;return {text:'Quanto? Scrivi l’importo da fatturare (es. 1000), oppure «500 in contanti» se non lo fatturi.'}}
+  if(!d.status){a.status=1;return {text:'A che punto è?',opts:[['Previsto','previsto'],['In corso','in corso'],['Da fatturare','da fatturare'],['Fatturato, aspetto il pagamento','in attesa di pagamento'],['Già incassato','incassato']]}}
+  if(d.projectId===undefined){const ps=wizProjects(d);if(ps.length&&!a.project){a.project=1;return {text:`Lo collego a un progetto di ${wizClientName(d)}?`,opts:[...ps.slice(0,5).map(p=>[p.name,p.name]),['No','no']]}}d.projectId=null}
+  // riepilogo
+  WIZ=null;
+  const amt=+d.amount||0,cash=+d.cash||0,t=taxCalc(amt,+d.month.slice(0,4));
+  const sum=`${ymLabel(d.month)}${d.day?' (giorno '+d.day+')':''} · ${wizClientName(d)}${d.clientNew?' (nuovo cliente)':''}\n${d.title||'—'}${d.projectId?' · progetto '+S.projects[d.projectId].name:''}\n${amt?eur(amt)+' fatturati':''}${amt&&cash?' + ':''}${cash?eur(cash)+' in contanti':''}${amt?` → tasse ~${eur(t.tot)}, netto ~${eur(t.net+cash)}`:''}\nStato: ${jst(d.status)[1]}`;
+  const data={...d};
+  return {text:`Riepilogo:\n${sum}\n\nLo aggiungo?`,confirm:{yes:'Aggiungi',no:'Annulla',cancel:'Ok, non aggiungo niente.',run:()=>{
+    let cid=data.clientId;if(!cid&&data.clientNew)cid=findOrCreateClient(data.clientNew).id;
+    const j={id:uid(),month:data.month,day:data.day||'',clientId:cid,projectId:data.projectId||null,title:data.title||'',amount:+data.amount||0,cash:+data.cash||0,status:data.status,created:Date.now(),...(data.status==='pagato'?{paidAt:key(new Date())}:{})};
+    put('jobs',j);FIN.year=+data.month.slice(0,4);FIN.month=+data.month.slice(5)-1;WIZ=null;
+    return `Fatto! L’ho aggiunto ai lavori di ${ymLabel(data.month)}. Lo trovi in Conti › Mesi.`}},acts:[['Modifica nella scheda','__jobform']],draft:data};
+}
+function wizStart(raw,n){
+  const d={},cut=[];
+  const mo=parseMonth(n);if(mo){d.month=mo.ym;cut.push(mo.match)}
+  const dm=/\b(\d{1,2})\s+(?:gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|settembre|ottobre|novembre|dicembre)\b/.exec(n);if(dm){d.day=dm[1];cut.push(dm[1]+' ')}
+  const am=parseAmount(n);if(am){if(am.cash)d.cash=am.v;else d.amount=am.v;cut.push(am.match)}
+  const st=parseStatus(n);if(st)d.status=st;
+  const fc=findClient(n);if(fc){d.clientId=fc.c.id;if(fc.match)cut.push(fc.match)}else{const nc=newClientName(raw,n);if(nc){const sim=similarClient(nc.name);if(sim.exact||sim.near)d.clientId=(sim.exact||sim.near).id;else d.clientNew=nc.name;cut.push(nc.match)}}
+  const ps=Object.values(S.projects).filter(p=>!isSolo(p)&&!p.archived).sort((a,b)=>b.name.length-a.name.length).find(p=>N(p.name).length>=4&&n.includes(N(p.name)));
+  if(ps){d.projectId=ps.id;if(!d.clientId&&ps.clientId)d.clientId=ps.clientId}
+  const tt=cleanTitle(raw,n,cut);if(tt)d.title=tt;else if(ps)d.title=ps.name;
+  WIZ={d,asked:{}};return wizAsk();
+}
+function wizAnswer(text){
+  let raw=wordsToNum(normalizeSpeech(text));const d=WIZ.d,a=WIZ.asked;
+  if(/^(annulla|stop|basta|lascia (stare|perdere)|niente)\b/.test(N(text.trim()))){WIZ=null;return {text:'Ok, lascio perdere.'}}
+  // un altro comando a metà: chiudo le domande ed eseguo quello
+  if(/^(quanto|cosa devo|chi mi deve|aggiungi|nuovo|nuova|crea|cancella|elimina|sposta|evento|pausa|emetti|fattura \d|task\b)|\b(ha pagato|hanno pagato|non ci sono|sono libero)\b/.test(N(text.trim()))){WIZ=null;return runCommand(text)||{text:'Ok.'}}
+  // «ok / sì» = accetto il primo suggerimento
+  if(/^(ok|okay|si|sì|va bene|certo|giusto|quello)\.?$/i.test(text.trim())){const last=[...chatLog].reverse().find(m=>m.who==='bot');if(last&&last.opts&&last.opts.length)raw=last.opts[0][1]}
+  const n=N(raw.trim());
+  // risposta alla domanda corrente (+ eventuali altre informazioni nella stessa frase)
+  const step=!d.month&&a.month?'month':!d.clientId&&!d.clientNew&&a.client?'client':d.title==null&&a.title?'title':d.amount==null&&d.cash==null&&a.amount?'amount':!d.status&&a.status?'status':d.projectId===undefined&&a.project?'project':null;
+  if(step==='month'){const mo=parseMonth(n);if(!mo)return {text:'Non ho capito il mese: scrivilo per esteso, es. «ottobre».',opts:wizAsk().opts};d.month=mo.ym}
+  else if(step==='client'){const fc=findClient(n);if(fc)d.clientId=fc.c.id;else{const nm=raw.trim().replace(/^(il|la|lo|per)\s+/i,'').replace(/^\w/,x=>x.toUpperCase());const sim=similarClient(nm);if(sim.exact)d.clientId=sim.exact.id;else d.clientNew=nm}}
+  else if(step==='title'){if(/^(salta|nessuna|niente|no)$/.test(n))d.title='';else{const p=Object.values(S.projects).find(x=>N(x.name)===n);if(p){d.title=p.name;if(d.projectId===undefined)d.projectId=p.id}else d.title=raw.trim().replace(/^\w/,x=>x.toUpperCase())}}
+  else if(step==='amount'){const am=parseAmount(n)||(/^\s*(\d+(?:[.,]\d+)?)\s*$/.test(n)?{v:num(n),cash:false}:null);if(!am)return {text:'Scrivimi solo la cifra, per esempio 1000 (oppure «500 in contanti»).'};if(am.cash||/contanti|nero|cash/.test(n))d.cash=am.v;else d.amount=am.v}
+  else if(step==='status'){const st=parseStatus(n)||(/^(fatturato|fattura|emessa)$/.test(n)?'attesa':null);if(!st)return {text:'Scegli uno stato qui sotto.',opts:wizAsk().opts};d.status=st}
+  else if(step==='project'){if(/^(no|nessuno|niente)$/.test(n))d.projectId=null;else{const p=wizProjects(d).find(x=>N(x.name)===n||n.includes(N(x.name)));d.projectId=p?p.id:null}}
+  return wizAsk();
+}
+function finSummaryText(y,mi){
+  const list=mi==null?jobsYear(y):jobsOf(y,mi),t=sumJobs(list),lab=mi==null?`nel ${y}`:`a ${MESI[mi].toLowerCase()} ${y}`;
+  if(!list.length)return `Nessun lavoro registrato ${lab}.`;
+  return `${lab[0].toUpperCase()+lab.slice(1)}: ${list.length} ${list.length===1?'lavoro':'lavori'}\nFatturato ${eur(t.amount)}${t.cash?` + contanti ${eur(t.cash)}`:''}\nTasse stimate ${eur(t.tax)}\nNetto ${eur(t.net)}`;
+}
+function finCommand(raw,n){
+  // nuovo lavoro
+  if(/^(?:aggiungi|aggiungimi|inserisci|metti|segna|crea|registra)?\s*(?:mi\s+)?(?:un|una)?\s*(?:nuov[oa]\s+)?(?:lavoro|entrata)\b/.test(n)||/^(?:aggiungi|inserisci|registra|segna)\b.*\b(?:lavoro|entrata)\b/.test(n))return wizStart(raw,n);
+  // quanto mi devono
+  if(/\b(quanto mi devono|chi mi deve|chi deve pagare|crediti|fatture (da incassare|non pagate|aperte|in sospeso)|da incassare)\b/.test(n)){
+    const g=invGroups(new Date().getFullYear()),tot=g.toCollect.reduce((a,j)=>a+invTot(j),0),today=key(new Date());
+    if(!g.toCollect.length)return {text:g.toIssue.length?`Nessuna fattura in attesa di pagamento. Hai però ${g.toIssue.length} ${g.toIssue.length===1?'lavoro':'lavori'} da fatturare (${eur(g.toIssue.reduce((a,j)=>a+invTot(j),0))}).`:'Nessuno ti deve niente al momento. 🎉'};
+    return {text:`Ti devono ${eur(tot)}:\n`+g.toCollect.map(j=>`• ${S.clients[j.clientId]?.name||'?'} · ${eur(invTot(j))} (fattura ${j.invoiceNo}${j.invoiceDue&&j.invoiceDue<today?', scaduta':''})`).join('\n'),acts:[['Apri Fatture','__fatt']]};
+  }
+  // da fatturare
+  if(/\b(cosa|che cosa|cosa devo|quali lavori)\b.*\bfatturare\b|\bda fatturare\b\??$/.test(n)&&!/^(aggiungi|nuovo)/.test(n)){
+    const g=invGroups(new Date().getFullYear());if(!g.toIssue.length)return {text:'Non hai lavori da fatturare.'};
+    return {text:'Da fatturare:\n'+g.toIssue.map(j=>`• ${S.clients[j.clientId]?.name||'?'} · ${j.title||''} · ${eur(invTot(j))}`).join('\n'),acts:[['Apri Fatture','__fatt']]};
+  }
+  // quanto ho fatturato / guadagnato
+  if(/\bquanto\b.*\b(fatturat\w*|guadagnat\w*|incassat\w*|netto|entrat\w*)\b|\b(riepilogo|resoconto|bilancio)\b.*\b(mese|anno|ottobre|novembre|settembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|dicembre|\d{4})\b/.test(n)){
+    const mo=parseMonth(n),yr=/\b(20\d\d)\b/.exec(n),now=new Date();
+    if(mo&&mo.match)return {text:finSummaryText(+mo.ym.slice(0,4),+mo.ym.slice(5)-1),acts:[['Apri Conti','__fin']]};
+    const y=yr?+yr[1]:now.getFullYear();
+    if(/\b(anno|nel 20|quest anno|quest'anno|totale)\b/.test(n)||yr)return {text:finSummaryText(y,null),acts:[['Apri Report','__report']]};
+    return {text:finSummaryText(now.getFullYear(),now.getMonth()),acts:[['Apri Conti','__fin']]};
+  }
+  // X ha pagato / fattura incassata
+  if(/\b(ha pagato|hanno pagato|incassat\w*|e arrivato il pagamento|mi ha pagato|saldat\w*)\b/.test(n)&&!/^(aggiungi|nuovo|lavoro)/.test(n)){
+    const fc=findClient(n),no=/\b(\d{1,4}\s*\/\s*\d{4})\b/.exec(n);
+    const open=Object.values(S.jobs).filter(j=>j.status!=='pagato'&&(+j.amount||+j.cash)&&(no?String(j.invoiceNo).replace(/\s/g,'')===no[1].replace(/\s/g,''):fc&&j.clientId===fc.c.id)).sort((a,b)=>(a.invoiceNo?0:1)-(b.invoiceNo?0:1)||String(a.month).localeCompare(b.month));
+    if(!fc&&!no)return {text:'Chi ha pagato? Es. «DNCA ha pagato» oppure «fattura 31/2026 incassata».',err:1};
+    if(!open.length)return {text:`Non trovo lavori da incassare${fc?' per '+fc.c.name:''}.`,err:1};
+    const j=open[0],c=S.clients[j.clientId];
+    return {text:`Segno come incassato: ${c?.name||''} · ${j.title||''} · ${eur(invTot(j))}${j.invoiceNo?' (fattura '+j.invoiceNo+')':''}?`,confirm:{yes:'Sì, incassato',no:'No',cancel:'Ok, lascio com’è.',run:()=>{put('jobs',{...S.jobs[j.id],status:'pagato',paidAt:key(new Date())});return 'Fatto 💶 Segnato come incassato.'}}};
+  }
+  // emetti fattura
+  if(/\b(emetti|emettere|fai|fare|faccio|crea)\b.*\bfattura\b|^fattura\b/.test(n)){
+    const fc=findClient(n),g=invGroups(new Date().getFullYear()),j=(fc?g.toIssue.filter(x=>x.clientId===fc.c.id):g.toIssue)[0];
+    if(!j)return {text:fc?`Non ci sono lavori da fatturare per ${fc.c.name}.`:'Non ci sono lavori da fatturare.',err:!fc};
+    setTimeout(()=>{toggleChat(false);openInvoice(j)},250);return {text:`Apro la fattura per ${S.clients[j.clientId]?.name||''} · ${j.title||''}: il numero proposto è ${nextInvoiceNo(new Date().getFullYear())}.`};
+  }
+  // nuovo preventivo
+  if(/\b(nuovo|crea|fai|fammi|prepara)\b.*\bpreventivo\b|^preventivo\b/.test(n)){
+    const fc=findClient(n);newQuote();const q=Object.values(S.quotes).find(x=>x.id===FIN.q);if(q&&fc){put('quotes',{...q,clientId:fc.c.id})}
+    setTimeout(()=>{toggleChat(false);openFin('prev');FIN.q=q&&q.id;renderFin(true)},200);
+    return {text:`Ho creato il preventivo ${q?qCode(q):''}${fc?' per '+fc.c.name:''}: lo apro in Conti.`};
+  }
+  return null;
+}
+
 const chatLog=[];
-const CHIPS={root:[['+ Aggiungi','sub:add'],['✓ Fatto','fatto '],['Sono libero','sono libero '],['Pausa','pausa 30 min'],['?','aiuto']],
-  add:[['← ','sub:root'],['Task','task '],['Progetto','nuovo progetto '],['Attività','aggiungi  a '],['Evento','evento domani alle '],['Pausa pranzo','pausa pranzo dalle 13 alle 14']]};
+const CHIPS={root:[['+ Aggiungi','sub:add'],['💶 Conti','sub:fin'],['✓ Fatto','fatto '],['Sono libero','sono libero '],['Pausa','pausa 30 min'],['?','aiuto']],
+  add:[['← ','sub:root'],['Task','task '],['Progetto','nuovo progetto '],['Attività','aggiungi  a '],['Evento','evento domani alle '],['Pausa pranzo','pausa pranzo dalle 13 alle 14'],['Lavoro (Conti)','!nuovo lavoro']],
+  fin:[['← ','sub:root'],['Nuovo lavoro','!nuovo lavoro'],['Quanto mi devono?','!quanto mi devono'],['Da fatturare','!cosa devo fatturare'],['Fatturato del mese','!quanto ho fatturato questo mese'],['Quest’anno','!quanto ho guadagnato quest anno'],['Incassato…','ha pagato'],['Nuovo preventivo','nuovo preventivo per ']]};
 let chipLevel='root';
 function renderChips(){const el=$('#cchips');if(!el)return;
   el.innerHTML=CHIPS[chipLevel].map(([l,v])=>`<button type="button" class="cchip${v.startsWith('sub:')&&l!=='← '?' more':''}" data-chip="${esc(v)}">${esc(l)}</button>`).join('');}
@@ -3108,18 +3283,20 @@ function renderChat(){
   if(!chatLog.length){
     el.innerHTML=`<div class="msg bot">Ciao Francesco, scrivimi cosa fare e lo metto in calendario.\nPuoi anche dettare: tocca il microfono della tastiera su iPhone, oppure premi Win + H su Windows.</div><div class="sugg">${SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
   }else{
-    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
+    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.opts&&m.opts.length&&i===chatLog.length-1?`<span class="copts">${m.opts.map(o=>`<button type="button" class="chip" data-opt="${esc(o[1])}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.acts&&m.acts.length&&!(m.confirm&&m.resolved&&m.acts.some(a=>a[1]==='__jobform'))?`<span class="copts">${m.acts.map(o=>`<button type="button" class="chip act" data-act2="${esc(o[1])}" data-mi="${i}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
   }
   el.scrollTop=el.scrollHeight;
 }
 function resolveConfirm(i,yes){
   const m=chatLog[i];if(!m||!m.confirm||m.resolved)return;m.resolved=true;
-  if(yes){const before=snap();chatLog.push({who:'bot',text:m.confirm.run(),undo:1,snap:before})}
+  if(yes){const before=snap();const fin=!!m.draft;chatLog.push({who:'bot',text:m.confirm.run(),undo:1,snap:before,acts:fin?[['Apri Conti','__fin']]:null})}
   else chatLog.push({who:'bot',text:m.confirm.cancel});
   renderChat();
 }
 function send(text){
   text=text.trim();if(!text)return;
+  if(WIZ&&!chatLog.some(m=>m.confirm&&!m.resolved)){chatLog.push({who:'me',text});let r;try{r=wizAnswer(text)}catch(e){WIZ=null;r={text:'Mi sono perso: riprova a scrivere il lavoro dall’inizio.',err:1}}
+    chatLog.push({who:'bot',text:r.text,err:r.err,confirm:r.confirm,opts:r.opts,acts:r.acts,draft:r.draft});renderChat();return}
   const pi=chatLog.findIndex(m=>m.confirm&&!m.resolved);
   if(pi>=0){
     const a=N(text);
@@ -3135,16 +3312,24 @@ function send(text){
     else{const rs=parts.map(x=>{try{return runCommand(x)}catch(e){return {text:`Non sono riuscito a fare: "${x}".`,err:1}}}).filter(Boolean);
       r={text:rs.map(x=>(x.err?'⚠ ':'✓ ')+x.text).join('\n\n'),err:rs.every(x=>x.err),undo:rs.some(x=>x.undo),ctrl:(rs.find(x=>x.ctrl)||{}).ctrl}}
   }catch(e){r={text:'Qualcosa è andato storto con questo comando. Prova a riscriverlo in modo più semplice.',err:1}}
-  if(r)chatLog.push({who:'bot',text:r.text,err:r.err,undo:r.undo,snap:r.undo?before:null,confirm:r.confirm,ctrl:r.ctrl});
+  if(r)chatLog.push({who:'bot',text:r.text,err:r.err,undo:r.undo,snap:r.undo?before:null,confirm:r.confirm,ctrl:r.ctrl,opts:r.opts,acts:r.acts,draft:r.draft});
   renderChat();
 }
 $('#chatLog').addEventListener('change',e=>{const sel=e.target.closest('[data-cdur]');if(!sel)return;const t=S.tasks[sel.dataset.cdur];if(t)put('tasks',{...t,minutes:+sel.value})});
 $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]');if(!b)return;const v=b.dataset.chip;
   if(v.startsWith('sub:')){chipLevel=v.slice(4);renderChips();return}
   if(v==='aiuto'){send('aiuto');return}
+  if(v.startsWith('!')){chipLevel='root';renderChips();send(v.slice(1));return}
   const i=$('#chatIn');i.value=v;i.focus();const pos=v.indexOf('  a ');const c=pos>=0?pos+1:v.length;i.setSelectionRange(c,c);chipLevel='root';renderChips()});
 $('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn');send(i.value);i.value='';i.focus()});
 $('#chatLog').addEventListener('click',e=>{
+  const op=e.target.closest('[data-opt]');if(op){send(op.dataset.opt);return}
+  const ac=e.target.closest('[data-act2]');if(ac){const a=ac.dataset.act2;
+    if(a==='__fin'||a==='__fatt'||a==='__report'){toggleChat(false);openFin(a==='__fatt'?'fatt':a==='__report'?'report':'mesi');return}
+    if(a==='__jobform'){const m=chatLog[+ac.dataset.mi];if(!m||!m.draft)return;m.resolved=true;WIZ=null;const d=m.draft;let cid=d.clientId;if(!cid&&d.clientNew)cid=findOrCreateClient(d.clientNew).id;
+      const [yy,mm]=d.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;toggleChat(false);openJob(null);
+      setTimeout(()=>{if(!$('#jM'))return;$('#jM').value=d.month;$('#jD').value=d.day||'';if(cid){$('#jC').value=cid}$('#jT').value=d.title||'';if(d.projectId)$('#jP').value=d.projectId;$('#jA').value=d.amount?String(d.amount).replace('.',','):'';$('#jK').value=d.cash?String(d.cash).replace('.',','):'';$('#jS').value=d.status||'prev';$('#jA').dispatchEvent(new Event('input'))},30);return}
+    return}
   const s=e.target.closest('[data-sugg]');if(s){$('#chatIn').value=s.dataset.sugg;$('#chatIn').focus();return}
   const cp=e.target.closest('[data-cprio]');if(cp){const p=S.projects[cp.dataset.cprio];if(p){setProjectPriority(p,+cp.dataset.v);renderChat()}return}
   const y=e.target.closest('[data-yes]');if(y){resolveConfirm(+y.dataset.yes,true);return}
