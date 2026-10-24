@@ -6,7 +6,7 @@
   var SB_URL = 'https://ureljyilauscbhhlwcep.supabase.co';
   var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZWxqeWlsYXVzY2JoaGx3Y2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MjIyNTksImV4cCI6MjEwODA5ODI1OX0.hVegSO4drVvjjYl3HCFzVgLIFh9HYCHql2zUbqfj5Gs';
   var VAPID = 'BEWv6QFhEBInRNQCg65TMk0taWTD1HvJfFIC2MNXGCGinaDKkjhPp9e-82CjfvXUsWLsSU663dxuJFcBArdUHAY';
-  var COLLS = ['clients', 'projects', 'tasks', 'blocks', 'settings'];
+  var COLLS = ['clients', 'projects', 'tasks', 'blocks', 'jobs', 'quotes', 'biz', 'settings'];
 
   var sb = window.supabase.createClient(SB_URL, SB_KEY, { auth: { persistSession: true, autoRefreshToken: true, storageKey: 'tbm-auth' } });
   var uid = null, email = '';

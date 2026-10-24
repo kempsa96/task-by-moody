@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610220916">
+<meta name="tbm-build" content="202610241949">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<script src="supabase.js?v=202610220916"></script>
-<script src="tbm-cloud.js?v=202610220916"></script>
+<script src="supabase.js?v=202610241949"></script>
+<script src="tbm-cloud.js?v=202610241949"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -674,13 +674,162 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
   #dayBtn{order:7;padding:6px 10px;font-size:13px}
   .brand b{font-size:19px}
 }
+/* ---------- Conti ---------- */
+.fin{display:none;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 24px}
+.app>.top{grid-row:1}.app>.tabs{grid-row:2}.app>.main,.app>.fin{grid-row:3}.app>.player{grid-row:4}
+.app[data-view="fin"] #main{display:none}
+.app[data-view="fin"] .fin{display:block}
+.app[data-view="fin"] .t-c{visibility:hidden}
+.lists .btn.on{color:var(--fg);background:var(--surface)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+.fin-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.fin-seg{display:flex;background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:3px;gap:2px}
+.fin-seg button{border:0;background:none;padding:7px 16px;border-radius:9px;font-weight:700;color:var(--muted);cursor:pointer}
+.fin-seg button[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgb(0 0 0/.08)}
+.fin-yr{display:flex;align-items:center;gap:10px;font-size:17px}
+.fin-biz{margin-left:auto;font-weight:600}
+.fcard{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:16px 18px;margin-bottom:12px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.fcard h3{margin:0;font-size:15px;font-weight:800;letter-spacing:-.01em}
+.fm-h{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.fm-h h2{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em}
+.fm-strip{position:relative;display:grid;grid-template-columns:repeat(12,minmax(64px,1fr));gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:2px}
+.fm-m{border:1px solid var(--line);background:var(--surface);border-radius:12px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:transform .15s,background .15s}
+.fm-m b{font-size:13px}.fm-m small{font-size:11px;color:var(--muted);white-space:nowrap}
+.fm-m:hover{transform:translateY(-1px)}
+.fm-m.cur b{color:var(--accent)}
+.fm-m.on{background:var(--fg);border-color:var(--fg);color:var(--bg)}.fm-m.on small{color:color-mix(in srgb,var(--bg) 70%,transparent)}.fm-m.on.cur b{color:var(--bg)}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.kpis.big6{grid-template-columns:repeat(6,minmax(0,1fr));margin-bottom:12px}
+.kpi{background:var(--surface-2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.kpis.big6 .kpi{background:var(--surface);box-shadow:var(--shadow)}
+.kpi span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.kpi b{font-size:18px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi.neg b{color:var(--muted)}.kpi.big b{color:#1E9E5A}
+.ft-wrap{overflow-x:auto;margin:0 -6px}
+.ft{width:100%;border-collapse:separate;border-spacing:0 4px;font-size:13px}
+.ft th{text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:2px 8px;white-space:nowrap}
+.ft td{padding:9px 8px;background:var(--surface-2);vertical-align:middle}
+.ft td:first-child{border-radius:10px 0 0 10px}.ft td:last-child{border-radius:0 10px 10px 0}
+.ft .r{text-align:right;white-space:nowrap}
+.ft td small{display:block;color:var(--muted);font-size:11px}
+.fr{cursor:pointer}
+.fr td{background:color-mix(in srgb,var(--rc,transparent) 15%,var(--surface-2));transition:background .15s}
+.fr:hover td{background:color-mix(in srgb,var(--rc,var(--fg)) 24%,var(--surface-2))}
+.fr td:first-child{box-shadow:inset 4px 0 0 var(--rc,transparent)}
+.ft tfoot td{background:none;font-weight:700;border-top:1px solid var(--line);padding-top:10px}
+.fday{font-weight:700;white-space:nowrap}
+.fmut{color:var(--muted)}
+.fnote{color:var(--muted);font-size:12px;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fst{border:0;border-radius:999px;padding:5px 26px 5px 10px;font-size:12px;font-weight:700;background:color-mix(in srgb,var(--rc,var(--muted)) 22%,var(--surface));cursor:pointer;min-width:150px}
+.fwarn{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:var(--danger);border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px}
+.finv{font-size:12px;font-weight:700;white-space:nowrap}.finv.sent{color:#1E9E5A}
+.fchip{display:inline-block;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;cursor:pointer;white-space:nowrap}
+.jcalc{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px}.jcalc:empty{display:none}.jcalc small{color:var(--muted)}
+.fgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px}
+.fchart{width:100%;height:auto;display:block}
+.fchart .gl{stroke:var(--line);stroke-width:1}.fchart .ax{fill:var(--muted);font-size:11px;font-family:var(--font-ui)}
+.fchart .ba,.flegend i.ba{fill:#F5A524;background:#F5A524}.fchart .bb,.flegend i.bb{fill:#22A55B;background:#22A55B}
+.flegend{display:flex;gap:14px;font-size:12px;color:var(--muted)}.flegend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.fdonut-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.fdonut{width:170px;height:170px;flex:none}
+.fdonut .dn1{font-size:16px;font-weight:800;fill:var(--fg);font-family:var(--font-ui)}.fdonut .dn2{font-size:11px;fill:var(--muted);font-family:var(--font-ui)}
+.flist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px}
+.flist li{display:flex;align-items:center;gap:8px;font-size:13px}.flist b{margin-left:auto}
+.qlist{display:flex;flex-direction:column;gap:6px}
+.qrow{display:grid;grid-template-columns:auto 1fr auto auto;gap:14px;align-items:center;border:0;border-radius:12px;padding:12px 14px;background:color-mix(in srgb,var(--rc,transparent) 12%,var(--surface-2));box-shadow:inset 4px 0 0 var(--rc,var(--line));text-align:left;cursor:pointer}
+.qrow:hover{background:color-mix(in srgb,var(--rc,var(--fg)) 20%,var(--surface-2))}
+.qnum{font-weight:800;font-size:13px;color:var(--accent)}.qmain{display:flex;flex-direction:column;min-width:0}.qmain b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.qmain small{color:var(--muted)}
+.qtot{font-weight:800}.qst{font-size:12px;font-weight:700;color:var(--muted)}
+/* editor preventivo */
+.qe{display:flex;flex-direction:column;gap:12px;min-height:100%}
+.qe-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;position:sticky;top:-2px;z-index:5;background:var(--bg);padding:4px 0 8px}
+.qe-code{font-size:18px;letter-spacing:-.01em}.qe-saved{font-size:12px;color:var(--muted)}
+.qe-act{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.qe-grid{display:grid;grid-template-columns:minmax(320px,440px) minmax(0,1fr);gap:16px;align-items:start}
+.qe-form{background:var(--surface);border-radius:16px;box-shadow:var(--shadow);padding:16px;display:flex;flex-direction:column;gap:12px}
+.qe-form textarea,.dlg textarea{border:0;box-shadow:0 0 0 1px var(--line) inset;border-radius:10px;background:var(--surface-2);padding:9px 10px;font:inherit;resize:vertical;width:100%;box-sizing:border-box;color:var(--fg)}
+.qi{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px;margin-bottom:8px;background:var(--surface-2)}
+.qi input,.qi textarea{width:100%;box-sizing:border-box;border:0;box-shadow:0 0 0 1px var(--line) inset;border-radius:8px;background:var(--surface);padding:7px 9px;font:inherit}
+.qi-h{display:flex;gap:6px;align-items:center}.qi-t{font-weight:700}
+.qi-ctl{display:flex;gap:2px}.qi-ctl button{border:0;background:none;width:26px;height:26px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:14px}.qi-ctl button:hover{background:var(--surface);color:var(--fg)}
+.qi-n{display:grid;grid-template-columns:1fr 90px auto;gap:8px;align-items:end}.qi-n label{font-size:11px;color:var(--muted);font-weight:700;display:flex;flex-direction:column;gap:3px}
+.qi-lt{font-weight:800;font-size:13px;padding-bottom:8px;white-space:nowrap}
+.qe-tot{display:flex;gap:16px;justify-content:flex-end;flex-wrap:wrap;font-size:13px;background:var(--surface-2);border-radius:10px;padding:10px 12px}
+.qe-prev{position:sticky;top:48px;background:color-mix(in srgb,var(--fg) 6%,var(--bg));border-radius:16px;padding:12px;overflow:hidden}
+.qe-paper{--qs:.6;position:relative;overflow:hidden}
+.qe-paper>.qdoc{transform:scale(var(--qs));transform-origin:top left;box-shadow:0 8px 30px rgb(0 0 0/.15)}
+.qe-prevbtn{display:none}
+.bimg{min-height:60px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-radius:10px;padding:10px}.bimg img{max-height:90px;max-width:100%}
+.bsign{width:100%;aspect-ratio:3/1;background:#fff;border:1px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair}
+/* il documento (A4) */
+.qdoc{--qc:#0B3D6B;width:794px;min-height:1123px;background:#fff;color:#1a1a1a;font-family:"Figtree",Helvetica,Arial,sans-serif;font-size:11px;line-height:1.4;padding:34px 50px 26px;box-sizing:border-box;display:flex;flex-direction:column;gap:9px;position:relative}
+.qd-band{position:absolute;left:0;right:0;top:0;height:8px;background:var(--qc)}
+.qd-top{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;margin-top:6px}
+.qd-logo{max-height:64px;max-width:300px;object-fit:contain}
+.qd-word{font-size:40px;font-weight:800;letter-spacing:-.02em;line-height:1}
+.qd-prov{text-align:right;font-size:11px;color:#444}
+.qd-title{margin:8px 0 0;font-size:22px;font-weight:800;letter-spacing:-.01em;color:var(--qc);border-bottom:2px solid var(--qc);padding-bottom:6px}
+.qd-meta{display:flex;gap:28px}.qd-meta div{display:flex;flex-direction:column}.qd-meta span{font-size:9.5px;text-transform:uppercase;letter-spacing:.08em;color:#777;font-weight:700}.qd-meta b{font-size:12.5px}
+.qd-parties{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.qd-h{background:var(--qc);color:#fff;font-weight:700;font-size:11px;letter-spacing:.03em;padding:4px 8px;border-radius:3px;margin-bottom:4px}
+.qd-proj b{color:var(--qc);font-size:12.5px}.qd-proj p{margin:4px 0 0;text-align:justify}
+.qd-items{width:100%;border-collapse:collapse}
+.qd-items th{background:var(--qc);color:#fff;font-size:10.5px;text-align:left;padding:6px 8px}
+.qd-items td{padding:6px 8px;vertical-align:top;border-bottom:1px solid #e6e8ec}
+.qd-items tr.alt td{background:#f6f7f9}
+.qd-items .r{text-align:right;white-space:nowrap}.qd-items .c{text-align:center}
+.qd-sub{color:#555;font-size:10.5px;margin-top:2px}
+.qd-incl{color:#999;font-style:italic}
+.qd-tot{align-self:flex-end;min-width:260px;display:flex;flex-direction:column;gap:2px}
+.qd-tot div{display:flex;justify-content:space-between;gap:20px;padding:3px 8px}
+.qd-tot .disc b{color:#c0392b}
+.qd-tot .grand{background:var(--qc);color:#fff;border-radius:3px;font-size:13px;padding:6px 8px;margin-top:4px}
+.qd-txt{margin:0;color:#333;text-align:justify}
+.qd-sign{display:grid;grid-template-columns:1fr 1.3fr;gap:40px;align-items:end;margin-top:2px;break-inside:avoid}
+.qd-sign>div{display:flex;flex-direction:column;gap:2px}
+.qd-line{display:block;border-bottom:1px solid #999;min-height:22px;padding:0 4px;font-weight:600}
+.qd-line.sig{min-height:48px;position:relative}.qd-line.sig img{position:absolute;right:10px;bottom:2px;max-height:64px;max-width:240px}
+.qd-sign small{color:#999;font-size:9.5px}
+.qd-signame{font-size:11px;color:#444}
+.qd-confirm{text-align:center;color:var(--qc);font-weight:700;margin:8px 0 0}
+.qd-foot{break-inside:avoid;margin-top:auto;text-align:center;border-top:1px solid #ddd;padding-top:10px;color:#555;font-size:10.5px}
+.qd-foot p{margin:2px 0}.qd-tag{font-weight:800;color:#222;font-size:12px}.qd-contacts{color:#777}
+.cbill summary{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none}.cbill summary::-webkit-details-marker{display:none}.cbill summary::after{content:'›';margin-left:auto;transform:rotate(90deg);color:var(--muted);transition:transform .2s}.cbill:not([open]) summary::after{transform:none}.cbill[open]{gap:10px}
+#qPrint{display:none}
+@media print{
+  @page{size:A4;margin:0}
+  html,body.qprint{height:auto!important;overflow:visible!important;background:#fff!important}
+  body.qprint>*:not(#qPrint){display:none!important}
+  body.qprint #qPrint{display:block!important}
+  #qPrint .qdoc{width:210mm;min-height:296mm;box-shadow:none;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .qd-items tr{break-inside:avoid}
+}
+@media (max-width:1100px){.kpis.big6{grid-template-columns:repeat(3,minmax(0,1fr))}.fgrid{grid-template-columns:minmax(0,1fr)}.qe-grid{grid-template-columns:minmax(0,1fr)}.qe-prev{display:none;position:static}.qe-prev.show{display:block}.qe-prevbtn{display:inline-block}}
+@media (max-width:820px){
+  .app[data-view="fin"] .t-c{display:none}
+  .fin-head{gap:8px}.fin-biz{padding:6px 8px;font-size:13px}
+  .fm-strip{grid-template-columns:repeat(12,64px)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis.big6{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .fcard{padding:14px}
+  .ft thead{display:none}.ft,.ft tbody,.ft tfoot{display:block}.ft-wrap{margin:0}
+  .ft tr{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px;padding:10px 12px;border-radius:12px;margin-bottom:6px;background:var(--surface-2)}
+  .fr{background:color-mix(in srgb,var(--rc,transparent) 15%,var(--surface-2))!important;box-shadow:inset 4px 0 0 var(--rc,transparent)}
+  .ft td{display:flex;flex-direction:column;background:none!important;padding:3px 0;border-radius:0!important;box-shadow:none!important;min-width:0}
+  .ft td::before{content:attr(data-l);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+  .ft .r{text-align:left}
+  .ft tfoot tr{grid-template-columns:repeat(2,1fr)}.ft tfoot td::before{content:none}.ft tfoot td:empty{display:none}
+  .fnote{max-width:none;white-space:normal}
+  .fwarn{align-self:flex-start;margin:3px 0 0}.fcl{display:flex;align-items:center;gap:6px}
+  .qe-bar .btn{padding:6px 10px;font-size:13px}.qe-saved{display:none}
+  .qrow{grid-template-columns:1fr auto;gap:4px 10px}.qnum{grid-column:1/-1}
+  .fm-h h2{font-size:20px}
+}
 </style>
 
 <div class="app">
   <header class="top">
     <div class="t-l">
     <a class="brand" href="https://www.moodyvideomilano.it" target="_blank" rel="noopener"><b>Task</b><span>by Moody</span></a>
-    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listCli">Clienti</button></nav>
+    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listCli">Clienti</button><button class="btn ghost" id="listFin">Conti</button></nav>
     <div class="status" id="status"><i></i><span>Caricamento…</span></div>
     </div>
     <div class="t-c">
@@ -705,6 +854,7 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
   <div class="tabs" role="tablist">
     <button role="tab" id="tabCal" aria-selected="true">Calendario</button>
     <button role="tab" id="tabProj" aria-selected="false">Da fare</button>
+    <button role="tab" id="tabFin" aria-selected="false">Conti</button>
   </div>
   <main class="main" id="main" data-tab="cal">
     <section class="panel side">
@@ -722,6 +872,7 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
       <div class="mini" id="mini"></div>
     </section>
   </main>
+  <section class="fin" id="fin" aria-label="Conti"></section>
   <footer class="player" id="player" aria-live="polite"></footer>
 </div>
 <button class="fab" id="fab" aria-expanded="false" aria-controls="chat">
@@ -748,7 +899,7 @@ const PRIO={1:'Alta',2:'Media',3:'Bassa'};
 const LS='taskbymoody.v1';
 const PPM=1.1;
 const defSettings=()=>({workStart:540,workEnd:1080,workDays:[1,2,3,4,5],lunch:false,lunchStart:780,lunchEnd:840,daysOff:[],daysOn:[],dayHours:{}});
-const S={settings:defSettings(),clients:{},projects:{},tasks:{},blocks:{}};
+const S={settings:defSettings(),clients:{},projects:{},tasks:{},blocks:{},jobs:{},quotes:{},biz:{}};
 let db=null,mode='loading',readOnly=false,showDone=false;
 let viewStart=key(new Date());
 const $=s=>document.querySelector(s);
@@ -843,7 +994,7 @@ function saveLocal(){try{localStorage.setItem(LS,JSON.stringify(S))}catch(e){}}
 function loadLocal(){try{const r=JSON.parse(localStorage.getItem(LS)||'null');if(r){Object.assign(S,{clients:{}},r);S.settings={...defSettings(),...r.settings}}}catch(e){}}
 /* ---------- annulla / ripristina ---------- */
 let undoStack=[],redoStack=[],stableSnap=null,batchOpen=false,batchT=null,noUndo=0;
-const takeSnap=()=>JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,settings:S.settings}));
+const takeSnap=()=>JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,jobs:S.jobs,quotes:S.quotes,settings:S.settings}));
 function markChange(){
   if(noUndo||mode==='loading')return;
   if(!stableSnap)stableSnap=takeSnap();
@@ -904,7 +1055,7 @@ async function init(){
   try{if(window.claude&&window.claude.use)ns=await window.claude.use('db')}catch(e){}
   if(ns){
     db=ns;mode='cloud';setStatus('cloud','Sincronizzato');
-    for(const c of ['clients','projects','tasks','blocks']){
+    for(const c of ['clients','projects','tasks','blocks','jobs','quotes','biz']){
       db.collection(c).onSnapshot(snap=>{
         const m={};snap.docs.forEach(d=>{if(d.exists)m[d.id]={...JSON.parse(JSON.stringify(d.data())),id:d.id}});
         S[c]=m;loadedSet.add(c);render();if(!batchOpen)setTimeout(refreshStable,0);
@@ -1260,7 +1411,7 @@ function renderMini(){
   el.innerHTML=`<div class="mini-h"><b data-mini="today" title="Vai a oggi">${esc(label)}</b><button data-mini="prev" aria-label="Mese precedente">‹</button><button data-mini="next" aria-label="Mese successivo">›</button><button data-mini="min" class="mini-x" aria-label="Riduci a icona" title="Riduci a icona"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3v3.5H13M3 9.5h3.5V13M9.5 6.5 14 2M6.5 9.5 2 14"/></svg></button></div>
     <div class="mini-g">${['L','M','M','G','V','S','D'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>`;
 }
-function render(){migrate();schedule();renderRange();renderProjects();renderCal();renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();queueReminders()}
+function render(){migrate();schedule();renderRange();renderProjects();renderCal();renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();queueReminders();if(finOpen())renderFin()}
 /* ---------- promemoria per le notifiche (solo nella versione app, quando window.tbmReminders esiste) ---------- */
 let remT=null,remSig='';
 function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if(force){remSig='';clearTimeout(remT);remT=null}if(remT)return;remT=setTimeout(()=>{remT=null;try{const L=buildReminders(),sig=JSON.stringify(L);if(sig!==remSig){remSig=sig;window.tbmReminders(L)}}catch(e){console.error(e)}},force?300:4000)}
@@ -1775,7 +1926,7 @@ $('#prev').onclick=()=>{viewStart=addDays(viewStart,-7);miniMonth=null;render()}
 $('#next').onclick=()=>{viewStart=addDays(viewStart,7);miniMonth=null;render()};
 $('#showDone').onchange=e=>{showDone=e.target.checked;renderProjects()};
 $('#tabCal').onclick=()=>setTab('cal');$('#tabProj').onclick=()=>setTab('proj');
-function setTab(t){$('#main').dataset.tab=t;$('#tabCal').setAttribute('aria-selected',t==='cal');$('#tabProj').setAttribute('aria-selected',t==='proj')}
+function setTab(t){if(typeof closeFin==='function')closeFin();$('#main').dataset.tab=t;$('#tabCal').setAttribute('aria-selected',t==='cal');$('#tabProj').setAttribute('aria-selected',t==='proj')}
 let rzT;addEventListener('resize',()=>{clearTimeout(rzT);rzT=setTimeout(render,150)});
 setInterval(()=>{if(!welcomeOpen)track();render();checkDayEnd()},60000);
 
@@ -1851,11 +2002,20 @@ function openClientList(){
   show(true);
 }
 function openClients(){openClientList()}
+const readBill=()=>{const v=id=>($('#'+id)?.value||'').trim();return {ragione:v('bRag'),piva:v('bPiva'),cf:v('bCf'),addr:v('bAddr'),cap:v('bCap'),city:v('bCity'),prov:v('bProv'),sdi:v('bSdi'),pec:v('bPec'),mail:v('bMail')}};
 function openClient(ed,fromList){
   form.innerHTML=`<h3>${ed?'Cliente':'Nuovo cliente'}</h3>
     <div class="field"><label for="cName">Nome</label><input id="cName" value="${esc(ed?.name||'')}" placeholder="Nome cliente"></div>
     <p class="note warn" id="cWarn" hidden></p>
     <div class="field"><span class="lbl">Colore</span>${swatches(ed?.color||freeColor())}<span class="note">I progetti di questo cliente prendono questo colore.</span></div>
+    ${(()=>{const b=ed?.bill||{},f=(id,l,v,ph)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" value="${esc(v||'')}" placeholder="${ph||''}"></div>`,miss=ed?billMissing(ed):['tutto'];
+      return `<details class="cedit cbill" ${ed&&miss.length&&miss.length<4?'open':''}><summary><span class="lbl">Dati per la fattura</span> ${miss.length?`<span class="fwarn">${miss.length===4||!ed?'da inserire':'incompleti'}</span>`:'<span class="finv sent">completi ✓</span>'}</summary>
+        ${f('bRag','Ragione sociale',b.ragione,ed?.name||'es. Istituto Ganassini S.p.A.')}
+        <div class="row">${f('bPiva','Partita IVA',b.piva)}${f('bCf','Codice fiscale',b.cf)}</div>
+        ${f('bAddr','Indirizzo',b.addr,'es. Via Pietro Gaggia, 16')}
+        <div class="row3">${f('bCap','CAP',b.cap)}${f('bCity','Città',b.city)}${f('bProv','Provincia',b.prov,'MI')}</div>
+        <div class="row">${f('bSdi','Codice SDI',b.sdi,'7 caratteri')}${f('bPec','PEC',b.pec)}</div>
+        ${f('bMail','Email amministrazione',b.mail)}</details>`})()}
     <div class="acts">${ed?`<button type="button" class="btn danger left" id="cDel">Elimina</button>`:''}<button type="button" class="btn ghost" id="cancel">${fromList?'Indietro':'Annulla'}</button><button type="submit" class="btn primary">${ed?'Salva':'Aggiungi cliente'}</button></div>`;
   const getC=wireSwatches();
   const back=()=>fromList?openClientList():dlg.close();
@@ -1869,8 +2029,8 @@ function openClient(ed,fromList){
     if(near&&forced!==name){forced=name;w.textContent=`C'è già un cliente molto simile: "${near.name}". Premi di nuovo per aggiungere comunque "${name}".`;w.hidden=false;form.querySelector('[type=submit]').textContent='Aggiungi comunque';return}
     if(ed){
       Object.values(S.projects).filter(p=>p.clientId===ed.id).forEach(p=>{const np={...p,client:name};if(p.color===ed.color)np.color=color;put('projects',np)});
-      put('clients',{...ed,name,color});
-    }else findOrCreateClient(name,color);
+      put('clients',{...ed,name,color,bill:readBill()});
+    }else{const c=findOrCreateClient(name,color),bl=readBill();if(Object.values(bl).some(Boolean))put('clients',{...c,bill:bl})}
     back();
   };
   show();
@@ -2296,8 +2456,8 @@ $('#dayBtn').onclick=()=>{const m=$('#dayBtn').dataset.mode;
   else if(m==='closed'){const k=key(new Date());setDayRec(k,{end:null});const st=S.settings;st.dayHours={...(st.dayHours||{})};const cur=hoursFor(k);st.dayHours[k]=[cur[0],Math.max(cur[1],Math.min(1440,nowMin()+120))];saveSettings();render()}};
 
 /* ---------- backup ---------- */
-const COLLS=['clients','projects','tasks','blocks'];
-function backupData(){return {app:'task-by-moody',version:1,exportedAt:new Date().toISOString(),data:JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,settings:S.settings}))}}
+const COLLS=['clients','projects','tasks','blocks','jobs','quotes','biz'];
+function backupData(){return {app:'task-by-moody',version:2,exportedAt:new Date().toISOString(),data:JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,jobs:S.jobs,quotes:S.quotes,biz:S.biz,settings:S.settings}))}}
 function bkMsg(html,err){const m=$('#bkMsg');if(!m)return;m.hidden=false;m.innerHTML=html;m.classList.toggle('warn',!!err)}
 function wireBackup(){
   $('#bkExport').onclick=async()=>{
@@ -2326,6 +2486,7 @@ function wireBackup(){
 function restoreBackup(d){
   if(readOnly)return;
   COLLS.forEach(c=>{
+    if(!d[c]&&['jobs','quotes','biz'].includes(c))return;
     const nw=d[c]||{};
     Object.keys(S[c]).forEach(id=>{if(!nw[id])del(c,id)});
     Object.values(nw).forEach(o=>{if(o&&o.id&&JSON.stringify(S[c][o.id])!==JSON.stringify(o))put(c,o)});
@@ -2921,7 +3082,8 @@ function runCommand(raw){
 /* undo */
 function snap(){return JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,settings:S.settings}))}
 function restore(old){
-  for(const c of ['clients','projects','tasks','blocks']){
+  for(const c of ['clients','projects','tasks','blocks','jobs','quotes']){
+    if(!old[c])continue;
     Object.keys(S[c]).forEach(id=>{if(!old[c][id])del(c,id)});
     Object.values(old[c]).forEach(o=>{if(JSON.stringify(S[c][o.id])!==JSON.stringify(o))put(c,o)});
   }
@@ -2992,6 +3154,398 @@ function toggleChat(open){setTimeout(placeMini,0);if(open){chipLevel='root';rend
 $('#fab').onclick=()=>toggleChat(true);
 $('#chatClose').onclick=()=>toggleChat(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#chat').hidden&&!dlg.open)toggleChat(false)});
+
+/* =====================================================================
+   CONTI — lavori del mese, tasse (forfettario), report e preventivi
+   ===================================================================== */
+const MESI=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
+const MESI3=['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic'];
+const eur=n=>(+n||0).toLocaleString('it-IT',{style:'currency',currency:'EUR'});
+const eur0=n=>(+n||0).toLocaleString('it-IT',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const num=v=>{const x=parseFloat(String(v??'').replace(/\s/g,'').replace(/\.(?=\d{3}(\D|$))/g,'').replace(',','.'));return isFinite(x)?x:0};
+const hrs=m=>{const h=m/60;return h>=10?Math.round(h)+' h':(Math.round(h*10)/10).toString().replace('.',',')+' h'};
+
+/* ---------- dati attività e fisco ---------- */
+const FDEF={regime:'forfettario',ateco:'74.20.19',coeff:78,inps:26.07,start:'2021-10-15',taxMode:'auto',tax:15};
+const NOTES_IT='Il preventivo comprende fino a 2 sessioni di revisione per ciascun contenuto prodotto. Le spese di trasferta (viaggio, vitto e alloggio) sono a carico del committente, salvo dove indicato diversamente. Eventuali attività extra non descritte nel presente preventivo saranno quotate a parte. I prezzi indicati sono fissi fino alla conclusione dei servizi descritti.';
+const NOTES_EN='This quote includes up to 2 rounds of revisions for each deliverable. Travel expenses (transport, meals and accommodation) are charged to the client unless stated otherwise. Any additional work not described in this quote will be quoted separately. Prices are fixed until the described services are completed.';
+const TERMS_IT='Una volta firmato, invialo via e-mail all’indirizzo indicato.\nRivalsa INPS 4% e marca da bollo; operazione non soggetta a IVA ai sensi degli artt. da 1 a 7-septies del DPR 633/1972.';
+const TERMS_EN='Once signed, please e-mail it to the provided address.\n4% INPS recovery and stamp duty, not subject to VAT pursuant to Articles 1 to 7-septies of Presidential Decree 633/1972.';
+const BDEF={id:'profile',name:'Moody di Francesco Zampaglione',brand:'MOODY',owner:'Francesco Zampaglione',role:'Owner – Moody',vat:'12056090967',city:'Milano - Italia',address:'',phone:'+39 3891788943',email:'info@moodyvideomilano.it',web:'www.moodyvideomilano.it',tagline:'Unleashing Business Impact Through Video',
+  logo:null,sign:null,qColor:'#0B3D6B',qLang:'en',qNext:152,qFmt:'P-{n}_{yyyy}',qValid:90,termsIt:TERMS_IT,termsEn:TERMS_EN,notesIt:NOTES_IT,notesEn:NOTES_EN,rivalsa:false,bollo:false};
+const biz=()=>({...BDEF,...(S.biz.profile||{})});
+const fisc=()=>({...FDEF,...(biz().fiscal||{})});
+function taxRate(year){const f=fisc();if(f.taxMode!=='auto')return +f.tax||0;const sy=+(String(f.start||'').slice(0,4));return sy&&year-sy<5?5:15}
+function taxCalc(amount,year){
+  const f=fisc(),a=+amount||0,imp=a*(+f.coeff||0)/100,inps=imp*(+f.inps||0)/100,irpef=Math.max(0,imp-inps)*taxRate(year)/100;
+  return {imp,inps,irpef,tot:inps+irpef,net:a-inps-irpef};
+}
+
+/* ---------- lavori ---------- */
+const JST=[['prev','Previsto',''],['corso','In corso','#E8A400'],['fatt','Da fatturare','#2F7DE1'],['attesa','Attesa pagamento','#EF7D1A'],['pagato','Incassato','#22A55B']];
+const jst=k=>JST.find(x=>x[0]===k)||JST[0];
+const jobYear=j=>+String(j.month||'').slice(0,4);
+function jobCalc(j){const t=taxCalc(j.amount,jobYear(j));return {amount:+j.amount||0,cash:+j.cash||0,tax:t.tot,inps:t.inps,irpef:t.irpef,net:t.net+(+j.cash||0)}}
+const jobsOf=(y,m)=>Object.values(S.jobs).filter(j=>j.month===`${y}-${String(m+1).padStart(2,'0')}`).sort((a,b)=>(parseInt(a.day)||99)-(parseInt(b.day)||99)||(a.created||0)-(b.created||0));
+const jobsYear=y=>Object.values(S.jobs).filter(j=>jobYear(j)===y);
+function sumJobs(list){return list.reduce((a,j)=>{const c=jobCalc(j);a.amount+=c.amount;a.cash+=c.cash;a.tax+=c.tax;a.net+=c.net;return a},{amount:0,cash:0,tax:0,net:0})}
+function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.piva||b.cf))m.push('P.IVA o codice fiscale');if(!b.addr)m.push('indirizzo');if(!b.city)m.push('città');if(!(b.sdi||b.pec))m.push('codice SDI o PEC');return m}
+
+/* ---------- preventivi ---------- */
+const qCode=q=>(biz().qFmt||'P-{n}_{yyyy}').replace('{n}',q.num).replace('{yyyy}',q.year).replace('{yy}',String(q.year).slice(2));
+function qTotals(q){
+  const sub=(q.items||[]).reduce((a,it)=>a+num(it.price)*(num(it.qty)||0),0),disc=Math.min(sub,num(q.discount)),imp=sub-disc;
+  const riv=q.rivalsa?imp*0.04:0,bol=q.bollo?2:0;return {sub,disc,imp,riv,bol,tot:imp+riv+bol};
+}
+function nextQuoteNum(){const b=biz(),used=Object.values(S.quotes).map(q=>+q.num||0);return Math.max(+b.qNext||1,used.length?Math.max(...used)+1:1)}
+const QL={
+  en:{title:'Service Quote',no:'Quotation No.',date:'Date',valid:'Valid until',cust:'Customer',prov:'Service Provider',proj:'Quote / Project description',desc:'Description',price:'Item price',qty:'Quantity',line:'Line total',sub:'Subtotal',disc:'Discount',riv:'INPS 4%',bol:'Tax stamp',tot:'Total',terms:'General terms',notes:'Special notes and instructions',sig:'Signature',confirm:'Please confirm your acceptance of this quote by signing this document',ask:'If you have any questions concerning this quote, contact',incl:'Included',vat:'VAT ID',cf:'Tax code'},
+  it:{title:'Preventivo',no:'Preventivo n.',date:'Data',valid:'Valido fino al',cust:'Cliente',prov:'Fornitore',proj:'Descrizione del progetto',desc:'Descrizione',price:'Prezzo',qty:'Quantità',line:'Totale',sub:'Subtotale',disc:'Sconto',riv:'Rivalsa INPS 4%',bol:'Marca da bollo',tot:'Totale',terms:'Condizioni generali',notes:'Note e istruzioni',sig:'Firma',confirm:'Per accettazione, firma il presente documento',ask:'Per qualsiasi domanda su questo preventivo contatta',incl:'Incluso',vat:'P.IVA',cf:'C.F.'}};
+const fmtD=(k,lang)=>{if(!k)return '';const d=parse(k);return lang==='en'?d.toLocaleDateString('en-GB'):d.toLocaleDateString('it-IT')};
+const nl2br=s=>esc(s||'').replace(/\n/g,'<br>');
+function quoteDoc(q){
+  const b=biz(),L=QL[q.lang]||QL.en,c=S.clients[q.clientId],cb=(c&&c.bill)||{},t=qTotals(q),col=b.qColor||'#0B3D6B';
+  const cust=[cb.ragione||c?.name||'',cb.addr||'',[cb.cap,cb.city,cb.prov?`(${cb.prov})`:''].filter(Boolean).join(' '),cb.piva?`${L.vat}: ${cb.piva}`:'',cb.cf&&cb.cf!==cb.piva?`${L.cf}: ${cb.cf}`:''].filter(Boolean);
+  const logo=b.logo?`<img class="qd-logo" src="${b.logo}" alt="">`:`<div class="qd-word">${esc(b.brand||b.name)}</div>`;
+  const rows=(q.items||[]).filter(it=>it.title||it.desc||num(it.price)).map((it,i)=>{const p=num(it.price),qt=num(it.qty)||0,lt=p*qt;
+    return `<tr class="${i%2?'alt':''}"><td><b>${esc(it.title)}</b>${it.desc?`<div class="qd-sub">${nl2br(it.desc)}</div>`:''}</td><td class="r">${p?eur(p):'—'}</td><td class="c">${esc(String(qt||''))}</td><td class="r">${p?eur(lt):`<span class="qd-incl">${L.incl}</span>`}</td></tr>`}).join('');
+  return `<div class="qdoc" style="--qc:${col}">
+    <div class="qd-band"></div>
+    <div class="qd-top">${logo}<div class="qd-prov">${esc(b.name)}<br>${L.vat}: ${esc(b.vat)}<br>${esc(b.city)}${b.phone?`<br>${esc(b.phone)}`:''}</div></div>
+    <h1 class="qd-title">${L.title}</h1>
+    <div class="qd-meta"><div><span>${L.no}</span><b>${esc(qCode(q))}</b></div><div><span>${L.date}</span><b>${fmtD(q.date,q.lang)}</b></div><div><span>${L.valid}</span><b>${fmtD(q.valid,q.lang)}</b></div></div>
+    <div class="qd-parties"><div><div class="qd-h">${L.cust}</div>${cust.map(esc).join('<br>')||'—'}</div><div><div class="qd-h">${L.prov}</div>${esc(b.name)}<br>${L.vat}: ${esc(b.vat)}<br>${esc([b.address,b.city].filter(Boolean).join(', '))}</div></div>
+    ${q.title||q.desc?`<div class="qd-h">${L.proj}</div><div class="qd-proj"><b>${esc(q.title)}</b>${q.desc?`<p>${nl2br(q.desc)}</p>`:''}</div>`:''}
+    <table class="qd-items"><thead><tr><th>${L.desc}</th><th class="r">${L.price}</th><th class="c">${L.qty}</th><th class="r">${L.line}</th></tr></thead><tbody>${rows||`<tr><td colspan="4" class="qd-sub">—</td></tr>`}</tbody></table>
+    <div class="qd-tot"><div><span>${L.sub}</span><b>${eur(t.sub)}</b></div>${t.disc?`<div class="disc"><span>${L.disc}</span><b>−${eur(t.disc)}</b></div>`:''}${q.rivalsa?`<div><span>${L.riv}</span><b>${eur(t.riv)}</b></div>`:''}${q.bollo?`<div><span>${L.bol}</span><b>${eur(t.bol)}</b></div>`:''}<div class="grand"><span>${L.tot}</span><b>${eur(t.tot)}</b></div></div>
+    ${q.terms?`<div class="qd-h">${L.terms}</div><p class="qd-txt">${nl2br(q.terms)}</p>`:''}
+    ${q.notes?`<div class="qd-h">${L.notes}</div><p class="qd-txt">${nl2br(q.notes)}</p>`:''}
+    <div class="qd-sign"><div><span class="qd-line">${fmtD(q.date,q.lang)}</span><small>${L.date}</small></div><div><div class="qd-signame">${esc(b.owner)}${b.role?` (${esc(b.role)})`:''}</div><span class="qd-line sig">${b.sign?`<img src="${b.sign}" alt="">`:''}</span><small>${L.sig}</small></div></div>
+    <p class="qd-confirm">${L.confirm}</p>
+    <div class="qd-sign"><div><span class="qd-line"></span><small>${L.date}</small></div><div><div class="qd-signame">${L.cust}</div><span class="qd-line sig"></span><small>${L.sig}</small></div></div>
+    <div class="qd-foot">${b.phone||b.email?`<p>${L.ask} ${esc(b.owner.split(' ')[0]||'')}: ${esc(b.phone||b.email)}</p>`:''}${b.tagline?`<p class="qd-tag">${esc(b.tagline)}</p>`:''}<p class="qd-contacts">${esc(b.city)}<br>${esc([b.phone,b.email].filter(Boolean).join('  ·  '))}${b.web?`<br>${esc(b.web)}`:''}</p></div>
+  </div>`;
+}
+function printQuote(q){
+  let root=$('#qPrint');if(!root){root=document.createElement('div');root.id='qPrint';document.body.appendChild(root)}
+  root.innerHTML=quoteDoc(q);
+  const c=S.clients[q.clientId],old=document.title;
+  document.title=`${qCode(q)}${c?' - '+c.name:''}${q.title?' - '+q.title:''}`.replace(/[\\/:*?"<>|]/g,'');
+  document.body.classList.add('qprint');
+  const done=()=>{document.body.classList.remove('qprint');document.title=old;window.removeEventListener('afterprint',done)};
+  window.addEventListener('afterprint',done);
+  const imgs=[...root.querySelectorAll('img')].map(i=>i.complete?null:new Promise(r=>{i.onload=i.onerror=r})).filter(Boolean);
+  Promise.all(imgs).then(()=>setTimeout(()=>{window.print();setTimeout(()=>window.addEventListener('focus',done,{once:true}),400)},60));
+}
+
+/* ---------- tempo speso (attività + eventi collegati) ---------- */
+function timeByProject(year){
+  const by={},add=(pid,m)=>{if(pid&&m>0)by[pid]=(by[pid]||0)+m};
+  allTasks().forEach(t=>(t.log||[]).forEach(L=>{if(+L.d.slice(0,4)===year)add(t.solo?t.id:t.projectId,L.e-L.s)}));
+  if(Object.values(S.blocks).some(b=>b.projectId)){
+    const today=key(new Date()),nm=nowMin(),last=`${year}-12-31`<today?`${year}-12-31`:today;
+    for(let k=`${year}-01-01`;k<=last;k=addDays(k,1))blocksOn(k).forEach(b=>{const base=S.blocks[b.id];if(!base||!base.projectId||isPause(b)||eventDone(b,k)==='no')return;
+      const e=k===today?Math.min(b.end,nm):b.end;add(base.projectId,e-b.start)});
+  }
+  return by;
+}
+
+/* ---------- vista ---------- */
+const FIN={view:'mesi',year:new Date().getFullYear(),month:new Date().getMonth(),q:null};
+const appEl=()=>document.querySelector('.app');
+const finOpen=()=>appEl()&&appEl().dataset.view==='fin';
+function openFin(view){if(view)FIN.view=view;appEl().dataset.view='fin';['tabCal','tabProj'].forEach(id=>$('#'+id).setAttribute('aria-selected','false'));$('#tabFin').setAttribute('aria-selected','true');$('#listFin').classList.add('on');renderFin()}
+function closeFin(){if(!appEl())return;appEl().dataset.view='';$('#tabFin').setAttribute('aria-selected','false');$('#listFin').classList.remove('on');FIN.q=null}
+function renderFin(force){
+  const el=$('#fin');if(!el||!finOpen())return;
+  if(FIN.q&&!force)return; // l'editor del preventivo si aggiorna da solo
+  if(mode==='loading'){el.innerHTML='<div class="empty">Carico…</div>';return}
+  if(FIN.q&&S.quotes[FIN.q]){renderQuoteEditor(el,S.quotes[FIN.q]);return}
+  FIN.q=null;
+  const y=FIN.year,tabs=[['mesi','Mesi'],['report','Report'],['prev','Preventivi']];
+  el.innerHTML=`<div class="fin-head">
+      <div class="fin-seg" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-fv="${k}" aria-selected="${FIN.view===k}">${l}</button>`).join('')}</div>
+      <div class="fin-yr"><button type="button" class="wk-arrow" data-fy="-1" aria-label="Anno precedente">‹</button><b>${y}</b><button type="button" class="wk-arrow" data-fy="1" aria-label="Anno successivo">›</button></div>
+      <button type="button" class="btn ghost fin-biz" data-fa="biz" title="Dati attività, fisco, logo e firma">⚙︎ Dati attività</button>
+    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):finMonths(y)}</div>`;
+  const st=el.querySelector('.fm-strip'),on=st&&st.querySelector('.fm-m.on');if(on&&st.scrollWidth>st.clientWidth)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
+}
+function finMonths(y){
+  const strip=MESI3.map((m,i)=>{const s=sumJobs(jobsOf(y,i)),cur=y===new Date().getFullYear()&&i===new Date().getMonth();
+    return `<button type="button" class="fm-m${i===FIN.month?' on':''}${cur?' cur':''}" data-fm="${i}"><b>${m}</b><small>${s.amount||s.cash?eur0(s.amount+s.cash):'—'}</small></button>`}).join('');
+  const list=jobsOf(y,FIN.month),t=sumJobs(list);
+  const rows=list.map(j=>{const c=S.clients[j.clientId],p=S.projects[j.projectId],k=jobCalc(j),st=jst(j.status),miss=c&&k.amount>0&&j.status!=='pagato'?billMissing(c):[];
+    const q=j.quoteId&&S.quotes[j.quoteId];
+    const qcell=q?`<button type="button" class="fchip" data-fq="${q.id}">${esc(qCode(q))}</button>`:j.quoteUrl?`<a class="fchip" href="${esc(j.quoteUrl)}" target="_blank" rel="noopener">Apri ↗</a>`:'<span class="fmut">—</span>';
+    return `<tr class="fr" data-fj="${j.id}" style="${st[2]?`--rc:${st[2]}`:''}">
+      <td data-l="Giorno" class="fday">${esc(j.day||'')}</td>
+      <td data-l="Cliente"><span class="fcl"><span class="dot" style="--c:${c?.color||'var(--muted)'}"></span> ${esc(c?.name||'—')}</span>${miss.length?` <span class="fwarn" title="Mancano: ${esc(miss.join(', '))}">dati fattura</span>`:''}</td>
+      <td data-l="Lavoro">${esc(j.title||p?.name||'')}${p&&j.title&&j.title!==p.name?`<small>${esc(p.name)}</small>`:''}</td>
+      <td data-l="Preventivo">${qcell}</td>
+      <td data-l="Fatturato" class="r">${k.amount?eur(k.amount):'<span class="fmut">—</span>'}</td>
+      <td data-l="Contanti" class="r">${k.cash?eur(k.cash):'<span class="fmut">—</span>'}</td>
+      <td data-l="Tasse" class="r fmut">${k.tax?eur(k.tax):'—'}</td>
+      <td data-l="Netto" class="r"><b>${eur(k.net)}</b></td>
+      <td data-l="Stato"><select class="fst" data-fs="${j.id}" aria-label="Stato">${JST.map(([v,l])=>`<option value="${v}" ${v===(j.status||'prev')?'selected':''}>${l}</option>`).join('')}</select></td>
+      <td data-l="Fattura">${j.invoiceNo?`<span class="finv${j.invoiceSent?' sent':''}">N° ${esc(j.invoiceNo)}${j.invoiceSent?' · inviata':''}</span>`:'<span class="fmut">—</span>'}</td>
+      <td data-l="Note" class="fnote">${esc(j.notes||'')}</td></tr>`}).join('');
+  return `<div class="fm-strip">${strip}</div>
+    <div class="fcard">
+      <div class="fm-h"><h2>${MESI[FIN.month]} ${y}</h2><button type="button" class="btn primary" data-fa="newjob">+ Lavoro</button></div>
+      <div class="kpis">${kpi('Fatturato',t.amount)}${kpi('Contanti',t.cash)}${kpi('Tasse stimate',t.tax,'neg')}${kpi('Netto',t.net,'big')}</div>
+      ${list.length?`<div class="ft-wrap"><table class="ft"><thead><tr><th>Giorno</th><th>Cliente</th><th>Lavoro</th><th>Preventivo</th><th class="r">Fatturato</th><th class="r">Contanti</th><th class="r">Tasse</th><th class="r">Netto</th><th>Stato</th><th>Fattura</th><th>Note</th></tr></thead><tbody>${rows}</tbody>
+        <tfoot><tr><td colspan="4">Totale ${MESI[FIN.month].toLowerCase()}</td><td class="r">${eur(t.amount)}</td><td class="r">${eur(t.cash)}</td><td class="r">${eur(t.tax)}</td><td class="r"><b>${eur(t.net)}</b></td><td colspan="3"></td></tr></tfoot></table></div>`
+        :`<div class="empty"><strong>Nessun lavoro a ${MESI[FIN.month].toLowerCase()}</strong><span>Aggiungi i lavori del mese: cliente, cifra e stato. Le tasse e il netto li calcolo io.</span><button type="button" class="btn primary" data-fa="newjob">+ Lavoro</button></div>`}
+      <p class="note">Tasse stimate col regime forfettario: coefficiente ${fisc().coeff}%, INPS ${String(fisc().inps).replace('.',',')}%, imposta sostitutiva ${taxRate(y)}% nel ${y}. Le cambi in «Dati attività».</p>
+    </div>`;
+}
+const kpi=(l,v,cls)=>`<div class="kpi ${cls||''}"><span>${l}</span><b>${eur(v)}</b></div>`;
+function barChart(data){ // data:[{l,a,b}] a=fatturato b=netto
+  const W=640,H=220,P=36,max=Math.max(1,...data.map(d=>Math.max(d.a,d.b))),step=Math.pow(10,Math.floor(Math.log10(max))),top=Math.ceil(max/step)*step;
+  const bw=(W-P-8)/data.length,y=v=>H-24-(v/top)*(H-40);
+  let g='';for(let i=0;i<=4;i++){const v=top*i/4;g+=`<line x1="${P}" x2="${W}" y1="${y(v)}" y2="${y(v)}" class="gl"/><text x="${P-6}" y="${y(v)+4}" class="ax" text-anchor="end">${v>=1000?(v/1000).toLocaleString('it-IT')+'k':v}</text>`}
+  const bars=data.map((d,i)=>{const x=P+4+i*bw;return `<g><title>${d.l}: fatturato ${eur(d.a)} · netto ${eur(d.b)}</title><rect x="${x+bw*.12}" y="${y(d.a)}" width="${bw*.36}" height="${Math.max(0,H-24-y(d.a))}" rx="3" class="ba"/><rect x="${x+bw*.5}" y="${y(d.b)}" width="${bw*.36}" height="${Math.max(0,H-24-y(d.b))}" rx="3" class="bb"/><text x="${x+bw/2}" y="${H-6}" class="ax" text-anchor="middle">${d.l}</text></g>`}).join('');
+  return `<svg class="fchart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Fatturato e netto per mese">${g}${bars}</svg><div class="flegend"><span><i class="ba"></i>Fatturato</span><span><i class="bb"></i>Netto</span></div>`;
+}
+function donut(parts){ // [{l,v,c}]
+  const tot=parts.reduce((a,p)=>a+p.v,0);if(!tot)return '';let a0=-Math.PI/2,out='';const R=70,r=44,cx=90,cy=90;
+  parts.forEach(p=>{const a1=a0+p.v/tot*Math.PI*2,lg=a1-a0>Math.PI?1:0,pt=(rr,a)=>`${cx+rr*Math.cos(a)} ${cy+rr*Math.sin(a)}`;
+    out+= p.v/tot>.999?`<circle cx="${cx}" cy="${cy}" r="${(R+r)/2}" fill="none" stroke="${p.c}" stroke-width="${R-r}"><title>${esc(p.l)}</title></circle>`
+      :`<path d="M${pt(R,a0)} A${R} ${R} 0 ${lg} 1 ${pt(R,a1)} L${pt(r,a1)} A${r} ${r} 0 ${lg} 0 ${pt(r,a0)}Z" fill="${p.c}"><title>${esc(p.l)}: ${Math.round(p.v/tot*100)}%</title></path>`;a0=a1});
+  return `<svg class="fdonut" viewBox="0 0 180 180" role="img" aria-label="Incidenza dei clienti sul fatturato">${out}<text x="90" y="86" text-anchor="middle" class="dn1">${eur0(tot)}</text><text x="90" y="104" text-anchor="middle" class="dn2">entrate</text></svg>`;
+}
+function finReport(y){
+  const now=new Date(),js=jobsYear(y),t=sumJobs(js);
+  const months=y<now.getFullYear()?12:y>now.getFullYear()?Math.max(1,new Set(js.map(j=>j.month)).size):now.getMonth()+1;
+  const data=MESI3.map((l,i)=>{const s=sumJobs(jobsOf(y,i));return {l,a:s.amount+s.cash,b:s.net}});
+  const time=timeByProject(y);
+  // per cliente
+  const byC={};js.forEach(j=>{const k=j.clientId||'_';const c=jobCalc(j);byC[k]=byC[k]||{amount:0,net:0,min:0};byC[k].amount+=c.amount+c.cash;byC[k].net+=c.net});
+  Object.entries(time).forEach(([pid,m])=>{const p=S.projects[pid];if(!p||isSolo(p)||!p.clientId)return;byC[p.clientId]=byC[p.clientId]||{amount:0,net:0,min:0};byC[p.clientId].min+=m});
+  const cl=Object.entries(byC).map(([id,v])=>({id,name:S.clients[id]?.name||'Senza cliente',color:S.clients[id]?.color||'#9AA0A6',...v})).sort((a,b)=>b.amount-a.amount||b.min-a.min);
+  const totA=cl.reduce((a,c)=>a+c.amount,0)||1;
+  // per progetto
+  const byP={};js.forEach(j=>{if(!j.projectId)return;const c=jobCalc(j);byP[j.projectId]=byP[j.projectId]||{amount:0,net:0};byP[j.projectId].amount+=c.amount+c.cash;byP[j.projectId].net+=c.net});
+  const pids=new Set([...Object.keys(byP),...Object.keys(time).filter(id=>S.projects[id]&&!isSolo(S.projects[id]))]);
+  const pl=[...pids].map(id=>({id,p:S.projects[id],min:time[id]||0,...(byP[id]||{amount:0,net:0})})).filter(x=>x.p).sort((a,b)=>b.amount-a.amount||b.min-a.min);
+  const rate=(net,min)=>min>=30&&net?eur(net/(min/60))+'/h':'<span class="fmut">—</span>';
+  return `<div class="kpis big6">${kpi('Fatturato '+y,t.amount)}${kpi('Contanti',t.cash)}${kpi('Tasse stimate',t.tax,'neg')}${kpi('Netto',t.net,'big')}${kpi('Media entrate al mese',(t.amount+t.cash)/months)}${kpi('Media netto al mese',t.net/months,'big')}</div>
+    <div class="fgrid">
+      <div class="fcard"><h3>Mese per mese</h3>${barChart(data)}</div>
+      <div class="fcard"><h3>Chi incide di più sul fatturato</h3>${cl.some(c=>c.amount)?`<div class="fdonut-wrap">${donut(cl.filter(c=>c.amount>0).map(c=>({l:c.name,v:c.amount,c:c.color})))}<ul class="flist">${cl.filter(c=>c.amount>0).map(c=>`<li><span class="dot" style="--c:${c.color}"></span>${esc(c.name)}<b>${Math.round(c.amount/totA*100)}%</b></li>`).join('')}</ul></div>`:'<p class="note">Ancora nessun lavoro nel '+y+'.</p>'}</div>
+    </div>
+    <div class="fcard"><h3>Clienti: guadagno e tempo</h3>${cl.length?`<div class="ft-wrap"><table class="ft rep"><thead><tr><th>Cliente</th><th class="r">Entrate</th><th class="r">Netto</th><th class="r">Incidenza</th><th class="r">Ore</th><th class="r">Netto all'ora</th></tr></thead><tbody>${cl.map(c=>`<tr><td data-l="Cliente"><span class="dot" style="--c:${c.color}"></span> ${esc(c.name)}</td><td data-l="Fatturato" class="r">${eur(c.amount)}</td><td data-l="Netto" class="r"><b>${eur(c.net)}</b></td><td data-l="Incidenza" class="r">${Math.round(c.amount/totA*100)}%</td><td data-l="Ore" class="r">${c.min?hrs(c.min):'—'}</td><td data-l="Netto all'ora" class="r">${rate(c.net,c.min)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nessun dato.</p>'}</div>
+    <div class="fcard"><h3>Progetti: guadagno e tempo</h3>${pl.length?`<div class="ft-wrap"><table class="ft rep"><thead><tr><th>Progetto</th><th>Cliente</th><th class="r">Ore</th><th class="r">Fatturato</th><th class="r">Netto</th><th class="r">Netto all'ora</th></tr></thead><tbody>${pl.map(x=>`<tr><td data-l="Progetto"><span class="dot" style="--c:${x.p.color}"></span> ${esc(x.p.name)}</td><td data-l="Cliente">${esc(clientName(x.p)||'—')}</td><td data-l="Ore" class="r">${x.min?hrs(x.min):'—'}</td><td data-l="Fatturato" class="r">${x.amount?eur(x.amount):'—'}</td><td data-l="Netto" class="r"><b>${x.net?eur(x.net):'—'}</b></td><td data-l="Netto all'ora" class="r">${rate(x.net,x.min)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Collega i lavori ai progetti per vedere quanto rende ogni ora.</p>'}
+      <p class="note">Le ore vengono dal tempo registrato sulle attività del progetto e dagli eventi collegati al progetto.</p></div>`;
+}
+function finQuotes(y){
+  const qs=Object.values(S.quotes).filter(q=>+q.year===y).sort((a,b)=>(b.num||0)-(a.num||0));
+  const QS={bozza:['Bozza',''],inviato:['Inviato','#2F7DE1'],accettato:['Accettato','#22A55B'],rifiutato:['Rifiutato','#9AA0A6']};
+  return `<div class="fcard"><div class="fm-h"><h2>Preventivi ${y}</h2><button type="button" class="btn primary" data-fa="newquote">+ Preventivo</button></div>
+    ${qs.length?`<div class="qlist">${qs.map(q=>{const c=S.clients[q.clientId],st=QS[q.status]||QS.bozza;return `<button type="button" class="qrow" data-fq="${q.id}" style="${st[1]?`--rc:${st[1]}`:''}"><span class="qnum">${esc(qCode(q))}</span><span class="qmain"><b>${esc(q.title||'Senza titolo')}</b><small>${esc(c?.name||'Nessun cliente')} · ${fmtD(q.date,'it')}</small></span><span class="qtot">${eur(qTotals(q).tot)}</span><span class="qst">${st[0]}</span></button>`}).join('')}</div>`
+      :`<div class="empty"><strong>Nessun preventivo nel ${y}</strong><span>Crea un preventivo: logo, dati, voci e firma sono già pronti. Poi lo esporti in PDF.</span><button type="button" class="btn primary" data-fa="newquote">+ Preventivo</button></div>`}
+  </div>`;
+}
+
+/* ---------- editor del lavoro ---------- */
+function openJob(j){
+  const isNew=!j,y=FIN.year,m=FIN.month;
+  j=j||{id:uid(),month:`${y}-${String(m+1).padStart(2,'0')}`,day:'',clientId:null,projectId:null,title:'',amount:0,cash:0,status:'prev',created:Date.now()};
+  const projs=Object.values(S.projects).filter(p=>!isSolo(p)).sort((a,b)=>(a.archived?1:0)-(b.archived?1:0)||a.name.localeCompare(b.name));
+  const qs=Object.values(S.quotes).sort((a,b)=>(b.year-a.year)||(b.num-a.num));
+  form.innerHTML=`<h3>${isNew?'Nuovo lavoro':'Lavoro'}</h3>
+    <div class="row"><div class="field"><label for="jM">Mese</label><input id="jM" type="month" value="${j.month}"></div><div class="field"><label for="jD">Giorno/i</label><input id="jD" value="${esc(j.day||'')}" placeholder="es. 16 oppure 27/31"></div></div>
+    <div class="field"><label for="jC">Cliente</label><select id="jC">${clientOptions(j.clientId)}</select><input id="jCn" placeholder="Nome del nuovo cliente" hidden></div>
+    <div class="field"><label for="jP">Progetto (facoltativo)</label><select id="jP"><option value="">Nessun progetto</option>${projs.map(p=>`<option value="${p.id}" ${p.id===j.projectId?'selected':''}>${esc(p.name)}${clientName(p)?' · '+esc(clientName(p)):''}${p.archived?' (archiviato)':''}</option>`).join('')}</select></div>
+    <div class="field"><label for="jT">Descrizione</label><input id="jT" value="${esc(j.title||'')}" placeholder="es. Video recap evento"></div>
+    <div class="field"><label for="jQ">Preventivo</label><select id="jQ"><option value="">Nessuno</option>${qs.map(q=>`<option value="${q.id}" ${q.id===j.quoteId?'selected':''}>${esc(qCode(q))} · ${esc(q.title||'')}</option>`).join('')}<option value="__url" ${!j.quoteId&&j.quoteUrl?'selected':''}>Link esterno…</option></select><input id="jQu" type="url" value="${esc(j.quoteUrl||'')}" placeholder="Incolla il link al preventivo (Google Drive, Sheets…)" hidden></div>
+    <div class="row"><div class="field"><label for="jA">Fatturato €</label><input id="jA" inputmode="decimal" value="${j.amount?String(j.amount).replace('.',','):''}" placeholder="0,00"></div><div class="field"><label for="jK">Contanti / non fatturato €</label><input id="jK" inputmode="decimal" value="${j.cash?String(j.cash).replace('.',','):''}" placeholder="0,00"></div></div>
+    <div class="jcalc" id="jCalc"></div>
+    <div class="field"><label for="jS">Stato</label><select id="jS">${JST.map(([v,l])=>`<option value="${v}" ${v===(j.status||'prev')?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="row"><div class="field"><label for="jN">Fattura n°</label><input id="jN" value="${esc(j.invoiceNo||'')}" placeholder="es. 31/2026"></div><div class="field"><label for="jID">Data fattura</label><input id="jID" type="date" value="${j.invoiceDate||''}"></div></div>
+    <label class="chk"><input type="checkbox" id="jIS" ${j.invoiceSent?'checked':''}> Fattura inviata</label>
+    <div class="field"><label for="jNo">Note</label><textarea id="jNo" rows="2">${esc(j.notes||'')}</textarea></div>
+    <p class="note warn" id="jWarn" hidden></p>
+    <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="jDel">Elimina</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi':'Salva'}</button></div>`;
+  const C=$('#jC'),Cn=$('#jCn'),P=$('#jP'),Q=$('#jQ'),Qu=$('#jQu');
+  const upd=()=>{const a=num($('#jA').value),k=num($('#jK').value),yy=+($('#jM').value||'').slice(0,4)||y,t=taxCalc(a,yy);
+    $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
+    const c=S.clients[C.value],miss=c&&a>0?billMissing(c):[],w=$('#jWarn');
+    w.hidden=!miss.length;if(miss.length){w.innerHTML=`Per fatturare a ${esc(c.name)} mancano: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="jFix">Completa i dati del cliente</button>`;$('#jFix').onclick=()=>openClient(c)}};
+  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();upd()};
+  P.onchange=()=>{const p=S.projects[P.value];if(p){if(p.clientId&&S.clients[p.clientId]){C.value=p.clientId;Cn.hidden=true}if(!$('#jT').value.trim())$('#jT').value=p.name}upd()};
+  Q.onchange=()=>{Qu.hidden=Q.value!=='__url';const q=S.quotes[Q.value];if(q){if(!num($('#jA').value))$('#jA').value=String(qTotals(q).imp).replace('.',',');if(q.clientId&&!C.value)C.value=q.clientId;if(!$('#jT').value.trim())$('#jT').value=q.title||''}upd()};
+  Qu.hidden=Q.value!=='__url';
+  ['#jA','#jK','#jM'].forEach(s=>$(s).addEventListener('input',upd));upd();
+  $('#cancel').onclick=()=>dlg.close();
+  if(!isNew)armDelete($('#jDel'),'Conferma eliminazione',()=>del('jobs',j.id));
+  form.onsubmit=e=>{e.preventDefault();
+    let cid=C.value||null;if(cid==='__new'){const n=Cn.value.trim();if(!n){Cn.focus();return}cid=findOrCreateClient(n).id}
+    const mo=$('#jM').value||j.month,qv=Q.value;
+    put('jobs',{...j,month:mo,day:$('#jD').value.trim(),clientId:cid,projectId:P.value||null,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
+      amount:num($('#jA').value),cash:num($('#jK').value),status:$('#jS').value,invoiceNo:$('#jN').value.trim(),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,notes:$('#jNo').value.trim()});
+    const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
+    dlg.close();renderFin();
+  };
+  show(true);
+}
+
+/* ---------- editor del preventivo ---------- */
+function newQuote(){
+  const b=biz(),today=key(new Date()),y=+today.slice(0,4),lang=b.qLang||'en';
+  const q={id:uid(),num:nextQuoteNum(),year:y,date:today,valid:addDays(today,+b.qValid||90),lang,clientId:null,title:'',desc:'',
+    items:[{id:uid(),title:'',desc:'',price:'',qty:1}],discount:0,rivalsa:!!b.rivalsa,bollo:!!b.bollo,terms:lang==='en'?b.termsEn:b.termsIt,notes:lang==='en'?b.notesEn:b.notesIt,status:'bozza',created:Date.now()};
+  put('quotes',q);FIN.view='prev';FIN.year=y;FIN.q=q.id;renderFin(true);
+}
+function pastItems(){const m={};Object.values(S.quotes).forEach(q=>(q.items||[]).forEach(it=>{if(it.title)m[it.title]=it}));return m}
+function renderQuoteEditor(el,q){
+  const b=biz(),past=pastItems(),cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name));
+  const QS=[['bozza','Bozza'],['inviato','Inviato'],['accettato','Accettato'],['rifiutato','Rifiutato']];
+  const itemRow=(it,i)=>`<div class="qi" data-i="${i}">
+      <div class="qi-h"><input class="qi-t" list="qiList" value="${esc(it.title)}" placeholder="Voce (es. Operatore video senior)"><div class="qi-ctl"><button type="button" data-qm="-1" aria-label="Sposta su">↑</button><button type="button" data-qm="1" aria-label="Sposta giù">↓</button><button type="button" data-qx aria-label="Elimina voce">×</button></div></div>
+      <textarea class="qi-d" rows="2" placeholder="Dettaglio (facoltativo)">${esc(it.desc||'')}</textarea>
+      <div class="qi-n"><label>Prezzo € <input class="qi-p" inputmode="decimal" value="${esc(String(it.price??'').replace('.',','))}" placeholder="0 = incluso"></label><label>Quantità <input class="qi-q" inputmode="decimal" value="${esc(String(it.qty??1))}"></label><span class="qi-lt">${num(it.price)?eur(num(it.price)*num(it.qty)):'Incluso'}</span></div>
+    </div>`;
+  el.innerHTML=`<div class="qe">
+    <div class="qe-bar"><button type="button" class="btn ghost" data-qa="back">‹ Preventivi</button><b class="qe-code">${esc(qCode(q))}</b><span class="qe-saved" id="qeSaved">Salvato</span>
+      <div class="qe-act"><button type="button" class="btn ghost qe-prevbtn" data-qa="preview">Anteprima</button><button type="button" class="btn" data-qa="job">${Object.values(S.jobs).some(j=>j.quoteId===q.id)?'Lavoro collegato ✓':'Aggiungi ai lavori'}</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div></div>
+    <div class="qe-grid">
+      <div class="qe-form">
+        <div class="row3"><div class="field"><label>Numero</label><input id="qN" inputmode="numeric" value="${q.num}"></div><div class="field"><label>Data</label><input id="qD" type="date" value="${q.date}"></div><div class="field"><label>Valido fino al</label><input id="qV" type="date" value="${q.valid}"></div></div>
+        <div class="row"><div class="field"><label>Cliente</label><select id="qC"><option value="">Scegli…</option>${cs.map(c=>`<option value="${c.id}" ${c.id===q.clientId?'selected':''}>${esc(c.name)}</option>`).join('')}<option value="__new">+ Nuovo cliente…</option></select><input id="qCn" placeholder="Nome del nuovo cliente" hidden></div>
+          <div class="field"><label>Lingua</label><select id="qL"><option value="it" ${q.lang==='it'?'selected':''}>Italiano</option><option value="en" ${q.lang==='en'?'selected':''}>English</option></select></div></div>
+        <p class="note warn" id="qWarn" hidden></p>
+        <div class="field"><label>Titolo del progetto</label><input id="qT" value="${esc(q.title)}" placeholder="es. Produzione contenuti foto e video – EADV Vienna"></div>
+        <div class="field"><label>Descrizione</label><textarea id="qDe" rows="4" placeholder="Cosa comprende il servizio…">${esc(q.desc)}</textarea></div>
+        <span class="lbl">Voci</span>
+        <div id="qItems">${(q.items||[]).map(itemRow).join('')}</div>
+        <button type="button" class="btn" data-qa="additem">+ Voce</button>
+        <datalist id="qiList">${Object.keys(past).map(t=>`<option value="${esc(t)}"></option>`).join('')}</datalist>
+        <div class="row"><div class="field"><label>Sconto €</label><input id="qS" inputmode="decimal" value="${q.discount?String(q.discount).replace('.',','):''}" placeholder="0"></div><div class="field"><label>Stato</label><select id="qSt">${QS.map(([v,l])=>`<option value="${v}" ${v===q.status?'selected':''}>${l}</option>`).join('')}</select></div></div>
+        <label class="chk"><input type="checkbox" id="qR" ${q.rivalsa?'checked':''}> Aggiungi rivalsa INPS 4%</label>
+        <label class="chk"><input type="checkbox" id="qB" ${q.bollo?'checked':''}> Aggiungi marca da bollo (2 €)</label>
+        <div class="qe-tot" id="qTot"></div>
+        <div class="field"><label>Condizioni generali</label><textarea id="qTe" rows="3">${esc(q.terms||'')}</textarea></div>
+        <div class="field"><label>Note e istruzioni</label><textarea id="qNo" rows="4">${esc(q.notes||'')}</textarea></div>
+        <div class="acts"><button type="button" class="btn danger left" id="qDel">Elimina preventivo</button><button type="button" class="btn" data-qa="dup">Duplica</button></div>
+        ${!b.sign||!S.biz.profile?`<p class="note">Logo, firma e i tuoi dati si impostano in <button type="button" class="linkbtn" data-qa="biz">Dati attività</button>.</p>`:''}
+      </div>
+      <div class="qe-prev" id="qPrev"><div class="qe-paper" id="qPaper">${quoteDoc(q)}</div></div>
+    </div></div>`;
+  let cur=JSON.parse(JSON.stringify(q)),saveT=null;
+  const paper=$('#qPaper'),prev=$('#qPrev'),saved=$('#qeSaved');
+  const fit=()=>{const w=prev.clientWidth-24;const s=Math.min(1,w/794);paper.style.setProperty('--qs',s);paper.style.height=(paper.firstElementChild.offsetHeight*s)+'px'};
+  const refresh=()=>{paper.innerHTML=quoteDoc(cur);fit();const t=qTotals(cur);$('#qTot').innerHTML=`<span>Subtotale <b>${eur(t.sub)}</b></span>${t.disc?`<span>Sconto <b>−${eur(t.disc)}</b></span>`:''}<span>Totale <b>${eur(t.tot)}</b></span>`;
+    const c=S.clients[cur.clientId],miss=c?billMissing(c):[],w=$('#qWarn');w.hidden=!miss.length;if(miss.length){w.innerHTML=`Nel preventivo mancano i dati di ${esc(c.name)}: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="qFix">Completa</button>`;$('#qFix').onclick=()=>openClient(c)}
+    el.querySelector('.qe-code').textContent=qCode(cur)};
+  const save=()=>{saved.textContent='Salvo…';clearTimeout(saveT);saveT=setTimeout(()=>{put('quotes',cur);saved.textContent='Salvato'},500)};
+  const read=()=>{cur.num=parseInt($('#qN').value)||cur.num;cur.date=$('#qD').value||cur.date;cur.year=+cur.date.slice(0,4);cur.valid=$('#qV').value;cur.title=$('#qT').value;cur.desc=$('#qDe').value;
+    cur.discount=num($('#qS').value);cur.status=$('#qSt').value;cur.rivalsa=$('#qR').checked;cur.bollo=$('#qB').checked;cur.terms=$('#qTe').value;cur.notes=$('#qNo').value;
+    const L=$('#qL').value;if(L!==cur.lang){const bb=biz();if(cur.terms===(cur.lang==='en'?bb.termsEn:bb.termsIt)){cur.terms=L==='en'?bb.termsEn:bb.termsIt;$('#qTe').value=cur.terms}if(cur.notes===(cur.lang==='en'?bb.notesEn:bb.notesIt)){cur.notes=L==='en'?bb.notesEn:bb.notesIt;$('#qNo').value=cur.notes}cur.lang=L}
+    cur.items=[...el.querySelectorAll('.qi')].map((r,i)=>({id:cur.items[i]?.id||uid(),title:r.querySelector('.qi-t').value,desc:r.querySelector('.qi-d').value,price:r.querySelector('.qi-p').value.trim()===''?'':num(r.querySelector('.qi-p').value),qty:num(r.querySelector('.qi-q').value)||0}));
+    el.querySelectorAll('.qi').forEach((r,i)=>{const it=cur.items[i];r.querySelector('.qi-lt').textContent=num(it.price)?eur(num(it.price)*num(it.qty)):'Incluso'})};
+  const redrawItems=()=>{$('#qItems').innerHTML=cur.items.map(itemRow).join('');refresh();save()};
+  el.querySelector('.qe-form').addEventListener('input',e=>{if(e.target.id==='qCn')return;read();refresh();save()});
+  el.querySelector('.qe-form').addEventListener('change',e=>{
+    if(e.target.id==='qC'){const v=e.target.value;$('#qCn').hidden=v!=='__new';if(v==='__new'){$('#qCn').focus();return}cur.clientId=v||null;refresh();save();return}
+    if(e.target.id==='qCn'){const n=e.target.value.trim();if(!n)return;const c=findOrCreateClient(n);cur.clientId=c.id;const s=$('#qC');s.insertAdjacentHTML('afterbegin',`<option value="${c.id}">${esc(c.name)}</option>`);s.value=c.id;e.target.hidden=true;refresh();save();return}
+    if(e.target.classList.contains('qi-t')){const p=past[e.target.value],r=e.target.closest('.qi');if(p&&!r.querySelector('.qi-d').value&&!r.querySelector('.qi-p').value){r.querySelector('.qi-d').value=p.desc||'';r.querySelector('.qi-p').value=String(p.price??'').replace('.',',');read();refresh();save()}}
+  });
+  el.querySelector('.qe-form').addEventListener('click',e=>{const r=e.target.closest('.qi');
+    if(e.target.matches('[data-qx]')){read();cur.items.splice(+r.dataset.i,1);redrawItems()}
+    else if(e.target.matches('[data-qm]')){read();const i=+r.dataset.i,j=i+ +e.target.dataset.qm;if(j<0||j>=cur.items.length)return;[cur.items[i],cur.items[j]]=[cur.items[j],cur.items[i]];redrawItems()}});
+  el.onclick=e=>{const a=e.target.closest('[data-qa]')?.dataset.qa;if(!a)return;
+    if(a==='back'){read();clearTimeout(saveT);put('quotes',cur);FIN.q=null;renderFin(true)}
+    else if(a==='additem'){read();cur.items.push({id:uid(),title:'',desc:'',price:'',qty:1});redrawItems();const l=el.querySelectorAll('.qi-t');l[l.length-1].focus()}
+    else if(a==='pdf'){read();clearTimeout(saveT);put('quotes',cur);printQuote(cur)}
+    else if(a==='preview'){prev.classList.toggle('show');fit()}
+    else if(a==='biz')openBiz();
+    else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=addDays(n.date,+biz().qValid||90);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}
+    else if(a==='job'){read();put('quotes',cur);const ex=Object.values(S.jobs).find(j=>j.quoteId===cur.id);if(ex){FIN.q=null;FIN.view='mesi';const [yy,mm]=ex.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;renderFin(true);openJob(ex);return}
+      const t=qTotals(cur),mo=cur.date.slice(0,7);put('jobs',{id:uid(),month:mo,day:'',clientId:cur.clientId,projectId:null,title:cur.title,quoteId:cur.id,amount:t.imp,cash:0,status:cur.status==='accettato'?'corso':'prev',created:Date.now()});
+      e.target.textContent='Lavoro collegato ✓';toast(`Aggiunto ai lavori di ${MESI[+mo.slice(5)-1].toLowerCase()}`)}};
+  const del0=$('#qDel');del0.onclick=()=>{if(!del0.classList.contains('armed')){del0.classList.add('armed');del0.textContent='Conferma eliminazione';return}clearTimeout(saveT);del('quotes',cur.id);FIN.q=null;renderFin(true)};
+  requestAnimationFrame(()=>{fit();refresh()});
+  if(!window.__qfit){window.__qfit=1;addEventListener('resize',()=>{const p=$('#qPaper'),pv=$('#qPrev');if(p&&pv&&p.firstElementChild){const s=Math.min(1,(pv.clientWidth-24)/794);p.style.setProperty('--qs',s);p.style.height=(p.firstElementChild.offsetHeight*s)+'px'}})}
+}
+
+/* ---------- dati attività: profilo, fisco, logo, firma, preventivi ---------- */
+function readImage(file,maxW,maxH){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>{const img=new Image();img.onload=()=>{const s=Math.min(1,maxW/img.width,maxH/img.height),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);res(c.toDataURL('image/png'))};img.onerror=rej;img.src=r.result};r.onerror=rej;r.readAsDataURL(file)})}
+function openBiz(){
+  const b=biz(),f=fisc(),fld=(id,l,v,ph,type)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" ${type?`type="${type}"`:''} value="${esc(v??'')}" placeholder="${esc(ph||'')}"></div>`;
+  form.innerHTML=`<h3>Dati attività</h3>
+    <span class="lbl">La tua attività</span>
+    <div class="row">${fld('bName','Ragione sociale',b.name)}${fld('bBrand','Marchio (se non hai il logo)',b.brand)}</div>
+    <div class="row">${fld('bOwner','Titolare',b.owner)}${fld('bRole','Ruolo (sotto la firma)',b.role)}</div>
+    <div class="row">${fld('bVat','Partita IVA',b.vat)}${fld('bCity','Città',b.city)}</div>
+    ${fld('bAddr','Indirizzo (facoltativo)',b.address)}
+    <div class="row">${fld('bPhone','Telefono',b.phone)}${fld('bEmail','Email',b.email,'','email')}</div>
+    <div class="row">${fld('bWeb','Sito',b.web)}${fld('bTag','Frase in fondo al preventivo',b.tagline)}</div>
+    <div class="cedit"><span class="lbl">Logo</span><div class="bimg" id="bLogoBox">${b.logo?`<img src="${b.logo}" alt="Logo">`:'<span class="note">Nessun logo: uso il marchio scritto.</span>'}</div>
+      <div class="padd"><button type="button" class="btn" id="bLogoUp">Carica logo</button>${b.logo?`<button type="button" class="btn ghost" id="bLogoDel">Rimuovi</button>`:''}<input type="file" id="bLogoF" accept="image/*" hidden></div></div>
+    <div class="cedit"><span class="lbl">Firma</span><p class="note" style="margin:0">Firma qui sotto col dito o col mouse, oppure carica un'immagine della firma.</p>
+      <canvas id="bSign" class="bsign" width="600" height="200"></canvas>
+      <div class="padd"><button type="button" class="btn ghost" id="bSignClr">Cancella</button><button type="button" class="btn" id="bSignUp">Carica immagine</button><input type="file" id="bSignF" accept="image/*" hidden></div></div>
+    <div class="cedit"><span class="lbl">Fisco · regime forfettario</span>
+      <div class="row">${fld('fAteco','Codice ATECO',f.ateco)}${fld('fStart','Inizio attività',f.start,'','date')}</div>
+      <div class="row">${fld('fCoeff','Coefficiente di redditività %',f.coeff)}${fld('fInps','Contributi INPS (gestione separata) %',f.inps)}</div>
+      <div class="row"><div class="field"><label for="fTaxM">Imposta sostitutiva</label><select id="fTaxM"><option value="auto" ${f.taxMode==='auto'?'selected':''}>Automatica (5% i primi 5 anni, poi 15%)</option><option value="man" ${f.taxMode!=='auto'?'selected':''}>Scelgo io</option></select></div>${fld('fTax','Aliquota %',f.taxMode==='auto'?taxRate(new Date().getFullYear()):f.tax)}</div>
+      <p class="note">Calcolo: fatturato × coefficiente = imponibile; su questo l'INPS; sull'imponibile meno l'INPS l'imposta sostitutiva. Con questi dati 1.000 € → ${eur(taxCalc(1000,new Date().getFullYear()).tot)} di tasse. È una stima: per gli importi esatti fa fede il commercialista.</p></div>
+    <div class="cedit"><span class="lbl">Preventivi</span>
+      <div class="row">${fld('qNext','Prossimo numero',nextQuoteNum())}${fld('qFmt','Formato del codice',b.qFmt,'P-{n}_{yyyy}')}</div>
+      <div class="row"><div class="field"><label for="qLang">Lingua predefinita</label><select id="qLang"><option value="it" ${b.qLang==='it'?'selected':''}>Italiano</option><option value="en" ${b.qLang==='en'?'selected':''}>English</option></select></div>${fld('qValid','Validità (giorni)',b.qValid)}</div>
+      <div class="field"><span class="lbl">Colore del documento</span>${swatches(b.qColor)}</div>
+      <label class="chk"><input type="checkbox" id="qRiv" ${b.rivalsa?'checked':''}> Rivalsa INPS 4% già spuntata nei nuovi preventivi</label>
+      <label class="chk"><input type="checkbox" id="qBol" ${b.bollo?'checked':''}> Marca da bollo già spuntata nei nuovi preventivi</label>
+      <div class="field"><label for="qNIt">Note standard (italiano)</label><textarea id="qNIt" rows="3">${esc(b.notesIt)}</textarea></div>
+      <div class="field"><label for="qNEn">Note standard (inglese)</label><textarea id="qNEn" rows="3">${esc(b.notesEn)}</textarea></div>
+      <div class="field"><label for="qTIt">Condizioni generali (italiano)</label><textarea id="qTIt" rows="2">${esc(b.termsIt)}</textarea></div>
+      <div class="field"><label for="qTEn">Condizioni generali (inglese)</label><textarea id="qTEn" rows="2">${esc(b.termsEn)}</textarea></div></div>
+    <div class="acts"><button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">Salva</button></div>`;
+  form.querySelector('.swatches').insertAdjacentHTML('beforeend',['#0B3D6B','#1C1C1E'].filter(c=>!PALETTE.includes(c)).map(c=>`<button type="button" class="sw" style="--c:${c}" data-c="${c}" aria-label="Colore" aria-pressed="${c===b.qColor}"></button>`).join(''));
+  const getC=wireSwatches();
+  let logo=b.logo,sign=b.sign,signDirty=false;
+  const cv=$('#bSign'),cx=cv.getContext('2d');cx.lineWidth=3.2;cx.lineCap='round';cx.lineJoin='round';cx.strokeStyle='#111';
+  const drawImg=src=>{cx.clearRect(0,0,cv.width,cv.height);if(!src)return;const im=new Image();im.onload=()=>{const s=Math.min(cv.width/im.width,cv.height/im.height);cx.drawImage(im,(cv.width-im.width*s)/2,(cv.height-im.height*s)/2,im.width*s,im.height*s)};im.src=src};
+  drawImg(sign);
+  let drawing=false,last=null;const pos=e=>{const r=cv.getBoundingClientRect();return [(e.clientX-r.left)*cv.width/r.width,(e.clientY-r.top)*cv.height/r.height]};
+  cv.onpointerdown=e=>{drawing=true;cv.setPointerCapture(e.pointerId);last=pos(e);signDirty=true;e.preventDefault()};
+  cv.onpointermove=e=>{if(!drawing)return;const p=pos(e);cx.beginPath();cx.moveTo(...last);cx.lineTo(...p);cx.stroke();last=p};
+  cv.onpointerup=cv.onpointercancel=()=>{drawing=false};
+  $('#bSignClr').onclick=()=>{cx.clearRect(0,0,cv.width,cv.height);sign=null;signDirty=true};
+  $('#bSignUp').onclick=()=>$('#bSignF').click();
+  $('#bSignF').onchange=async e=>{const f0=e.target.files[0];if(!f0)return;sign=await readImage(f0,600,200);signDirty=false;drawImg(sign)};
+  $('#bLogoUp').onclick=()=>$('#bLogoF').click();
+  $('#bLogoF').onchange=async e=>{const f0=e.target.files[0];if(!f0)return;logo=await readImage(f0,800,320);$('#bLogoBox').innerHTML=`<img src="${logo}" alt="Logo">`};
+  const ld=$('#bLogoDel');if(ld)ld.onclick=()=>{logo=null;$('#bLogoBox').innerHTML='<span class="note">Nessun logo: uso il marchio scritto.</span>';ld.remove()};
+  $('#fTaxM').onchange=()=>{if($('#fTaxM').value==='auto')$('#fTax').value=taxRate(new Date().getFullYear())};
+  $('#cancel').onclick=()=>dlg.close();
+  form.onsubmit=e=>{e.preventDefault();
+    if(signDirty){const blank=!cx.getImageData(0,0,cv.width,cv.height).data.some((v,i)=>i%4===3&&v>0);sign=blank?null:cv.toDataURL('image/png')}
+    const v=id=>$('#'+id).value.trim();
+    put('biz',{...(S.biz.profile||{}),id:'profile',name:v('bName'),brand:v('bBrand'),owner:v('bOwner'),role:v('bRole'),vat:v('bVat'),city:v('bCity'),address:v('bAddr'),phone:v('bPhone'),email:v('bEmail'),web:v('bWeb'),tagline:v('bTag'),logo,sign,
+      qNext:parseInt(v('qNext'))||1,qFmt:v('qFmt')||'P-{n}_{yyyy}',qLang:$('#qLang').value,qValid:parseInt(v('qValid'))||90,qColor:getC(),rivalsa:$('#qRiv').checked,bollo:$('#qBol').checked,
+      notesIt:$('#qNIt').value,notesEn:$('#qNEn').value,termsIt:$('#qTIt').value,termsEn:$('#qTEn').value,
+      fiscal:{regime:'forfettario',ateco:v('fAteco'),start:v('fStart'),coeff:num(v('fCoeff')),inps:num(v('fInps')),taxMode:$('#fTaxM').value==='auto'?'auto':'man',tax:num(v('fTax'))}});
+    dlg.close();renderFin(true);toast('Dati attività salvati');
+  };
+  show(true);
+}
+
+/* ---------- eventi della vista Conti ---------- */
+$('#fin').addEventListener('click',e=>{
+  const t=e.target;
+  const fv=t.closest('[data-fv]');if(fv){FIN.view=fv.dataset.fv;renderFin();return}
+  const fy=t.closest('[data-fy]');if(fy){FIN.year+= +fy.dataset.fy;renderFin();return}
+  const fm=t.closest('[data-fm]');if(fm){FIN.month=+fm.dataset.fm;renderFin();return}
+  const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;renderFin(true);return}
+  const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
+  if(t.closest('select,a,input'))return;
+  const fr=t.closest('[data-fj]');if(fr&&S.jobs[fr.dataset.fj])openJob(S.jobs[fr.dataset.fj]);
+});
+$('#fin').addEventListener('change',e=>{const s=e.target.closest('[data-fs]');if(!s)return;const j=S.jobs[s.dataset.fs];if(j)put('jobs',{...j,status:s.value,...(s.value==='pagato'&&!j.paidAt?{paidAt:key(new Date())}:{})})});
+$('#listFin').onclick=()=>finOpen()?closeFin():openFin();
+$('#tabFin').onclick=()=>openFin();
 
 init();
 })();
