@@ -313,6 +313,9 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .cchip:hover{border-color:var(--fg)}
 .cchip.more{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
 .chat-f{border-top:0!important}
+.mic{border:0;background:var(--surface-2);color:var(--fg);width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;flex:none;transition:background .15s,color .15s}
+.mic:hover{background:var(--line)}.mic.on{background:#E5484D;color:#fff;animation:micp 1.2s ease-in-out infinite}
+@keyframes micp{0%,100%{box-shadow:0 0 0 0 rgb(229 72 77/.5)}50%{box-shadow:0 0 0 8px rgb(229 72 77/0)}}
 .copts{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;white-space:normal}.copts .chip{color:var(--fg);font-weight:600;padding:5px 11px;font-size:13px}.copts .chip.act{color:var(--accent)}
 .msg .confirm{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .msg .confirm .btn{padding:5px 10px;font-size:13px}
@@ -351,7 +354,7 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .msg.bot.err{border-color:var(--danger)}
 .msg .undo{margin-top:6px;display:block;font-size:12px;border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;color:var(--muted)}
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
-.chat-f{display:grid;grid-template-columns:1fr auto;gap:6px;padding:10px;border-top:1px solid var(--line)}
+.chat-f{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:10px;border-top:1px solid var(--line)}
 .chat-f input{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--surface);min-width:0;font-size:16px}
 .gutter{position:relative;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .gutter span{position:absolute;right:8px;transform:translateY(-50%);font-variant-numeric:tabular-nums}
@@ -706,6 +709,11 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
 .fwarn{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;background:var(--danger);border-radius:999px;padding:1px 7px;margin-left:4px;vertical-align:1px}
 .finv{font-size:12px;font-weight:700;white-space:nowrap}.finv.sent{color:#1E9E5A}
 .fchip{display:inline-block;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:700;color:var(--accent);text-decoration:none;cursor:pointer;white-space:nowrap}
+.jdays{display:flex;flex-direction:column;gap:8px;background:var(--surface-2);border-radius:12px;padding:10px 12px}
+.jd-h{display:flex;align-items:center;justify-content:space-between;gap:8px}.jd-q{display:flex;gap:4px}.jd-q button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600;cursor:pointer}
+.jd-g{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}.jd-g .wd{font-size:10px;font-weight:700;color:var(--muted);text-align:center}
+.jd{border:0;background:var(--surface);border-radius:8px;padding:7px 0;font-size:13px;font-weight:600;cursor:pointer;transition:background .12s,transform .12s}.jd.we{color:var(--muted)}.jd:hover{transform:scale(1.06)}
+.jd.on{background:var(--accent);color:#fff}
 .jcalc{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;background:var(--surface-2);border-radius:10px;padding:10px 12px;font-size:13px}.jcalc:empty{display:none}.jcalc small{color:var(--muted)}
 .fgrid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:12px}
 .fchart{width:100%;height:auto;display:block}
@@ -865,7 +873,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
   <div class="chat-h"><b>Assistente</b><span>comandi in italiano · offline</span><button class="btn icon ghost" id="chatClose" aria-label="Chiudi">✕</button></div>
   <div class="chat-log" id="chatLog" aria-live="polite"></div>
   <div class="cchips" id="cchips"></div>
-  <form class="chat-f" id="chatForm"><input id="chatIn" placeholder="es. mercoledì 21 sono libero" autocomplete="off" aria-label="Comando"><button class="btn primary" type="submit">Invia</button></form>
+  <form class="chat-f" id="chatForm"><input id="chatIn" placeholder="es. mercoledì 21 sono libero" autocomplete="off" aria-label="Comando"><button class="mic" type="button" id="micBtn" aria-label="Detta con il microfono" title="Detta (serve internet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button><button class="btn primary" type="submit">Invia</button></form>
 </section>
 <div class="ctx" id="ctx" hidden role="menu"></div>
 <div class="wl" id="wl" hidden role="dialog" aria-modal="true" aria-labelledby="wlTitle"><div class="wl-card" id="wlCard"></div></div>
@@ -3160,7 +3168,7 @@ function wizAsk(){
   const data={...d};
   return {text:`Riepilogo:\n${sum}\n\nLo aggiungo?`,confirm:{yes:'Aggiungi',no:'Annulla',cancel:'Ok, non aggiungo niente.',run:()=>{
     let cid=data.clientId;if(!cid&&data.clientNew)cid=findOrCreateClient(data.clientNew).id;
-    const j={id:uid(),month:data.month,day:data.day||'',clientId:cid,projectId:data.projectId||null,title:data.title||'',amount:+data.amount||0,cash:+data.cash||0,status:data.status,created:Date.now(),...(data.status==='pagato'?{paidAt:key(new Date())}:{})};
+    const j={id:uid(),month:data.month,day:data.day||'',clientId:cid,projectId:data.projectId||null,title:data.title||'',amount:+data.amount||0,cash:+data.cash||0,status:data.status,invRivalsa:true,created:Date.now(),...(data.status==='pagato'?{paidAt:key(new Date())}:{})};
     put('jobs',j);FIN.year=+data.month.slice(0,4);FIN.month=+data.month.slice(5)-1;WIZ=null;
     return `Fatto! L’ho aggiunto ai lavori di ${ymLabel(data.month)}. Lo trovi in Conti › Mesi.`}},acts:[['Modifica nella scheda','__jobform']],draft:data};
 }
@@ -3302,14 +3310,26 @@ $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
   if(v==='aiuto'){send('aiuto');return}
   if(v.startsWith('!')){chipLevel='root';renderChips();send(v.slice(1));return}
   const i=$('#chatIn');i.value=v;i.focus();const pos=v.indexOf('  a ');const c=pos>=0?pos+1:v.length;i.setSelectionRange(c,c);chipLevel='root';renderChips()});
+(()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition,b=$('#micBtn');if(!SR){b.hidden=true;return}
+  let rec=null;
+  b.onclick=()=>{if(rec){rec.stop();return}
+    if(!navigator.onLine){toast('Il microfono funziona solo quando sei connesso a internet');return}
+    const inp=$('#chatIn'),base=inp.value.trim()?inp.value.trim()+' ':'';
+    try{rec=new SR()}catch(e){toast('Microfono non disponibile su questo dispositivo');return}
+    rec.lang='it-IT';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
+    rec.onresult=e=>{let t='',fin=false;for(let i=0;i<e.results.length;i++){t+=e.results[i][0].transcript;if(e.results[i].isFinal)fin=true}inp.value=base+t;if(fin)inp.dataset.dict='1'};
+    rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Consenti l’uso del microfono per questa app (impostazioni del browser / dell’iPhone)');else if(e.error!=='aborted'&&e.error!=='no-speech')toast('Il microfono non ha funzionato, riprova')};
+    rec.onend=()=>{rec=null;b.classList.remove('on');inp.focus()};
+    b.classList.add('on');try{rec.start()}catch(e){rec=null;b.classList.remove('on')}};
+})();
 $('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn');send(i.value);i.value='';i.focus()});
 $('#chatLog').addEventListener('click',e=>{
   const op=e.target.closest('[data-opt]');if(op){send(op.dataset.opt);return}
   const ac=e.target.closest('[data-act2]');if(ac){const a=ac.dataset.act2;
     if(a==='__fin'||a==='__fatt'||a==='__report'){toggleChat(false);openFin(a==='__fatt'?'fatt':a==='__report'?'report':'mesi');return}
     if(a==='__jobform'){const m=chatLog[+ac.dataset.mi];if(!m||!m.draft)return;m.resolved=true;WIZ=null;const d=m.draft;let cid=d.clientId;if(!cid&&d.clientNew)cid=findOrCreateClient(d.clientNew).id;
-      const [yy,mm]=d.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;toggleChat(false);openJob(null);
-      setTimeout(()=>{if(!$('#jM'))return;$('#jM').value=d.month;$('#jD').value=d.day||'';if(cid){$('#jC').value=cid}$('#jT').value=d.title||'';if(d.projectId)$('#jP').value=d.projectId;$('#jA').value=d.amount?String(d.amount).replace('.',','):'';$('#jK').value=d.cash?String(d.cash).replace('.',','):'';$('#jS').value=d.status||'prev';$('#jA').dispatchEvent(new Event('input'))},30);return}
+      const [yy,mm]=d.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;toggleChat(false);
+      openJob(null,{month:d.month,day:d.day||'',clientId:cid||null,projectId:d.projectId||null,title:d.title||'',amount:+d.amount||0,cash:+d.cash||0,status:d.status||'prev'});return}
     return}
   const s=e.target.closest('[data-sugg]');if(s){$('#chatIn').value=s.dataset.sugg;$('#chatIn').focus();return}
   const cp=e.target.closest('[data-cprio]');if(cp){const p=S.projects[cp.dataset.cprio];if(p){setProjectPriority(p,+cp.dataset.v);renderChat()}return}
@@ -3546,7 +3566,7 @@ function openInvoice(j){
     <p class="note" style="margin:0">${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'')} · ${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}</p>
     <div class="row3"><div class="field"><label for="iN">Numero</label><input id="iN" value="${esc(no)}"></div><div class="field"><label for="iD">Data</label><input id="iD" type="date" value="${d}"></div><div class="field"><label for="iS">Scadenza</label><input id="iS" type="date" value="${j.invoiceDue||addDays(d,30)}"></div></div>
     <div class="field"><label for="iA">Importo (compenso) €</label><input id="iA" inputmode="decimal" value="${String(+j.amount||0).replace('.',',')}"></div>
-    <label class="chk"><input type="checkbox" id="iR" ${j.invRivalsa?'checked':''}> Rivalsa INPS 4%</label>
+    <label class="chk"><input type="checkbox" id="iR" ${(j.invRivalsa??true)?'checked':''}> Rivalsa INPS 4%</label>
     <label class="chk"><input type="checkbox" id="iB" ${j.invBollo??((+j.amount||0)>77.47)?'checked':''}> Marca da bollo 2 € (obbligatoria sopra 77,47 €)</label>
     <div class="jcalc" id="iCalc"></div>
     <label class="chk"><input type="checkbox" id="iSent" ${j.invoiceSent?'checked':''}> Inviata al cliente</label>
@@ -3558,56 +3578,97 @@ function openInvoice(j){
     $('#iCalc').innerHTML=`<span>Totale fattura <b>${eur(a+r+b)}</b>${r?` <small>(rivalsa ${eur(r)})</small>`:''}</span><span>Netto stimato <b>${eur(t.net)}</b></span>`;$('#iPdW').hidden=!$('#iPaid').checked};
   ['#iA','#iR','#iB','#iPaid','#iD'].forEach(s=>$(s).addEventListener('input',upd));upd();
   $('#iD').addEventListener('change',()=>{$('#iS').value=addDays($('#iD').value||today,30)});
+  $('#iN').addEventListener('blur',()=>{$('#iN').value=fixInvNo($('#iN').value,j.month)});
   $('#cancel').onclick=()=>dlg.close();
   const fx=$('#iFix');if(fx)fx.onclick=()=>openClient(c);
   const dl=$('#iDel');if(dl)dl.onclick=()=>{if(!dl.classList.contains('armed')){dl.classList.add('armed');dl.textContent='Conferma';return}put('jobs',{...j,invoiceNo:'',invoiceDate:null,invoiceDue:null,invoiceSent:false,status:j.status==='pagato'||j.status==='attesa'?'fatt':j.status});dlg.close()};
   form.onsubmit=e=>{e.preventDefault();const paid=$('#iPaid').checked;
-    put('jobs',{...j,invoiceNo:$('#iN').value.trim(),invoiceDate:$('#iD').value||today,invoiceDue:$('#iS').value||null,amount:num($('#iA').value),invRivalsa:$('#iR').checked,invBollo:$('#iB').checked,invoiceSent:$('#iSent').checked,
+    put('jobs',{...j,invoiceNo:fixInvNo($('#iN').value,j.month),invoiceDate:$('#iD').value||today,invoiceDue:$('#iS').value||null,amount:num($('#iA').value),invRivalsa:$('#iR').checked,invBollo:$('#iB').checked,invoiceSent:$('#iSent').checked,
       status:paid?'pagato':'attesa',paidAt:paid?($('#iPd').value||today):null});
     dlg.close();toast(paid?'Fattura incassata 💶':'Fattura salvata')};
   show();
 }
 
 /* ---------- editor del lavoro ---------- */
-function openJob(j){
+function daysLabel(days){
+  const ds=[...days].sort().map(k=>+k.slice(8)),out=[];let i=0;
+  while(i<ds.length){let j=i;while(j+1<ds.length&&ds[j+1]===ds[j]+1)j++;out.push(j-i>=2?`${ds[i]}–${ds[j]}`:j>i?`${ds[i]}, ${ds[j]}`:`${ds[i]}`);i=j+1}
+  return out.join(', ');
+}
+const fixInvNo=(v,ym)=>{v=String(v||'').trim();return /^\d+$/.test(v)?`${v}/${String(ym||key(new Date())).slice(0,4)}`:v};
+function syncJobBlocks(j){
+  const mine=Object.values(S.blocks).filter(b=>b.jobId===j.id),want=j.cal&&j.cal.on?(j.days||[]):[];
+  const c=S.clients[j.clientId],title=j.title||c?.name||'Lavoro',color=(S.projects[j.projectId]||{}).color||c?.color||'#7C8796';
+  mine.forEach(b=>{if(!want.includes(b.date))del('blocks',b.id)});
+  want.forEach(k=>{const b=mine.find(x=>x.date===k),nb={...(b||{id:uid(),repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()}),date:k,start:j.cal.start,end:j.cal.end,title,color,projectId:j.projectId||null,jobId:j.id};
+    if(!b||JSON.stringify(b)!==JSON.stringify(nb))put('blocks',nb)});
+}
+function openJob(j,preset){
   const isNew=!j,y=FIN.year,m=FIN.month;
-  j=j||{id:uid(),month:`${y}-${String(m+1).padStart(2,'0')}`,day:'',clientId:null,projectId:null,title:'',amount:0,cash:0,status:'prev',created:Date.now()};
-  const projs=Object.values(S.projects).filter(p=>!isSolo(p)).sort((a,b)=>(a.archived?1:0)-(b.archived?1:0)||a.name.localeCompare(b.name));
+  j=j||{id:uid(),month:`${y}-${String(m+1).padStart(2,'0')}`,day:'',clientId:null,projectId:null,title:'',amount:0,cash:0,status:'prev',invRivalsa:true,created:Date.now(),...(preset||{})};
   const qs=Object.values(S.quotes).sort((a,b)=>(b.year-a.year)||(b.num-a.num));
+  const st=S.settings,cal=j.cal||{on:false,start:st.workStart,end:st.workEnd};
+  let days=new Set(j.days||[]);
   form.innerHTML=`<h3>${isNew?'Nuovo lavoro':'Lavoro'}</h3>
-    <div class="row"><div class="field"><label for="jM">Mese</label><input id="jM" type="month" value="${j.month}"></div><div class="field"><label for="jD">Giorno/i</label><input id="jD" value="${esc(j.day||'')}" placeholder="es. 16 oppure 27/31"></div></div>
     <div class="field"><label for="jC">Cliente</label><select id="jC">${clientOptions(j.clientId)}</select><input id="jCn" placeholder="Nome del nuovo cliente" hidden></div>
-    <div class="field"><label for="jP">Progetto (facoltativo)</label><select id="jP"><option value="">Nessun progetto</option>${projs.map(p=>`<option value="${p.id}" ${p.id===j.projectId?'selected':''}>${esc(p.name)}${clientName(p)?' · '+esc(clientName(p)):''}${p.archived?' (archiviato)':''}</option>`).join('')}</select></div>
-    <div class="field"><label for="jT">Descrizione</label><input id="jT" value="${esc(j.title||'')}" placeholder="es. Video recap evento"></div>
+    <div class="field"><label for="jP">Progetto</label><select id="jP"></select><input id="jPn" placeholder="Nome del nuovo progetto" hidden></div>
+    <div class="field"><label for="jT">Descrizione</label><input id="jT" value="${esc(j.title||'')}" placeholder="es. Laboratorio Media Lab"></div>
+    <div class="row"><div class="field"><label for="jM">Mese</label><input id="jM" type="month" value="${j.month}"></div><div class="field"><label for="jD">Giorno/i</label><input id="jD" value="${esc(j.day||'')}" placeholder="scegli qui sotto o scrivi"></div></div>
+    <div class="jdays"><div class="jd-h"><span class="lbl">Giorni di lavoro</span><span class="jd-q"><button type="button" data-jq="wd">Lun–Ven</button><button type="button" data-jq="all">Tutti</button><button type="button" data-jq="none">Nessuno</button></span></div><div class="jd-g" id="jGrid"></div>
+      <label class="chk"><input type="checkbox" id="jCal" ${cal.on?'checked':''}> Blocca questi giorni nel calendario</label>
+      <div class="row" id="jCalT" ${cal.on?'':'hidden'}><div class="field"><label for="jCs">Dalle</label><input id="jCs" type="time" step="900" value="${hm(cal.start)}"></div><div class="field"><label for="jCe">Alle</label><input id="jCe" type="time" step="900" value="${hm(cal.end)}"></div></div></div>
     <div class="field"><label for="jQ">Preventivo</label><select id="jQ"><option value="">Nessuno</option>${qs.map(q=>`<option value="${q.id}" ${q.id===j.quoteId?'selected':''}>${esc(qCode(q))} · ${esc(q.title||'')}</option>`).join('')}<option value="__url" ${!j.quoteId&&j.quoteUrl?'selected':''}>Link esterno…</option></select><input id="jQu" type="url" value="${esc(j.quoteUrl||'')}" placeholder="Incolla il link al preventivo (Google Drive, Sheets…)" hidden></div>
     <div class="row"><div class="field"><label for="jA">Fatturato €</label><input id="jA" inputmode="decimal" value="${j.amount?String(j.amount).replace('.',','):''}" placeholder="0,00"></div><div class="field"><label for="jK">Contanti / non fatturato €</label><input id="jK" inputmode="decimal" value="${j.cash?String(j.cash).replace('.',','):''}" placeholder="0,00"></div></div>
     <div class="jcalc" id="jCalc"></div>
     <div class="field"><label for="jS">Stato</label><select id="jS">${JST.map(([v,l])=>`<option value="${v}" ${v===(j.status||'prev')?'selected':''}>${l}</option>`).join('')}</select></div>
-    <div class="row"><div class="field"><label for="jN">Fattura n°</label><input id="jN" value="${esc(j.invoiceNo||'')}" placeholder="es. 31/2026"></div><div class="field"><label for="jID">Data fattura</label><input id="jID" type="date" value="${j.invoiceDate||''}"></div></div>
-    <label class="chk"><input type="checkbox" id="jIS" ${j.invoiceSent?'checked':''}> Fattura inviata</label>
+    <div class="row"><div class="field"><label for="jN">Fattura n°</label><input id="jN" value="${esc(j.invoiceNo||'')}" placeholder="es. 31"></div><div class="field"><label for="jID">Data fattura</label><input id="jID" type="date" value="${j.invoiceDate||''}"></div></div>
     <label class="chk"><input type="checkbox" id="jIR" ${j.invRivalsa?'checked':''}> Rivalsa INPS 4% in fattura</label>
+    <label class="chk"><input type="checkbox" id="jIS" ${j.invoiceSent?'checked':''}> Fattura inviata</label>
     <div class="field"><label for="jNo">Note</label><textarea id="jNo" rows="2">${esc(j.notes||'')}</textarea></div>
     <p class="note warn" id="jWarn" hidden></p>
     <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="jDel">Elimina</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi':'Salva'}</button></div>`;
-  const C=$('#jC'),Cn=$('#jCn'),P=$('#jP'),Q=$('#jQ'),Qu=$('#jQu');
-  const upd=()=>{const a0=num($('#jA').value),a=a0+($('#jIR').checked?a0*0.04:0),k=num($('#jK').value),yy=+($('#jM').value||'').slice(0,4)||y,t=taxCalc(a,yy);
+  const C=$('#jC'),Cn=$('#jCn'),P=$('#jP'),Pn=$('#jPn'),Q=$('#jQ'),Qu=$('#jQu'),M=$('#jM');
+  const fillProjects=keep=>{const cid=C.value&&C.value!=='__new'?C.value:null,cur=keep??P.value;
+    const ps=cid?Object.values(S.projects).filter(p=>!isSolo(p)&&p.clientId===cid).sort((a,b)=>(a.archived?1:0)-(b.archived?1:0)||a.name.localeCompare(b.name)):[];
+    const cname=cid?S.clients[cid].name:(C.value==='__new'?(Cn.value.trim()||'il nuovo cliente'):'');
+    P.innerHTML=`<option value="">${cid||C.value==='__new'?'Nessun progetto':'Scegli prima il cliente'}</option>${ps.map(p=>`<option value="${p.id}">${esc(p.name)}${p.archived?' (archiviato)':''}</option>`).join('')}${cid||C.value==='__new'?`<option value="__new">+ Nuovo progetto${cname?' per '+esc(cname):''}…</option>`:''}`;
+    P.value=ps.some(p=>p.id===cur)||cur==='__new'?cur:'';P.disabled=!cid&&C.value!=='__new';Pn.hidden=P.value!=='__new'};
+  const grid=()=>{const ym=M.value||j.month,[yy,mm]=ym.split('-').map(Number),first=new Date(yy,mm-1,1),off=(first.getDay()+6)%7,n=new Date(yy,mm,0).getDate();
+    days=new Set([...days].filter(k=>k.startsWith(ym)));
+    let h=['L','M','M','G','V','S','D'].map(x=>`<span class="wd">${x}</span>`).join('')+'<span></span>'.repeat(off);
+    for(let d=1;d<=n;d++){const k=`${ym}-${String(d).padStart(2,'0')}`,wd=(off+d-1)%7;h+=`<button type="button" class="jd${days.has(k)?' on':''}${wd>4?' we':''}" data-jd="${k}">${d}</button>`}
+    $('#jGrid').innerHTML=h};
+  const syncDay=()=>{if(days.size)$('#jD').value=daysLabel(days)};
+  $('#jGrid').onclick=e=>{const b=e.target.closest('[data-jd]');if(!b)return;const k=b.dataset.jd;days.has(k)?days.delete(k):days.add(k);b.classList.toggle('on');syncDay()};
+  form.querySelector('.jd-q').onclick=e=>{const q=e.target.closest('[data-jq]')?.dataset.jq;if(!q)return;const ym=M.value||j.month,[yy,mm]=ym.split('-').map(Number),n=new Date(yy,mm,0).getDate();
+    days=new Set();if(q!=='none')for(let d=1;d<=n;d++){const k=`${ym}-${String(d).padStart(2,'0')}`,wd=parse(k).getDay();if(q==='all'||(wd>0&&wd<6))days.add(k)}
+    grid();if(q==='none')$('#jD').value='';else syncDay()};
+  M.addEventListener('change',()=>{grid();syncDay()});
+  $('#jCal').onchange=()=>{$('#jCalT').hidden=!$('#jCal').checked};
+  const upd=()=>{const a0=num($('#jA').value),a=a0+($('#jIR').checked?a0*0.04:0),k=num($('#jK').value),yy=+(M.value||'').slice(0,4)||y,t=taxCalc(a,yy);
     $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
     const c=S.clients[C.value],miss=c&&a>0?billMissing(c):[],w=$('#jWarn');
     w.hidden=!miss.length;if(miss.length){w.innerHTML=`Per fatturare a ${esc(c.name)} mancano: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="jFix">Completa i dati del cliente</button>`;$('#jFix').onclick=()=>openClient(c)}};
-  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();upd()};
-  P.onchange=()=>{const p=S.projects[P.value];if(p){if(p.clientId&&S.clients[p.clientId]){C.value=p.clientId;Cn.hidden=true}if(!$('#jT').value.trim())$('#jT').value=p.name}upd()};
-  Q.onchange=()=>{Qu.hidden=Q.value!=='__url';const q=S.quotes[Q.value];if(q){if(!num($('#jA').value))$('#jA').value=String(qTotals(q).imp).replace('.',',');if(q.clientId&&!C.value)C.value=q.clientId;if(!$('#jT').value.trim())$('#jT').value=q.title||''}upd()};
+  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');upd()};
+  Cn.oninput=()=>fillProjects();
+  P.onchange=()=>{Pn.hidden=P.value!=='__new';if(!Pn.hidden){Pn.focus();return}const p=S.projects[P.value];if(p&&!$('#jT').value.trim())$('#jT').value=p.name;upd()};
+  Q.onchange=()=>{Qu.hidden=Q.value!=='__url';const q=S.quotes[Q.value];if(q){if(!num($('#jA').value))$('#jA').value=String(qTotals(q).imp).replace('.',',');if(q.clientId&&!C.value){C.value=q.clientId;fillProjects('')}if(!$('#jT').value.trim())$('#jT').value=q.title||''}upd()};
   Qu.hidden=Q.value!=='__url';
-  ['#jA','#jK','#jM','#jIR'].forEach(s=>$(s).addEventListener('input',upd));upd();
+  $('#jN').addEventListener('blur',()=>{$('#jN').value=fixInvNo($('#jN').value,M.value)});
+  ['#jA','#jK','#jIR'].forEach(s=>$(s).addEventListener('input',upd));M.addEventListener('input',upd);
+  fillProjects(j.projectId||'');grid();upd();
   $('#cancel').onclick=()=>dlg.close();
-  if(!isNew)armDelete($('#jDel'),'Conferma eliminazione',()=>del('jobs',j.id));
+  if(!isNew){const hasEv=Object.values(S.blocks).some(b=>b.jobId===j.id);armDelete($('#jDel'),hasEv?'Elimina anche gli eventi':'Conferma eliminazione',()=>{Object.values(S.blocks).filter(b=>b.jobId===j.id).forEach(b=>del('blocks',b.id));del('jobs',j.id)})}
   form.onsubmit=e=>{e.preventDefault();
     let cid=C.value||null;if(cid==='__new'){const n=Cn.value.trim();if(!n){Cn.focus();return}cid=findOrCreateClient(n).id}
-    const mo=$('#jM').value||j.month,qv=Q.value;
-    put('jobs',{...j,month:mo,day:$('#jD').value.trim(),clientId:cid,projectId:P.value||null,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
-      amount:num($('#jA').value),cash:num($('#jK').value),status:$('#jS').value,invoiceNo:$('#jN').value.trim(),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()});
+    let pid=P.value||null;if(pid==='__new'){const n=Pn.value.trim();if(!n){Pn.focus();return}const c=S.clients[cid];const np={id:uid(),name:n,client:c?.name||'',clientId:cid,color:c?.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pid=np.id}
+    const mo=M.value||j.month,qv=Q.value,cs=toMin($('#jCs').value||'09:00'),ce=Math.max(toMin($('#jCe').value||'18:00'),cs+15);
+    const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
+      amount:num($('#jA').value),cash:num($('#jK').value),status:$('#jS').value,invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
+    put('jobs',nj);syncJobBlocks(nj);
     const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
     dlg.close();renderFin();
+    if(nj.cal.on&&nj.days.length)toast(`${nj.days.length} ${nj.days.length===1?'giorno bloccato':'giorni bloccati'} nel calendario`);
   };
   show(true);
 }
