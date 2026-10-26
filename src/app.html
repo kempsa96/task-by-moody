@@ -1409,30 +1409,39 @@ function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if
 window.tbmForceReminders=()=>queueReminders(true);
 function buildReminders(){
   const n=S.settings.notif||{},ev=n.ev!==false,tk=n.task!==false,dy=n.day!==false,lead=n.lead??10;
-  const now=Date.now(),lim=now+36*3600000,out=[],q=x=>'«'+x+'»';
+  const now=Date.now(),lim=now+36*3600000,out=[],q=x=>'«'+x+'»',cut=(s,l=38)=>s.length>l?s.slice(0,l-1)+'…':s;
   const add=(id,ms,title,body,url)=>{if(ms>now+20000&&ms<lim)out.push({id,at:new Date(ms).toISOString(),title,body:body||'',...(url?{url}:{})})};
   const tripPlain=b=>{const t=b.travel;if(!t)return '';const ic=(TMODES.find(x=>x[0]===t.mode)||TMODES[0])[1];return `${ic} ${dur(t.minutes)}${t.lines&&t.lines.length?' · linee '+t.lines.join(' → '):''}`};
   const mapsOf=b=>b.place&&b.place.lat!=null?gmapsUrl(b.from||homePlace(),b.place,b.travel?.mode||S.settings.travelMode||'transit'):null;
+  const nextAfter=(k,m)=>{const s=PLAN.segs.find(x=>x.date===k&&x.start>=m);return s?taskById(s.id)?.title:null};
   const k0=key(new Date());
-  for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k);
+  for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k),[ws,we]=hoursFor(k);
+    const departs=bl.filter(b=>!isPause(b)&&eventDone(b,k)!=='no').map(b=>{const br=bufRanges(b,k,bl);return br.before?br.before[0]:b.start});
     if(ev)bl.forEach(b=>{if(eventDone(b,k)==='no')return;const t=b.title||'Evento';
-      if(isPause(b)){add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`${b.id==='prep'?'🌅':b.id==='lunch'||/pranzo/i.test(t)?'🍽':'☕'} ${t}`,`Fino alle ${hm(b.end)}. Riposati!`);return}
-      const br=bufRanges(b,k,bl),when=`${hm(b.start)}–${hm(b.end)}`;
+      if(isPause(b)){
+        if(b.id==='prep'){ // se a quell'ora parti per un evento, basta l'avviso di partenza
+          if(departs.some(m=>m<=b.end))return;
+          const first=nextAfter(k,b.end),ev1=bl.find(x=>!isPause(x)&&x.start>=b.end&&x.start<=b.end+60);
+          add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`🌅 Preparati: si inizia alle ${hm(b.end)}`,ev1?`Primo impegno: ${ev1.title||'evento'} alle ${hm(ev1.start)}`:first?`Prima attività: ${q(first)}`:'Sveglia, colazione e via 💪');return}
+        const nx=nextAfter(k,b.end),lunch=b.id==='lunch'||/pranzo/i.test(t);
+        add(`p:${b.id}:${k}:${b.start}`,msOf(k,b.start),`${lunch?'🍽 Pausa pranzo':'☕ '+cut(t)} fino alle ${hm(b.end)}`,nx?`Poi riprendi con ${q(nx)}`:lunch?'Buon appetito!':'Stacca un attimo.');return}
+      const br=bufRanges(b,k,bl),when=`${hm(b.start)}–${hm(b.end)}`,where=b.place?`📍 ${b.place.label.split(',')[0]}`:'';
       if(br.before){
-        const tp=tripPlain(b),where=b.place?` · 📍 ${b.place.label.split(',')[0]}`:'',url=mapsOf(b);
-        if(lead>0)add(`g1:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0])-lead*60000,`🚗 Tra ${lead} min devi partire`,`${q(t)} inizia alle ${hm(b.start)}${where}`,url);
-        add(`g0:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0]),`🚗 È ora di partire`,`${q(t)} · ${when}${where}${tp?'\n'+tp+(url?' · tocca per il percorso':''):''}`,url);
-      }else add(`e:${b.id}:${k}:${b.start}`,msOf(k,b.start)-lead*60000,lead>0?`📌 Tra ${lead} min: ${t}`:`📌 Adesso: ${t}`,when);
+        const tp=tripPlain(b),url=mapsOf(b);
+        if(lead>0)add(`g1:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0])-lead*60000,`🚗 Tra ${lead} min parti per ${cut(t,28)}`,[`Esci alle ${hm(br.before[0])} · inizia alle ${hm(b.start)}`,where,tp].filter(Boolean).join(' · '),url);
+        add(`g0:${b.id}:${k}:${br.before[0]}`,msOf(k,br.before[0]),`🚗 Parti ora per ${cut(t,30)}`,[`Inizia alle ${hm(b.start)}`,where,tp].filter(Boolean).join(' · ')+(url?'\nTocca per aprire il percorso':''),url);
+      }else add(`e:${b.id}:${k}:${b.start}`,msOf(k,b.start)-lead*60000,lead>0?`📌 ${cut(t,30)} tra ${lead} min`:`📌 ${cut(t,30)} adesso`,[when,where].filter(Boolean).join(' · '));
     });
-    if(dy&&dayIsOn(k)){const [a,z]=hoursFor(k),r=dayRec(k)||{};
-      if(r.start==null&&!r.skipped){const first=PLAN.segs.find(x=>x.date===k);add(`ds:${k}:${a}`,msOf(k,a),'☀️ Buongiorno! Si comincia',first?`Prima cosa: ${q(taskById(first.id)?.title||'')}`:'Apri Task by Moody e inizia la giornata')}
-      if(r.end==null)add(`de:${k}:${z}`,msOf(k,z),'🌇 Orario finito','Chiudi la giornata o allunga l’orario')}
+    if(dy&&dayIsOn(k)){const r=dayRec(k)||{};
+      if(r.start==null&&!r.skipped){const segs=PLAN.segs.filter(x=>x.date===k),first=segs[0],mins=segs.reduce((a,x)=>a+x.end-x.start,0),nev=bl.filter(b=>!isPause(b)).length;
+        add(`ds:${k}:${ws}`,msOf(k,ws),`☀️ Si comincia! Giornata ${hm(ws)}–${hm(we)}`,[first?`Prima: ${q(taskById(first.id)?.title||'')}`:'',mins?`${dur(mins)} di attività`:'',nev?`${nev} ${nev===1?'evento':'eventi'}`:''].filter(Boolean).join(' · ')||'Apri l’app per iniziare la giornata')}
+      if(r.end==null)add(`de:${k}:${we}`,msOf(k,we),`🌇 Fine orario (${hm(we)})`,'Apri l’app per chiudere la giornata o allungare l’orario')}
   }
   if(tk){const lastEnd={};
-    PLAN.segs.forEach(x=>{const t=taskById(x.id);if(!t)return;const cont=lastEnd[x.id]&&lastEnd[x.id].d===x.date&&lastEnd[x.id].m===x.start;lastEnd[x.id]={d:x.date,m:x.end};
-      if(cont)return;const p=S.projects[t.projectId];
-      add(`t:${x.id}:${x.date}:${x.start}`,msOf(x.date,x.start),`▶ Ora: ${t.title}`,`${t.solo?'Task':(p?p.name+' · ':'')}fino alle ${hm(x.end)}`)});
-    Object.entries(PLAN.info).forEach(([id,v])=>{const t=taskById(id);if(t&&v.endDate)add(`te:${id}:${v.endDate}:${v.end}`,msOf(v.endDate,v.end),`⏱ Tempo finito: ${t.title}`,'Fatto o ti serve altro tempo?')});
+    PLAN.segs.forEach((x,i)=>{const t=taskById(x.id);if(!t)return;const cont=lastEnd[x.id]&&lastEnd[x.id].d===x.date&&lastEnd[x.id].m===x.start;lastEnd[x.id]={d:x.date,m:x.end};
+      if(cont)return;const p=S.projects[t.projectId],nx=PLAN.segs.slice(i+1).find(y=>y.date===x.date&&y.id!==x.id);
+      add(`t:${x.id}:${x.date}:${x.start}`,msOf(x.date,x.start),`▶ Inizia: ${cut(t.title)}`,[t.solo?'':p?.name,`fino alle ${hm(x.end)}`,nx?`poi ${q(cut(taskById(nx.id)?.title||'',24))}`:''].filter(Boolean).join(' · '))});
+    Object.entries(PLAN.info).forEach(([id,v])=>{const t=taskById(id);if(t&&v.endDate)add(`te:${id}:${v.endDate}:${v.end}`,msOf(v.endDate,v.end),`⏱ Tempo finito: ${cut(t.title)}`,'L’hai finita? Apri l’app: ✓ fatto oppure +30 min')});
   }
   // una sola notifica per minuto tra inizio giornata / inizio attività / fine attività
   const rank=id=>id.startsWith('ds:')?0:id.startsWith('t:')?1:id.startsWith('te:')?2:-1,taken={};
