@@ -110,8 +110,16 @@ button,input,select{font:inherit;color:inherit}
 .wh.on{border-top:2px dashed var(--playhead)}
 .wh.on span{color:var(--fg);border-color:var(--playhead)}
 .seg.past{opacity:.6;background:color-mix(in srgb,var(--c) 14%,var(--surface))}
-.seg.past.isdone{opacity:1;background:color-mix(in srgb,var(--ok) 16%,var(--surface));border-left-color:var(--ok);box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 35%,transparent) inset}
-.seg.past.isdone b{padding-right:24px}
+.seg.past.isdone,.seg.donepin{opacity:.42;background:color-mix(in srgb,var(--c) 16%,var(--surface))}
+.seg.past.isdone:hover,.seg.donepin:hover{opacity:.7}
+.blk.pers{border-left-style:dashed}
+.hasnote{opacity:.55;font-weight:700}
+.seg .tk{display:inline-grid;place-items:center;cursor:pointer;color:var(--c);vertical-align:-2px;border-radius:4px;margin:-3px 0 -3px -3px;padding:3px;touch-action:manipulation}
+.seg .tk .ticon{vertical-align:0}
+.seg .tk:hover{color:var(--ok)}
+.seg .tk.on{color:var(--ok)}
+.seg .tk.on rect{fill:var(--ok);stroke:var(--ok)}
+.seg .tk.on path{stroke:#fff}
 .okb{position:absolute;top:5px;right:5px;width:20px;height:20px;border-radius:6px;background:var(--ok);display:grid;place-items:center;box-shadow:0 2px 6px color-mix(in srgb,var(--ok) 45%,transparent)}
 .seg.tiny .okb{width:16px;height:16px;top:2px;border-radius:5px}
 .blk.evok{background:color-mix(in srgb,var(--ok) 14%,var(--surface));border-left-color:var(--ok);box-shadow:0 0 0 1px color-mix(in srgb,var(--ok) 35%,transparent) inset}
@@ -1149,6 +1157,7 @@ function startPause(minutes){
   put('blocks',{id:uid(),kind:'pause',title:'Pausa',color:'#7C8796',date:k,start:st,end:Math.min(1440,st+minutes),repeat:{freq:'none',interval:1,endType:'never'},exceptions:{}});
   viewStart=k;render();
 }
+const TICK=(id,on)=>`<span class="tk${on?' on':''}" data-act="segDone" data-id="${id}" role="button" tabindex="0" aria-label="${on?'Segna da fare':'Segna come fatta'}" title="${on?'Fatta · tocca per rimetterla da fare':'Segna come fatta'}">${SOLO_ICON}</span>`;
 const SOLO_ICON='<svg class="ticon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="1.5" y="1.5" width="13" height="13" rx="3.5"/><path d="M4.8 8.3l2.2 2.2 4.3-4.6"/></svg>';
 function sortedProjects(){
   const rk=p=>p.rank!=null?p.rank:1e6+(p.created||0)/1e7;
@@ -1412,7 +1421,7 @@ function resolveTask(id,action){
   const base=t.solo?S.projects[id]:S.tasks[id];
   const coll=t.solo?'projects':'tasks';
   if(manual()){
-    if(action==='done'){put(coll,{...base,done:true,doneAt:Date.now(),pin:null});return}
+    if(action==='done'){put(coll,{...base,done:true,doneAt:Date.now()});return}
     if(action==='later'){put(coll,{...base,pin:null});return}
     if(action==='reset'){const p=base.pin;const log=(base.log||[]).filter(L=>!(p&&L.d===p.d&&L.s>=p.s-1&&L.e<=p.s+pinLen(t)+1));put(coll,{...base,pin:null,log});return}
     const x=+action;if(x){const today=key(new Date()),st=Math.ceil(nowMin()/15)*15;put(coll,{...base,pin:{d:today,s:Math.min(st,1440-x),len:x}})}
@@ -1647,17 +1656,20 @@ function renderCal(){
     });
     blks.forEach(b=>{
       const evd=isPause(b)?null:eventDone(b,k);
-      body+=`<div class="blk${isPause(b)?' pause':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}</b><em>${evd==='no'?'non svolto · ':''}${hm(b.start)}–${hm(b.end)}${b.place?` · 📍 ${esc(b.place.label.split(',')[0])}`:''}${b.projectId&&S.projects[b.projectId]?` · ${esc(S.projects[b.projectId].name)}`:''}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
+      body+=`<div class="blk${isPause(b)?' pause':''}${b.life==='pers'?' pers':''}${!on&&b.life!=='pers'&&!isPause(b)?' offwork':''}${evd==='yes'?' evok':''}${evd==='no'?' evno':''}" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color};top:${(b.start-r0)*PPM}px;height:${Math.max(18,(b.end-b.start)*PPM-2)}px;--h:${Math.max(18,(b.end-b.start)*PPM-2)}px" title="Trascina per spostare"><b>${blockIcon(b)?blockIcon(b)+' ':''}${isRec(b)?'<span class="rep" aria-label="ricorrente">↻</span> ':''}${esc(b.title||'Evento')}${b.notes?' <span class="hasnote" title="Ha una descrizione">≡</span>':''}</b><em>${evd==='no'?'non svolto · ':''}${b.life==='pers'?'🏠 ':''}${hm(b.start)}–${hm(b.end)}${b.place?` · 📍 ${esc(b.place.label.split(',')[0])}`:''}${b.projectId&&S.projects[b.projectId]?` · ${esc(S.projects[b.projectId].name)}`:''}</em>${evd==='yes'?OKB:''}<span class="rz" title="Trascina per allungare o accorciare"></span></div>`;
     });
     const joined={},joinedLi={},skip=new Set();
     segs.forEach((x,si)=>{const t=taskById(x.id);(t?.log||[]).forEach((L,li)=>{if(L.d===k&&Math.abs(x.start-L.e)<=3&&!skip.has(x.id+':'+li)){skip.add(x.id+':'+li);joined[si]=L.s;joinedLi[si]=li}})});
     allTasks().forEach(t=>{(t.log||[]).forEach((L,li)=>{if(L.d!==k||skip.has(t.id+':'+li))return;const p=S.projects[t.projectId];if(!p)return;const solo=isSolo(p),h=(L.e-L.s)*PPM-2;
-      body+=`<div class="seg past${h<34?' tiny':''}${t.done?' isdone':''}${isFlash(t.id,k,L.s,L.e)?' merging':''}" data-act="editTask" data-id="${t.id}" data-li="${li}" data-start="${L.s}" data-end="${L.e}" style="--c:${colorOf(t)};top:${(L.s-r0)*PPM+1}px;height:${Math.max(10,h)}px;--h:${Math.max(10,h)}px" title="${esc(t.title)} · ${t.done?'fatta':'tempo passato'}"><b>${esc(t.title)}</b>${t.done?OKB:''}<em>${solo?'Task':esc(p.name)}</em><span class="tc">${hm(L.s)}–${hm(L.e)}</span><span class="rz" title="Trascina per allungare o accorciare"></span></div>`})});
+      body+=`<div class="seg past${h<34?' tiny':''}${t.done?' isdone':''}${isFlash(t.id,k,L.s,L.e)?' merging':''}" data-act="editTask" data-id="${t.id}" data-li="${li}" data-start="${L.s}" data-end="${L.e}" style="--c:${colorOf(t)};top:${(L.s-r0)*PPM+1}px;height:${Math.max(10,h)}px;--h:${Math.max(10,h)}px" title="${esc(t.title)} · ${t.done?'fatta':'tempo passato'}"><b>${t.done?TICK(t.id,true)+' ':''}${esc(t.title)}</b><em>${solo?'Task':esc(p.name)}</em><span class="tc">${hm(L.s)}–${hm(L.e)}</span><span class="rz" title="Trascina per allungare o accorciare"></span></div>`})});
+    allTasks().forEach(t=>{if(!t.done||!t.pin||t.pin.d!==k)return;const p=S.projects[t.projectId];if(!p)return;
+      const ps=t.pin.s,pe=Math.min(1440,ps+pinLen(t));if((t.log||[]).some(L=>L.d===k&&L.s<pe&&L.e>ps))return;const solo=isSolo(p),h=(pe-ps)*PPM-2;
+      body+=`<div class="seg donepin${h<34?' tiny':''}" data-act="editTask" data-id="${t.id}" data-start="${ps}" data-end="${pe}" style="--c:${colorOf(t)};top:${(ps-r0)*PPM+1}px;height:${Math.max(14,h)}px;--h:${Math.max(14,h)}px" title="${esc(t.title)} · fatta"><b>${TICK(t.id,true)} ${esc(t.title)}</b><em>${solo?'Task':esc(p.name)}</em><span class="tc">fatta · ${hm(ps)}–${hm(pe)}</span></div>`});
     segs.forEach((x,si)=>{
       const vs=joined[si]!=null?joined[si]:x.start,nmc=nowMin(),live=k===today&&vs<=nmc&&x.end>nmc,pp=live?Math.round((nmc-vs)/(x.end-vs)*100):0;
       const t=taskById(x.id),p=S.projects[t.projectId],h=(x.end-vs)*PPM-2,late=PLAN.info[x.id]?.late,solo=isSolo(p);
       body+=`<div class="seg${h<34?' tiny':''}${late?' late':''}${solo?' soloseg':''}${x.pinned?' pinned':''}${live||joined[si]!=null?' running':''}${isFlash(t.id,k,vs,x.end)?' merging':''}${live?' live':''}" data-act="editTask" data-id="${t.id}" data-start="${vs}" data-end="${x.end}"${joined[si]!=null?` data-li="${joinedLi[si]}" data-run="1"`:''} style="--pp:${pp}%;--c:${colorOf(t)};top:${(vs-r0)*PPM+1}px;height:${Math.max(14,h)}px;--h:${Math.max(14,h)}px" title="${esc(t.title)} · ${esc(p.name)}">
-        <b>${solo?SOLO_ICON+' ':''}${esc(t.title)}</b><em>${solo?'Task':esc(p.name)}</em><span class="tc">${joined[si]!=null?'in corso · ':''}${x.pinned?'orario fisso · ':''}${hm(vs)}–${hm(x.end)}${x.parts>1?` · parte ${x.part}/${x.parts}`:''}</span>${x.part===x.parts?'<span class="rz" title="Trascina per allungare o accorciare"></span>':''}</div>`;
+        <b>${TICK(t.id,false)} ${esc(t.title)}</b><em>${solo?'Task':esc(p.name)}</em><span class="tc">${joined[si]!=null?'in corso · ':''}${x.pinned?'orario fisso · ':''}${hm(vs)}–${hm(x.end)}${x.parts>1?` · parte ${x.part}/${x.parts}`:''}</span>${x.part===x.parts?'<span class="rz" title="Trascina per allungare o accorciare"></span>':''}</div>`;
     });
     if(k===today){const n=nowMin();if(n>=r0&&n<=r1)body+=`<div class="playhead" style="top:${(n-r0)*PPM}px"></div>`}
     body+='</div>';
@@ -1707,6 +1719,7 @@ cal.addEventListener('pointerdown',e=>{
   const bh=e.target.closest('.buf');
   if(bh&&e.pointerType==='mouse'){e.preventDefault();const b=S.blocks[bh.dataset.id];if(!b)return;const [bx,by]=bufOf(b),side=bh.dataset.buf;
     bz={el:bh,b,side,y0:e.clientY,v0:side==='before'?bx:by,v:null,top0:parseFloat(bh.style.top),h0:bh.offsetHeight};bh.setPointerCapture(e.pointerId);return}
+  if(e.target.closest('.tk'))return;
   const w=e.target.closest('.wh');
   if(w){e.preventDefault();const k=w.dataset.date,[hs,he]=hoursFor(k);wh={el:w,k,side:w.dataset.wh,y0:e.clientY,v0:w.dataset.wh==='s'?hs:he,hs,he,v:null};w.setPointerCapture(e.pointerId);return}
   if(e.pointerType!=='mouse'){const el=e.target.closest('.seg[data-id],.blk[data-id]');
@@ -1821,6 +1834,7 @@ document.addEventListener('click',e=>{
   else if(act==='editBlock'){if(justMoved){justMoved=false;return}openBlock(S.blocks[id],el.dataset.occ)}
   else if(act==='settings')openSettings();
   else if(act==='newBlock')newBlockNow();
+  else if(act==='segDone'){e.stopPropagation();if(justMoved){justMoved=false;return}const tk=S.tasks[id],sp=S.projects[id],x=tk||sp;if(!x)return;const nd=!x.done;put(tk?'tasks':'projects',{...x,done:nd,doneAt:nd?Date.now():null});if(nd)toast(`«${x.title||x.name}» fatta ✓`,{label:'Annulla',run:doUndo})}
   else if(act==='toggle'){const t=S.tasks[id];put('tasks',{...t,done:!t.done,doneAt:!t.done?Date.now():null})}
   else if(act==='up'||act==='down')move(id,act==='up'?-1:1);
   else if(act==='addTask')addTaskFromRow(id);
@@ -2268,12 +2282,12 @@ function applyOnly(b,occ,nb){
   // stacca questa occorrenza: salta la serie e crea un evento singolo
   const ex={...(b.exceptions||{})};ex[occ]='skip';
   put('blocks',{...b,exceptions:ex});
-  put('blocks',{id:uid(),title:nb.title,color:nb.color,date:nb.date,start:nb.start,end:nb.end,...(nb.before!=null?{before:nb.before,after:nb.after}:{before:b.before,after:b.after})});
+  put('blocks',{id:uid(),title:nb.title,color:nb.color,date:nb.date,start:nb.start,end:nb.end,notes:nb.notes??b.notes,allDay:nb.allDay??b.allDay,life:nb.life??b.life,projectId:nb.projectId!==undefined?nb.projectId:b.projectId,place:nb.place!==undefined?nb.place:b.place,from:nb.from!==undefined?nb.from:b.from,travel:nb.travel!==undefined?nb.travel:b.travel,...(nb.before!=null?{before:nb.before,after:nb.after}:{before:b.before,after:b.after})});
 }
 function applyAll(b,occ,nb,repeat){
   const shift=Math.round((parse(nb.date)-parse(occ))/864e5);
   const ex={};Object.entries(b.exceptions||{}).forEach(([k,v])=>{if(v==='skip')ex[k]=v});
-  put('blocks',{...b,title:nb.title,color:nb.color,start:nb.start,end:nb.end,...(nb.before!=null?{before:nb.before,after:nb.after}:{}),date:addDays(b.date,shift),repeat:repeat||b.repeat,exceptions:ex});
+  put('blocks',{...b,...nb,title:nb.title,color:nb.color,start:nb.start,end:nb.end,...(nb.before!=null?{before:nb.before,after:nb.after}:{}),date:addDays(b.date,shift),repeat:repeat||b.repeat,exceptions:ex});
 }
 function askScope(title,onOnly,onAll){
   form.innerHTML=`<h3>${esc(title)}</h3><p class="note">È un evento che si ripete. Cosa vuoi cambiare?</p>
@@ -2366,6 +2380,7 @@ function openBlock(b,occ){
   const r={freq:'none',interval:1,endType:'never',...(b.repeat||{})};
   form.innerHTML=`<h3>${dup?'Duplica evento':isNew?'Nuovo evento':'Evento'}</h3>${dup?'<p class="note" style="margin-top:-4px">Scegli il nuovo giorno: il resto è già copiato, puoi cambiarlo se serve.</p>':''}
     <div class="field"><label for="bTitle">Cosa</label><input id="bTitle" value="${esc(b.title)}" placeholder="es. Dentista, riprese, call cliente"></div>
+    ${isPause(b)?'':`<div class="field"><span class="lbl">Tipo</span><div class="seg3" id="bLife"><button type="button" data-v="work" aria-pressed="${b.life!=='pers'}">💼 Lavoro</button><button type="button" data-v="pers" aria-pressed="${b.life==='pers'}">🏠 Personale</button></div></div>`}
     ${isPause(b)?'':`<label class="chk" style="display:flex;gap:8px;align-items:center;margin:-2px 0 10px;font-size:14px"><input type="checkbox" id="bAll" ${b.allDay?'checked':''}> Tutto il giorno <small style="color:var(--muted)">(compleanni, ricorrenze: non occupa ore)</small></label>`}
     <div class="row3"><div class="field"><label for="bDate">Giorno</label><input id="bDate" type="date" value="${occ}"></div>
     <div class="field"><label for="bS">Dalle</label><input id="bS" type="time" step="900" value="${hm(cur.start)}"></div>
@@ -2379,6 +2394,7 @@ function openBlock(b,occ){
     ${isPause(b)?'':tripFields(b)}
     ${isPause(b)?'':`<div class="row" id="bBufR"><div class="field"><label for="bBefore">Prima (viaggio / preparazione)</label><select id="bBefore">${bufOptions(bufOf(b)[0])}</select></div>
     <div class="field"><label for="bAfter">Dopo (rientro)</label><select id="bAfter">${bufOptions(bufOf(b)[1])}</select></div></div>`}
+    ${isPause(b)?'':`<div class="field"><label for="bNotes">Descrizione</label><textarea id="bNotes" rows="3" placeholder="Note, link, indirizzo, contatti… la vedi solo aprendo l'evento" style="resize:vertical;min-height:64px">${esc(b.notes||'')}</textarea></div>`}
     <div class="field"><span class="lbl">Colore</span>${swatches(b.color)}</div>
     <p class="note">${rec?`Si ripete ${repLabel(b)}. `:''}Le task che cadono in questo orario slittano o si dividono in due parti. Puoi anche trascinare l'evento sul calendario per spostarlo.</p>
     <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="bDel">Elimina</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${dup?'Crea duplicato':isNew?'Aggiungi':'Salva'}</button></div>`;
@@ -2390,6 +2406,7 @@ function openBlock(b,occ){
   $('#bRep').onchange=sync;$('#bEnd').onchange=sync;sync();
   const syncAll=()=>{const a=!!($('#bAll')&&$('#bAll').checked);$('#bS').closest('.field').hidden=a;$('#bE').closest('.field').hidden=a;if($('#bBufR'))$('#bBufR').hidden=a};
   if($('#bAll')){$('#bAll').onchange=syncAll;syncAll()}
+  let life=b.life==='pers'?'pers':'work';form.querySelectorAll('#bLife button').forEach(x=>x.onclick=()=>{life=x.dataset.v;form.querySelectorAll('#bLife button').forEach(y=>y.setAttribute('aria-pressed',y===x))});
   $('#cancel').onclick=()=>dlg.close();
   if(!isNew){
     if(rec)$('#bDel').onclick=()=>askScope('Elimina evento',()=>{const ex={...(b.exceptions||{})};ex[occ]='skip';put('blocks',{...b,exceptions:ex})},()=>del('blocks',b.id));
@@ -2401,6 +2418,8 @@ function openBlock(b,occ){
     const repeat={freq:f,interval:Math.max(1,+$('#bIv').value||1),endType:f==='none'?'never':et,count:et==='count'?Math.max(1,+$('#bCount').value||1):null,until:et==='until'?$('#bUntil').value||null:null};
     const isAll=!!($('#bAll')&&$('#bAll').checked);if(isAll){st=0;en=1440}
     const nb={title:$('#bTitle').value.trim()||'Evento',color:getC(),date:$('#bDate').value||occ,start:st,end:en,allDay:isAll};
+    if($('#bNotes'))nb.notes=$('#bNotes').value.trim();
+    if($('#bLife'))nb.life=life;
     if($('#bBefore')){nb.before=isAll?0:+$('#bBefore').value;nb.after=isAll?0:+$('#bAfter').value}
     if(trip)Object.assign(nb,trip.value());
     if($('#bProj')){let pv=$('#bProj').value||null;if(pv==='__new'){const nm=$('#bProjN').value.trim()||nb.title;const np={id:uid(),name:nm,client:'',clientId:null,color:nb.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pv=np.id}nb.projectId=pv}
