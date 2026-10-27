@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610271145">
+<meta name="tbm-build" content="202610271213">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202610271145"></script>
-<script src="tbm-cloud.js?v=202610271145"></script>
+<script src="supabase.js?v=202610271213"></script>
+<script src="tbm-cloud.js?v=202610271213"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -846,6 +846,24 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .slot-top{display:flex;gap:8px}.slq{width:100%;box-sizing:border-box;border:0;box-shadow:0 0 0 1px var(--line) inset;border-radius:10px;background:var(--surface-2);padding:9px 10px;font:inherit}
 .sl-list{max-height:280px}
 @media (min-width:821px){.tray{display:none!important}}
+.qadd{position:absolute;left:3px;width:max(calc(100% - 6px),236px);z-index:45;background:var(--surface);border-radius:14px;box-shadow:0 14px 40px rgb(0 0 0/.22),0 0 0 2px var(--accent);padding:8px;display:flex;flex-direction:column;gap:6px;animation:qapop .18s cubic-bezier(.2,.8,.2,1)}
+.qadd.right{left:auto;right:3px}
+.qadd.sheet{position:fixed;left:12px;right:12px;width:auto;bottom:12px;z-index:90;padding:12px;border-radius:18px;gap:8px}
+.qadd.sheet .qa-t{font-size:12px}
+@keyframes qapop{from{transform:scale(.94);opacity:0}}
+.qa-t{font-size:11px;font-weight:700;color:var(--muted)}
+.qa-in{border:0;background:var(--surface-2);border-radius:9px;padding:8px 10px;font:inherit;font-size:16px;font-weight:600;width:100%;box-sizing:border-box;color:var(--fg)}
+.qa-b{display:flex;align-items:center;gap:6px}
+.qa-seg{display:flex;background:var(--surface-2);border-radius:999px;padding:2px;margin-right:auto}
+.qa-seg button{border:0;background:none;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;white-space:nowrap}
+.qa-seg button.on{background:var(--surface);color:var(--fg);box-shadow:0 1px 3px rgb(0 0 0/.12)}
+.qa-x,.qa-ok{border:0;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:17px;font-weight:800;display:grid;place-items:center;flex:none}
+.qa-x{background:var(--surface-2);color:var(--muted)}.qa-ok{background:var(--accent);color:#fff}
+.qa-list{border:0;background:none;color:var(--accent);font-size:12px;font-weight:600;text-align:left;padding:2px;cursor:pointer}
+dialog{overflow:auto}
+.dlg-x{position:sticky;top:10px;margin:10px 10px -46px auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);color:var(--fg);font-size:22px;line-height:1;cursor:pointer;z-index:10}
+.dlg-x:hover{background:var(--line)}
+.dlg>h3{padding-right:44px}
 </style>
 
 <div class="app">
@@ -1467,7 +1485,7 @@ function renderMini(){
   el.innerHTML=`<div class="mini-h"><b data-mini="today" title="Vai a oggi">${esc(label)}</b><button data-mini="prev" aria-label="Mese precedente">‹</button><button data-mini="next" aria-label="Mese successivo">›</button><button data-mini="min" class="mini-x" aria-label="Riduci a icona" title="Riduci a icona"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3v3.5H13M3 9.5h3.5V13M9.5 6.5 14 2M6.5 9.5 2 14"/></svg></button></div>
     <div class="mini-g">${['L','M','M','G','V','S','D'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>`;
 }
-function render(){migrate();schedule();renderRange();renderProjects();renderCal();renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();renderTray();queueReminders();if(finOpen())renderFin()}
+function render(){migrate();schedule();renderRange();renderProjects();const qaS=QA?qaState():null;renderCal();if(QA)drawQA(false,qaS);renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();renderTray();queueReminders();if(finOpen())renderFin()}
 /* ---------- promemoria per le notifiche (solo nella versione app, quando window.tbmReminders esiste) ---------- */
 let remT=null,remSig='';
 function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if(force){remSig='';clearTimeout(remT);remT=null}if(remT)return;remT=setTimeout(()=>{remT=null;try{const L=buildReminders(),sig=JSON.stringify(L);if(sig!==remSig){remSig=sig;window.tbmReminders(L)}}catch(e){console.error(e)}},force?300:4000)}
@@ -1761,8 +1779,8 @@ cal.addEventListener('pointerup',e=>{
   if(d.type==='mouse'){
     let [a,b]=dragRange(d);
     if(!d.moved){a=f15(d.m0);b=a+60}
-    openSlot(d.date,a,Math.min(1440,b));
-  }else if(Math.abs(e.clientY-d.y0)<10){const a=f15(d.m0);openSlot(d.date,a,Math.min(1440,a+60))}
+    openQuick(d.date,a,Math.min(1440,b));
+  }else if(Math.abs(e.clientY-d.y0)<10){const a=f15(d.m0);openQuick(d.date,a,Math.min(1440,a+60))}
 });
 cal.addEventListener('pointercancel',()=>{if(lp){clearTimeout(lp.timer);lp=null}if(mv)mv.el.classList.remove('lifted');if(rz||wh||bz){rz=null;wh=null;bz=null;render()}if(mv){if(mv.ghost)mv.ghost.remove();mv.el.style.opacity='';mv=null}if(drag&&drag.ghost)drag.ghost.remove();drag=null});
 
@@ -2839,6 +2857,51 @@ function openSlot(date,start,end){
   form.onsubmit=e=>{e.preventDefault();add()};
   show(true);setTimeout(()=>$('#slNew').focus(),50);
 }
+
+/* ---------- aggiunta rapida direttamente nel calendario ---------- */
+let QA=null;
+function openQuick(date,start,end){QA={date,start,end:Math.max(end,start+15),type:'ev',text:''};drawQA(true)}
+function closeQA(){QA=null;document.querySelectorAll('.qadd,.qa-slot').forEach(x=>x.remove())}
+function placeSheet(){const el=document.querySelector('.qadd.sheet');if(!el)return;const vv=window.visualViewport;const gap=vv?Math.max(0,innerHeight-(vv.height+vv.offsetTop)):0;el.style.bottom=(gap+12)+'px'}
+if(window.visualViewport){visualViewport.addEventListener('resize',placeSheet);visualViewport.addEventListener('scroll',placeSheet)}
+function qaState(){const old=document.querySelector('.qadd .qa-in'),had=!!old&&document.activeElement===old;return {had,sel:had?[old.selectionStart,old.selectionEnd]:null}}
+function drawQA(focus,st){
+  const {had,sel}=st||qaState();
+  document.querySelectorAll('.qadd,.qa-slot').forEach(x=>x.remove());if(!QA)return;
+  const col=document.querySelector(`.daycol[data-date="${QA.date}"]`);if(!col)return;
+  const el=document.createElement('div');el.className='qadd';
+  el.style.top=(QA.start-bounds()[0])*PPM+'px';el.style.minHeight=Math.max(64,(QA.end-QA.start)*PPM)+'px';
+  const cs=$('#calScroll').getBoundingClientRect(),cr=col.getBoundingClientRect();if(cr.left+240>cs.right)el.classList.add('right');
+  el.innerHTML=`<div class="qa-t">${esc(shortDate(QA.date))} · ${hm(QA.start)}–${hm(QA.end)}</div>
+    <input class="qa-in" enterkeyhint="send" placeholder="${QA.type==='ev'?'Nuovo evento…':'Cosa devi fare?'}" value="${esc(QA.text)}" aria-label="Titolo">
+    <div class="qa-b"><span class="qa-seg"><button type="button" data-qt="ev" class="${QA.type==='ev'?'on':''}">📌 Evento</button><button type="button" data-qt="todo" class="${QA.type==='todo'?'on':''}">✓ Da fare</button></span>
+    <button type="button" class="qa-x" aria-label="Annulla" title="Annulla">×</button><button type="button" class="qa-ok" aria-label="Aggiungi" title="Aggiungi">↑</button></div>
+    ${QA.type==='todo'&&orderedItems(false).some(t=>!t.done)?`<button type="button" class="qa-list">oppure scegli dalla lista…</button>`:''}`;
+  const sheet=innerWidth<=820;
+  if(sheet){el.classList.add('sheet');el.style.top='';el.style.minHeight='';document.body.appendChild(el);
+    const sl=document.createElement('div');sl.className='dragbox snap qa-slot';Object.assign(sl.style,{top:(QA.start-bounds()[0])*PPM+'px',height:(QA.end-QA.start)*PPM+'px'});col.appendChild(sl);placeSheet()}
+  else col.appendChild(el);
+  const inp=el.querySelector('.qa-in');
+  inp.oninput=()=>{QA.text=inp.value};
+  inp.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();commitQA()}else if(e.key==='Escape'){closeQA()}};
+  el.addEventListener('pointerdown',e=>e.stopPropagation());
+  el.onclick=e=>{e.stopPropagation();const t=e.target.closest('[data-qt]');
+    if(t){QA.type=t.dataset.qt;QA.text=inp.value;drawQA(true);return}
+    if(e.target.closest('.qa-ok'))commitQA();else if(e.target.closest('.qa-x'))closeQA();
+    else if(e.target.closest('.qa-list')){const q=QA;closeQA();openSlot(q.date,q.start,q.end)}};
+  if(focus||had){inp.focus({preventScroll:true});if(sel)try{inp.setSelectionRange(sel[0],sel[1])}catch(x){}}
+}
+function commitQA(){
+  if(!QA)return;const q=QA,v=(document.querySelector('.qadd .qa-in')?.value||q.text).trim();
+  if(!v){document.querySelector('.qadd .qa-in')?.focus();return}
+  closeQA();
+  if(q.type==='ev'){put('blocks',{id:uid(),title:v,color:PALETTE[0],date:q.date,start:q.start,end:q.end,repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()});toast(`📌 ${v} · ${hm(q.start)}`,{label:'Annulla',run:doUndo})}
+  else{put('projects',{id:uid(),kind:'task',name:v,minutes:q.end-q.start,priority:2,deadline:null,done:false,color:'#56606E',created:Date.now(),pin:{d:q.date,s:q.start,len:q.end-q.start}});toast(`✓ ${v} · ${hm(q.start)}`,{label:'Annulla',run:doUndo})}
+}
+document.addEventListener('pointerdown',e=>{if(QA&&!e.target.closest('.qadd')&&!e.target.closest('.daycol'))closeQA()},true);
+cal.addEventListener('mousedown',e=>{if(QA&&!e.target.closest('.qadd'))e.preventDefault()});
+/* X per chiudere ogni finestra */
+(()=>{const x=document.createElement('button');x.type='button';x.className='dlg-x';x.setAttribute('aria-label','Chiudi');x.innerHTML='×';x.onclick=()=>dlg.close();dlg.prepend(x)})();
 
 /* ---------- menu tasto destro ---------- */
 const ctx=$('#ctx');
