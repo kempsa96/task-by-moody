@@ -113,6 +113,8 @@ button,input,select{font:inherit;color:inherit}
 .seg.past.isdone,.seg.donepin{opacity:.42;background:color-mix(in srgb,var(--c) 16%,var(--surface))}
 .seg.past.isdone:hover,.seg.donepin:hover{opacity:.7}
 .blk.pers{border-left-style:dashed}
+.seg.rfanim{transition:top .2s cubic-bezier(.2,.8,.2,1)}
+.seg.reflow{z-index:3;box-shadow:0 2px 10px color-mix(in srgb,var(--c) 30%,transparent)}
 .hasnote{opacity:.55;font-weight:700}
 .seg .tk{display:inline-grid;place-items:center;cursor:pointer;color:var(--c);vertical-align:-2px;border-radius:4px;margin:-3px 0 -3px -3px;padding:3px;touch-action:manipulation}
 .seg .tk .ticon{vertical-align:0}
@@ -1311,8 +1313,38 @@ function logPast(id,d,s,e,removeIndex){
   writeLog(t,normLog(log));flashAt(id,d,s+1);
   return msOf(d,e);
 }
+/* ---------- riflusso: quando trascini una task sopra le altre, quelle dopo scorrono giù senza sovrapporsi (gli eventi restano fermi) ---------- */
+function reflowPlan(date,id,ns,len){
+  if(!manual())return [];
+  const now=Date.now();
+  const others=allTasks().filter(t=>!t.done&&t.pin&&t.pin.d===date&&t.id!==id&&msOf(date,t.pin.s+pinLen(t))>now)
+    .map(t=>({id:t.id,s:t.pin.s,len:pinLen(t)})).sort((a,b)=>a.s-b.s);
+  const placed=[[ns,ns+len]],out=[];
+  for(const o of others){
+    let x=o.s,moved=true,guard=0;
+    while(moved&&guard++<50){moved=false;for(const [a,b] of placed){if(x<b&&x+o.len>a){x=b;moved=true}}}
+    x=Math.min(x,1440-o.len);placed.push([x,x+o.len]);if(x!==o.s)out.push({id:o.id,s:x,len:o.len});
+  }
+  return out;
+}
+let rfEls=[];
+function previewReflow(date,id,ns,len){
+  const sh=date?reflowPlan(date,id,ns,len):[],want=new Map(sh.map(x=>[x.id,x]));
+  rfEls.forEach(el=>{if(!el.isConnected||!want.has(el.dataset.id)||el.closest('.daycol')?.dataset.date!==date){el.style.top=el.dataset.top0;el.classList.remove('reflow');setTimeout(()=>el.classList.remove('rfanim'),200)}});
+  rfEls=rfEls.filter(el=>el.isConnected&&el.classList.contains('reflow'));
+  if(!date)return;
+  const r0=bounds()[0];
+  sh.forEach(x=>{const el=document.querySelector(`#calInner .daycol[data-date="${date}"] .seg[data-id="${x.id}"]:not(.past):not(.donepin)`);if(!el)return;
+    if(!el.dataset.top0)el.dataset.top0=el.style.top;el.classList.add('rfanim','reflow');el.style.top=((x.s-r0)*PPM+1)+'px';if(!rfEls.includes(el))rfEls.push(el)});
+}
+function placeWithReflow(id,date,ns,len){
+  const sh=reflowPlan(date,id,ns,len);
+  placeTask(id,date,ns,len);
+  sh.forEach(x=>{const t=taskById(x.id);if(!t)return;const base=t.solo?S.projects[x.id]:S.tasks[x.id];put(t.solo?'projects':'tasks',{...base,pin:{d:date,s:x.s,len:x.len}})});
+  return sh.length;
+}
 function dropTask(m){
-  if(manual()&&(m.kind==='task'||m.kind==='run')&&msOf(m.date,m.ns+m.segLen)>Date.now()+60000){placeTask(m.t.id,m.date,m.ns,m.kind==='run'?m.segLen:pinLen(m.t));return}
+  if(manual()&&(m.kind==='task'||m.kind==='run')&&msOf(m.date,m.ns+m.segLen)>Date.now()+60000){if(m.kind==='task')placeWithReflow(m.t.id,m.date,m.ns,pinLen(m.t));else placeTask(m.t.id,m.date,m.ns,m.segLen);return}
   const endMs=msOf(m.date,m.ns+m.segLen),startMs=msOf(m.date,m.ns),now=Date.now();
   const title=m.t.title,others=orderedPending().some(x=>x.id!==m.t.id);
   if(endMs<=now+60000){
@@ -1768,12 +1800,13 @@ cal.addEventListener('pointermove',e=>{
     if(!mv.moved&&Math.abs(e.clientY-mv.y0)+Math.abs(e.clientX-mv.x0)<6)return;
     const under=document.elementFromPoint(e.clientX,e.clientY);const col=under&&under.closest('.daycol');
     if(!col)return;
-    if(!mv.moved){mv.moved=true;mv.el.style.opacity='.35';mv.ghost=document.createElement('div');mv.ghost.className='dragbox'}
+    if(!mv.moved){mv.moved=true;mv.el.style.opacity=mv.kind==='task'&&manual()?'0':'.35';mv.ghost=document.createElement('div');mv.ghost.className='dragbox'}
     if(mv.ghost.parentNode!==col)col.appendChild(mv.ghost);
     mv.date=col.dataset.date;mv.ns=Math.max(0,Math.min(1440-mv.len,Math.round((minAt(col,e)-mv.grab)/(mv.kind==='log'?5:15))*(mv.kind==='log'?5:15)));
     if(mv.kind==='log'||mv.kind==='run'){mv.ns=snapStart(mv.t.id,mv.li,mv.date,mv.ns,mv.len);mv.ghost&&mv.ghost.classList.toggle('snap',snapEdges(mv.t.id,mv.li,mv.date).some(x=>x.m===mv.ns||x.m===mv.ns+mv.len))}
     Object.assign(mv.ghost.style,{top:(mv.ns-bounds()[0])*PPM+'px',height:mv.len*PPM+'px'});
-    mv.ghost.textContent=hm(mv.ns)+'–'+hm(mv.ns+mv.len);return;
+    mv.ghost.textContent=hm(mv.ns)+'–'+hm(mv.ns+mv.len)+(mv.t?' · '+mv.t.title:'');
+    if(mv.kind==='task'&&manual())previewReflow(mv.date,mv.t.id,mv.ns,mv.len);return;
   }
   if(!drag||drag.type!=='mouse')return;
   drag.m1=minAt(drag.col,e);if(Math.abs(e.clientY-drag.y0)>4)drag.moved=true;updGhost();
@@ -1795,7 +1828,7 @@ cal.addEventListener('pointerup',e=>{
     else render();
     return}
   if(lp){clearTimeout(lp.timer);lp=null}
-  if(mv){const m=mv;mv=null;if(m.ghost)m.ghost.remove();m.el.style.opacity='';m.el.classList.remove('lifted');
+  if(mv){const m=mv;mv=null;previewReflow(null);if(m.ghost)m.ghost.remove();m.el.style.opacity='';m.el.classList.remove('lifted');
     if(m.moved){justMoved=true;setTimeout(()=>{justMoved=false},400);
       if(m.kind==='task'||m.kind==='log'||m.kind==='run'){if(m.date!==m.occ||m.ns!==m.start)dropTask(m)}
       else if(m.date!==m.occ||m.ns!==m.start)moveBlock(m.b,m.occ,m.date,m.ns,m.ns+m.len)}
@@ -1808,7 +1841,7 @@ cal.addEventListener('pointerup',e=>{
     openQuick(d.date,a,Math.min(1440,b));
   }else if(Math.abs(e.clientY-d.y0)<10){const a=f15(d.m0);openQuick(d.date,a,Math.min(1440,a+60))}
 });
-cal.addEventListener('pointercancel',()=>{if(lp){clearTimeout(lp.timer);lp=null}if(mv)mv.el.classList.remove('lifted');if(rz||wh||bz){rz=null;wh=null;bz=null;render()}if(mv){if(mv.ghost)mv.ghost.remove();mv.el.style.opacity='';mv=null}if(drag&&drag.ghost)drag.ghost.remove();drag=null});
+cal.addEventListener('pointercancel',()=>{if(lp){clearTimeout(lp.timer);lp=null}previewReflow(null);if(mv)mv.el.classList.remove('lifted');if(rz||wh||bz){rz=null;wh=null;bz=null;render()}if(mv){if(mv.ghost)mv.ghost.remove();mv.el.style.opacity='';mv=null}if(drag&&drag.ghost)drag.ghost.remove();drag=null});
 
 /* ---------- clicks ---------- */
 document.addEventListener('click',e=>{
@@ -2813,7 +2846,7 @@ addEventListener('pointermove',e=>{
   if(t.idx<t.cards.length)t.g.insertBefore(pd.line,t.cards[t.idx]);else t.g.appendChild(pd.line);
   const br=projBox.getBoundingClientRect();
   if(e.clientY<br.top+40)projBox.scrollTop-=12;else if(e.clientY>br.bottom-40)projBox.scrollTop+=12;
-  if(manual()){const h=calHit(e.clientX,e.clientY,60);pd.cal=h;if(h){pd.line.remove();showDbox(h,60,taskById(pd.id)?.title||'');calAutoScroll(e.clientY);pd.ghost.classList.add('tocal')}else{showDbox(null);pd.ghost.classList.remove('tocal')}}
+  if(manual()){const h=calHit(e.clientX,e.clientY,60);pd.cal=h;if(h){pd.line.remove();showDbox(h,60,taskById(pd.id)?.title||'',pd.id);calAutoScroll(e.clientY);pd.ghost.classList.add('tocal')}else{showDbox(null);pd.ghost.classList.remove('tocal')}}
 },{passive:false});
 function pdEnd(drop){
   if(!pd)return;const d=pd;pd=null;
@@ -2821,7 +2854,7 @@ function pdEnd(drop){
   projDragged=true;setTimeout(()=>{projDragged=false},300);
   d.ghost.remove();d.line.remove();d.card.classList.remove('pdrag');projBox.classList.remove('dragging');
   showDbox(null);
-  if(drop&&d.cal){placeTask(d.id,d.cal.date,d.cal.ns,60);const t=taskById(d.id);toast(`«${t?t.title:''}» alle ${hm(d.cal.ns)}`,{label:'Annulla',run:doUndo});return}
+  if(drop&&d.cal){placeWithReflow(d.id,d.cal.date,d.cal.ns,60);const t=taskById(d.id);toast(`«${t?t.title:''}» alle ${hm(d.cal.ns)}`,{label:'Annulla',run:doUndo});return}
   if(!drop||!d.t)return;
   if(!taskById(d.id))return;
   const ids=d.t.cards.map(c=>c.dataset.iid);ids.splice(d.t.idx,0,d.id);
@@ -2842,7 +2875,8 @@ function calHit(x,y,len){
   return {col,date:col.dataset.date,ns:Math.max(0,Math.min(1440-len,Math.round((m-15)/15)*15))};
 }
 let dbox=null;
-function showDbox(h,len,title){
+function showDbox(h,len,title,id){
+  previewReflow(h&&id?h.date:null,id,h?h.ns:0,len);
   if(!h){if(dbox)dbox.remove();dbox=null;return}
   if(!dbox){dbox=document.createElement('div');dbox.className='dragbox snap'}
   if(dbox.parentNode!==h.col)h.col.appendChild(dbox);
@@ -2864,7 +2898,7 @@ function xdStart(){
   xd.ghost=document.createElement('div');xd.ghost.className='xghost';xd.ghost.textContent=xd.title;xd.ghost.style.setProperty('--c',t?colorOf(t):'var(--accent)');document.body.appendChild(xd.ghost);
   xd.src.classList.add('lifting');moveXd(xd.x0,xd.y0);
 }
-function moveXd(x,y){xd.ghost.style.transform=`translate(${x-40}px,${y-28}px)`;const h=calHit(x,y,60);xd.hit=h;showDbox(h,60,xd.title);if(h)calAutoScroll(y)}
+function moveXd(x,y){xd.ghost.style.transform=`translate(${x-40}px,${y-28}px)`;const h=calHit(x,y,60);xd.hit=h;showDbox(h,60,xd.title,xd.id);if(h)calAutoScroll(y)}
 $('#tray').addEventListener('pointerdown',e=>{const c=e.target.closest('.tchip');if(!c||readOnly)return;
   xd={id:c.dataset.iid,src:c,x0:e.clientX,y0:e.clientY,on:false,touch:e.pointerType!=='mouse'};
   if(xd.touch)xd.timer=setTimeout(()=>{if(xd&&!xd.on)xdStart()},280)});
@@ -2873,7 +2907,7 @@ addEventListener('pointermove',e=>{if(!xd)return;
   moveXd(e.clientX,e.clientY)},{passive:true});
 const xdEnd=drop=>{if(!xd)return;clearTimeout(xd.timer);const d=xd;xd=null;if(!d.on)return;
   d.ghost.remove();d.src.classList.remove('lifting');showDbox(null);trayDragged=true;setTimeout(()=>trayDragged=false,300);
-  if(drop&&d.hit){placeTask(d.id,d.hit.date,d.hit.ns,60);toast(`«${d.title}» alle ${hm(d.hit.ns)}`,{label:'Annulla',run:doUndo})}};
+  if(drop&&d.hit){placeWithReflow(d.id,d.hit.date,d.hit.ns,60);toast(`«${d.title}» alle ${hm(d.hit.ns)}`,{label:'Annulla',run:doUndo})}};
 addEventListener('pointerup',()=>xdEnd(true));addEventListener('pointercancel',()=>xdEnd(false));
 $('#tray').addEventListener('click',e=>{const c=e.target.closest('.tchip');if(!c||trayDragged)return;openPlace(c.dataset.iid)});
 document.addEventListener('touchmove',e=>{if((xd&&xd.on)||(mv&&mv.touch)||(pd&&pd.on))e.preventDefault()},{passive:false});
