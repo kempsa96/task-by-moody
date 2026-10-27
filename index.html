@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610271218">
+<meta name="tbm-build" content="202610271219">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202610271218"></script>
-<script src="tbm-cloud.js?v=202610271218"></script>
+<script src="supabase.js?v=202610271219"></script>
+<script src="tbm-cloud.js?v=202610271219"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -902,12 +902,12 @@ dialog{overflow:auto}
   </header>
   <div class="tabs" role="tablist">
     <button role="tab" id="tabCal" aria-selected="true">Calendario</button>
-    <button role="tab" id="tabProj" aria-selected="false">Da fare</button>
+    <button role="tab" id="tabProj" aria-selected="false">Task</button>
     <button role="tab" id="tabFin" aria-selected="false">Conti</button>
   </div>
   <main class="main" id="main" data-tab="cal">
     <section class="panel side">
-      <div class="panel-h"><h2>Da fare</h2><label class="toggle-done"><input type="checkbox" id="showDone"> completate</label><button class="plus" data-act="newProject" aria-label="Aggiungi progetto" title="Aggiungi progetto">+</button></div>
+      <div class="panel-h"><h2>Task</h2><label class="toggle-done"><input type="checkbox" id="showDone"> completate</label><button class="plus" data-act="newProject" aria-label="Nuova task" title="Nuova task">+</button></div>
       <div class="projects" id="projects"></div>
       <div class="split" id="split" role="separator" aria-orientation="horizontal" aria-label="Trascina per ridimensionare progetti e eventi" tabindex="0"></div>
       <div class="side-imp" id="sideImp">
@@ -1815,7 +1815,7 @@ document.addEventListener('click',e=>{
   const rs=e.target.closest('[data-resolve]');if(rs){resolveTask(rs.dataset.id,rs.dataset.resolve);return}
   const el=e.target.closest('[data-act]');if(!el)return;
   const id=el.dataset.id,act=el.dataset.act;
-  if(act==='newProject'){e.stopPropagation();const r=el.getBoundingClientRect();showCtx(r.right-210,r.bottom+4,[{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Progetto',run:()=>openProject()},{label:'↳ Task di un progetto',run:()=>openTask(null)}])}
+  if(act==='newProject')openSolo();
   else if(act==='grip')return;
   else if(act==='editItem'){if(projDragged){projDragged=false;return}const t=taskById(id);if(!t)return;if(t.solo)openSolo(S.projects[id]);else openTask(S.tasks[id])}
   else if(act==='itemToggle'){const t=taskById(id);if(!t)return;if(t.solo){const sp=S.projects[id];put('projects',{...sp,done:!sp.done,doneAt:!sp.done?Date.now():null})}else{const x=S.tasks[id];put('tasks',{...x,done:!x.done,doneAt:!x.done?Date.now():null})}}
@@ -2843,8 +2843,8 @@ function renderTray(){
   if(!manual()||mode==='loading'){el.hidden=true;return}
   const now=Date.now(),list=orderedItems(false).filter(t=>!t.done&&!(t.pin&&msOf(t.pin.d,t.pin.s+pinLen(t))>now));
   el.hidden=false;
-  el.innerHTML=list.length?`<span class="tray-l">Da fare</span>${list.slice(0,30).map(t=>`<button type="button" class="tchip" data-iid="${t.id}" style="--c:${colorOf(t)}">${esc(t.title)}</button>`).join('')}<span class="tray-h">tieni premuto e trascina nel calendario</span>`
-    :`<span class="tray-l">Da fare</span><span class="tray-h">Niente in lista: aggiungi con + o tocca un orario nel calendario.</span>`;
+  el.innerHTML=list.length?`<span class="tray-l">Task</span>${list.slice(0,30).map(t=>`<button type="button" class="tchip" data-iid="${t.id}" style="--c:${colorOf(t)}">${esc(t.title)}</button>`).join('')}<span class="tray-h">tieni premuto e trascina nel calendario</span>`
+    :`<span class="tray-l">Task</span><span class="tray-h">Niente in lista: aggiungi con + o tocca un orario nel calendario.</span>`;
 }
 let xd=null,trayDragged=false;
 function xdStart(){
