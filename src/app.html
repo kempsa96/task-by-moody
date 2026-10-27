@@ -341,6 +341,10 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .away:hover{color:var(--fg);border-color:var(--muted)}
 .dayh{flex-wrap:wrap;row-gap:6px}
 .dayh .brk{flex-basis:100%;height:0}
+.dayh .adrow{flex-basis:100%;display:flex;flex-direction:column;gap:3px;min-width:0}
+.adchip{all:unset;box-sizing:border-box;cursor:pointer;display:block;max-width:100%;font-size:11.5px;font-weight:600;line-height:1.25;padding:3px 7px;border-radius:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:color-mix(in srgb,var(--c) 18%,var(--bg,#fff));color:var(--ink,inherit);border-left:3px solid var(--c)}
+.adchip:hover{background:color-mix(in srgb,var(--c) 28%,var(--bg,#fff))}
+.adchip:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .away{white-space:nowrap}
 .fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;display:flex;gap:8px;align-items:center;background:var(--fg);color:var(--bg);border:0;border-radius:999px;padding:12px 18px;font-weight:700;box-shadow:0 6px 20px rgb(0 0 0 / .25);cursor:pointer}
 .chat{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:min(390px,calc(100vw - 32px));height:min(540px,calc(100% - 32px));z-index:21;background:var(--surface);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgb(0 0 0 / .28);display:flex;flex-direction:column;overflow:hidden}
@@ -978,9 +982,10 @@ function occurs(b,k){
   if(r.endType==='count'&&r.count&&i>=r.count)return false;
   return true;
 }
-function blocksOn(k){
+function blocksOn(k,withAll){
   const out=[];
   for(const b of Object.values(S.blocks)){
+    if(b.allDay&&!withAll)continue;
     if(!occurs(b,k))continue;
     if(b.onlyWorking&&!dayIsOn(k))continue;
     const ex=(b.exceptions||{})[k];if(ex==='skip')continue;
@@ -988,6 +993,7 @@ function blocksOn(k){
   }
   return out;
 }
+const allDayOn=k=>blocksOn(k,true).filter(b=>b.allDay);
 function repLabel(b){
   if(!isRec(b))return '';const r=b.repeat,d=parse(b.date),iv=r.interval||1;
   let t={daily:iv>1?`ogni ${iv} giorni`:'ogni giorno',workdays:'nei giorni lavorativi',weekly:iv>1?`ogni ${iv} settimane, ${WDL[d.getDay()].toLowerCase()}`:`ogni ${WDL[d.getDay()].toLowerCase()}`,monthly:iv>1?`ogni ${iv} mesi, il ${d.getDate()}`:`ogni mese, il ${d.getDate()}`,yearly:`ogni anno, il ${d.getDate()} ${MO[d.getMonth()]}`}[r.freq]||'';
@@ -1502,6 +1508,7 @@ function buildReminders(){
   const k0=key(new Date());
   for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k),[ws,we]=hoursFor(k);
     const departs=bl.filter(b=>!isPause(b)&&eventDone(b,k)!=='no').map(b=>{const br=bufRanges(b,k,bl);return br.before?br.before[0]:b.start});
+    if(ev)allDayOn(k).forEach(b=>{const t=b.title||'Evento',bd=/compleann/i.test(t);add(`a:${b.id}:${k}`,msOf(k,540),/^\p{Extended_Pictographic}/u.test(t)?`Oggi · ${cut(t,44)}`:`📅 Oggi · ${cut(t,44)}`,bd?'Ricordati di fare gli auguri 🎉':'Tutto il giorno')});
     if(ev)bl.forEach(b=>{if(eventDone(b,k)==='no')return;const t=b.title||'Evento';
       if(isPause(b)){
         if(b.id==='prep'){ // se a quell'ora parti per un evento, basta l'avviso di partenza
@@ -1628,7 +1635,7 @@ function renderCal(){
     const load=segs.reduce((a,x)=>a+x.end-x.start,0),custom=(S.settings.dayHours||{})[k];
     head+=`<div class="dayh${k===today?' today':''}${k===hoverDay?' hov':''}" data-date="${k}"><div><div class="wd">${WD[d.getDay()]}</div><div class="dn">${d.getDate()}</div></div>
       <span class="load">${custom?hm(custom[0])+'–'+hm(custom[1])+'<br>':''}${load?dur(load):''}</span><span class="brk"></span>
-      <button class="away" data-act="away" data-date="${k}" aria-pressed="${!on}" title="Cambia: al lavoro / libero">${on?'Al lavoro':'Libero'}</button></div>`;
+      <button class="away" data-act="away" data-date="${k}" aria-pressed="${!on}" title="Cambia: al lavoro / libero">${on?'Al lavoro':'Libero'}</button>${(()=>{const ad=allDayOn(k);return ad.length?`<div class="adrow">${ad.map(b=>`<button type="button" class="adchip" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color}" title="${esc(b.title||'Evento')} · tutto il giorno">${esc((b.title||'Evento').replace(/compleanno\s+(di\s+)?/i,''))}</button>`).join('')}</div>`:''})()}</div>`;
     body+=`<div class="daycol${on?'':' off'}" data-date="${k}">`;
     const [hs,he]=hoursFor(k);body+=`<div class="work" style="top:${(hs-r0)*PPM}px;height:${(he-hs)*PPM}px"></div>`;
     if(on)body+=`<div class="wh top" data-wh="s" data-date="${k}" style="top:${(hs-r0)*PPM}px" title="Trascina per cambiare l'inizio della giornata"><span>▲▼ ${hm(hs)}</span></div><div class="wh bot" data-wh="e" data-date="${k}" style="top:${(he-r0)*PPM}px" title="Trascina per cambiare la fine della giornata"><span>▲▼ ${hm(he)}</span></div>`;
@@ -2352,13 +2359,14 @@ function wireTrip(b,when){
 }
 function openBlock(b,occ){
   const isNew=!b.id,dup=!!b._dup;
-  if(isNew){const t=b;b={id:uid(),title:t.title||'',color:t.color||'#7C8796',date:t.date,start:t.start,end:t.end,repeat:{freq:'none',interval:1,endType:'never'}};
+  if(isNew){const t=b;b={id:uid(),title:t.title||'',color:t.color||'#7C8796',date:t.date,start:t.start,end:t.end,repeat:{freq:'none',interval:1,endType:'never'},...(t.allDay?{allDay:true}:{})};
     if(dup){['before','after','kind','projectId','place','from','travel'].forEach(f=>{if(t[f]!=null)b[f]=t[f]})}}
   const rec=isRec(b);occ=occ||b.date;
-  const cur=isNew?b:(blocksOn(occ).find(x=>x.id===b.id)||b);
+  const cur=isNew?b:(blocksOn(occ,true).find(x=>x.id===b.id)||b);
   const r={freq:'none',interval:1,endType:'never',...(b.repeat||{})};
   form.innerHTML=`<h3>${dup?'Duplica evento':isNew?'Nuovo evento':'Evento'}</h3>${dup?'<p class="note" style="margin-top:-4px">Scegli il nuovo giorno: il resto è già copiato, puoi cambiarlo se serve.</p>':''}
     <div class="field"><label for="bTitle">Cosa</label><input id="bTitle" value="${esc(b.title)}" placeholder="es. Dentista, riprese, call cliente"></div>
+    ${isPause(b)?'':`<label class="chk" style="display:flex;gap:8px;align-items:center;margin:-2px 0 10px;font-size:14px"><input type="checkbox" id="bAll" ${b.allDay?'checked':''}> Tutto il giorno <small style="color:var(--muted)">(compleanni, ricorrenze: non occupa ore)</small></label>`}
     <div class="row3"><div class="field"><label for="bDate">Giorno</label><input id="bDate" type="date" value="${occ}"></div>
     <div class="field"><label for="bS">Dalle</label><input id="bS" type="time" step="900" value="${hm(cur.start)}"></div>
     <div class="field"><label for="bE">Alle</label><input id="bE" type="time" step="900" value="${hm(cur.end%1440===0&&cur.end?1439:cur.end)}"></div></div>
@@ -2369,7 +2377,7 @@ function openBlock(b,occ){
     <div class="field" id="bUntilF"><label for="bUntil">Fino al</label><input id="bUntil" type="date" value="${r.until||addDays(occ,30)}"></div></div>
     ${isPause(b)?'':projectField(b)}
     ${isPause(b)?'':tripFields(b)}
-    ${isPause(b)?'':`<div class="row"><div class="field"><label for="bBefore">Prima (viaggio / preparazione)</label><select id="bBefore">${bufOptions(bufOf(b)[0])}</select></div>
+    ${isPause(b)?'':`<div class="row" id="bBufR"><div class="field"><label for="bBefore">Prima (viaggio / preparazione)</label><select id="bBefore">${bufOptions(bufOf(b)[0])}</select></div>
     <div class="field"><label for="bAfter">Dopo (rientro)</label><select id="bAfter">${bufOptions(bufOf(b)[1])}</select></div></div>`}
     <div class="field"><span class="lbl">Colore</span>${swatches(b.color)}</div>
     <p class="note">${rec?`Si ripete ${repLabel(b)}. `:''}Le task che cadono in questo orario slittano o si dividono in due parti. Puoi anche trascinare l'evento sul calendario per spostarlo.</p>
@@ -2380,6 +2388,8 @@ function openBlock(b,occ){
   const sync=()=>{const f=$('#bRep').value;$('#bIvF').hidden=!['daily','weekly','monthly','yearly'].includes(f);$('#bEndR').hidden=f==='none';
     const en=$('#bEnd').value;$('#bCountF').hidden=en!=='count';$('#bUntilF').hidden=en!=='until'};
   $('#bRep').onchange=sync;$('#bEnd').onchange=sync;sync();
+  const syncAll=()=>{const a=!!($('#bAll')&&$('#bAll').checked);$('#bS').closest('.field').hidden=a;$('#bE').closest('.field').hidden=a;if($('#bBufR'))$('#bBufR').hidden=a};
+  if($('#bAll')){$('#bAll').onchange=syncAll;syncAll()}
   $('#cancel').onclick=()=>dlg.close();
   if(!isNew){
     if(rec)$('#bDel').onclick=()=>askScope('Elimina evento',()=>{const ex={...(b.exceptions||{})};ex[occ]='skip';put('blocks',{...b,exceptions:ex})},()=>del('blocks',b.id));
@@ -2389,8 +2399,9 @@ function openBlock(b,occ){
     let st=toMin($('#bS').value||'09:00'),en=toMin($('#bE').value||'10:00');if(en<=st)en=Math.min(1440,st+60);
     const f=$('#bRep').value,et=$('#bEnd').value;
     const repeat={freq:f,interval:Math.max(1,+$('#bIv').value||1),endType:f==='none'?'never':et,count:et==='count'?Math.max(1,+$('#bCount').value||1):null,until:et==='until'?$('#bUntil').value||null:null};
-    const nb={title:$('#bTitle').value.trim()||'Evento',color:getC(),date:$('#bDate').value||occ,start:st,end:en};
-    if($('#bBefore')){nb.before=+$('#bBefore').value;nb.after=+$('#bAfter').value}
+    const isAll=!!($('#bAll')&&$('#bAll').checked);if(isAll){st=0;en=1440}
+    const nb={title:$('#bTitle').value.trim()||'Evento',color:getC(),date:$('#bDate').value||occ,start:st,end:en,allDay:isAll};
+    if($('#bBefore')){nb.before=isAll?0:+$('#bBefore').value;nb.after=isAll?0:+$('#bAfter').value}
     if(trip)Object.assign(nb,trip.value());
     if($('#bProj')){let pv=$('#bProj').value||null;if(pv==='__new'){const nm=$('#bProjN').value.trim()||nb.title;const np={id:uid(),name:nm,client:'',clientId:null,color:nb.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pv=np.id}nb.projectId=pv}
     if(isNew||!rec){put('blocks',{...b,...nb,repeat,exceptions:b.exceptions||{},...(isNew?{created:Date.now()}:{})});dlg.close();return}
@@ -2972,12 +2983,15 @@ document.addEventListener('contextmenu',e=>{
 function openBlockList(){
   const today=key(new Date()),all=Object.values(S.blocks);
   const rec=all.filter(isRec).filter(b=>!(b.repeat.endType==='until'&&b.repeat.until&&b.repeat.until<today)).sort((a,b)=>a.start-b.start);
+  const md=b=>{const x=b.date.slice(5);return (x>=today.slice(5)?'0':'1')+x};
+  const ann=rec.filter(b=>b.allDay).sort((a,b)=>md(a)<md(b)?-1:1),recT=rec.filter(b=>!b.allDay);
   const upcoming=[];
-  for(let i=0;i<60;i++){const k=addDays(today,i);blocksOn(k).filter(b=>!isRec(S.blocks[b.id])||(S.blocks[b.id].exceptions||{})[k]).forEach(b=>upcoming.push(b))}
-  const row=(b,k,sub)=>`<li><button type="button" class="crow brow" data-bid="${b.id}" data-occ="${k}"><span class="dot" style="--c:${b.color}"></span><span>${esc(b.title||'Evento')}<small>${sub}</small></span><small class="tm">${hm(b.start)}–${hm(b.end)}</small></button></li>`;
+  for(let i=0;i<60;i++){const k=addDays(today,i);blocksOn(k,true).filter(b=>!isRec(S.blocks[b.id])||(S.blocks[b.id].exceptions||{})[k]).forEach(b=>upcoming.push(b))}
+  const row=(b,k,sub)=>`<li><button type="button" class="crow brow" data-bid="${b.id}" data-occ="${k}"><span class="dot" style="--c:${b.color}"></span><span>${esc(b.title||'Evento')}<small>${sub}</small></span><small class="tm">${b.allDay?'Tutto il giorno':hm(b.start)+'–'+hm(b.end)}</small></button></li>`;
   let lastDay='';
   form.innerHTML=`<h3>Eventi</h3>
-    ${rec.length?`<span class="lbl">Ricorrenti</span><ul class="clist">${rec.map(b=>row(b,b.date,repLabel(b))).join('')}</ul>`:''}
+    ${recT.length?`<span class="lbl">Ricorrenti</span><ul class="clist">${recT.map(b=>row(b,b.date,repLabel(b))).join('')}</ul>`:''}
+    ${ann.length?`<details><summary class="lbl" style="cursor:pointer">Compleanni e ricorrenze di tutto il giorno (${ann.length})</summary><ul class="clist">${ann.map(b=>row(b,b.date,new Date(b.date+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'long'})+' · '+repLabel(b))).join('')}</ul></details>`:''}
     <span class="lbl">Prossimi 60 giorni</span>
     ${upcoming.length?`<ul class="clist blist">${upcoming.map(b=>{const d=b.occ!==lastDay?`<li class="dayl">${esc(longDate(b.occ))}${b.occ===today?' · oggi':''}</li>`:'';lastDay=b.occ;return d+row(b,b.occ,isRec(S.blocks[b.id])?`orario cambiato solo questo giorno (di solito ${hm(S.blocks[b.id].start)}–${hm(S.blocks[b.id].end)})`:'')}).join('')}</ul>`:'<p class="note">Nessun evento singolo nei prossimi 60 giorni.</p>'}
     <div class="acts"><button type="button" class="btn ghost" id="cancel">Chiudi</button><button type="button" class="btn primary" id="blNew">+ Evento</button></div>`;
