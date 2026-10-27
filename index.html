@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610271213">
+<meta name="tbm-build" content="202610271216">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Task">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202610271213"></script>
-<script src="tbm-cloud.js?v=202610271213"></script>
+<script src="supabase.js?v=202610271216"></script>
+<script src="tbm-cloud.js?v=202610271216"></script>
 </head>
 <body>
 <title>Task by Moody</title>
@@ -864,6 +864,10 @@ dialog{overflow:auto}
 .dlg-x{position:sticky;top:10px;margin:10px 10px -46px auto;display:grid;place-items:center;width:34px;height:34px;border-radius:50%;border:0;background:var(--surface-2);color:var(--fg);font-size:22px;line-height:1;cursor:pointer;z-index:10}
 .dlg-x:hover{background:var(--line)}
 .dlg>h3{padding-right:44px}
+.dlchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:-6px}.dlchips button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:600;cursor:pointer}.dlchips button.on,.dlchips button:hover{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.dlh{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+.dlg-over .dlh{color:var(--danger)}.dlg-today .dlh{color:var(--accent)}
+.dlb{font-weight:700}.dlb.over{color:var(--danger)}.dlb.today{color:var(--accent)}
 </style>
 
 <div class="app">
@@ -1159,7 +1163,19 @@ function sortedProjects(){
   return activeProjects().sort((a,b)=>(a.priority-b.priority)||(rk(a)-rk(b))
     ||((a.deadline||'9999')<(b.deadline||'9999')?-1:(a.deadline||'9999')>(b.deadline||'9999')?1:0)||((a.created||0)-(b.created||0)));
 }
+/* ---------- scadenze: decidono l'ordine ---------- */
+const dlOf=t=>{const p=S.projects[t.projectId];return t.deadline||(!t.solo&&p?p.deadline:null)||null};
+const DLG=[['over','Scadute'],['today','Oggi'],['tomorrow','Domani'],['week','Entro una settimana'],['later','Più avanti'],['none','Senza scadenza']];
+function dlGroup(d){if(!d)return 'none';const t=key(new Date());if(d<t)return 'over';if(d===t)return 'today';if(d===addDays(t,1))return 'tomorrow';if(d<=addDays(t,7))return 'week';return 'later'}
+function dlForGroup(g,cur){const t=key(new Date());if(g==='none')return null;if(g==='today'||g==='over')return t;if(g==='tomorrow')return addDays(t,1);if(g==='week')return cur&&dlGroup(cur)==='week'?cur:addDays(t,7);return cur&&dlGroup(cur)==='later'?cur:addDays(t,14)}
+function dlLabel(d){if(!d)return '';const t=key(new Date()),g=dlGroup(d);if(g==='over'){const n=Math.round((parse(t)-parse(d))/864e5);return n===1?'scaduta ieri':`scaduta da ${n} giorni`}if(g==='today')return 'oggi';if(g==='tomorrow')return 'domani';return 'entro '+shortDate(d)}
+const dlChips=id=>`<div class="dlchips">${[['today','Oggi'],['tomorrow','Domani'],['week','Tra una settimana'],['none','Senza scadenza']].map(([v,l])=>`<button type="button" data-dlset="${v}" data-for="${id}">${l}</button>`).join('')}</div>`;
+document.addEventListener('click',e=>{const b=e.target.closest('[data-dlset]');if(!b)return;const inp=$('#'+b.dataset.for);if(!inp)return;const t=key(new Date()),v=b.dataset.dlset;
+  inp.value=v==='none'?'':v==='today'?t:v==='tomorrow'?addDays(t,1):addDays(t,7);inp.dispatchEvent(new Event('change'));document.querySelectorAll(`[data-for="${b.dataset.for}"]`).forEach(x=>x.classList.toggle('on',x===b))});
 function orderedItems(includeDone){
+  if(manual()){const P=S.projects;
+    return allTasks().filter(t=>{const p=P[t.projectId];return p&&!p.archived&&(includeDone||!t.done)}).map(t=>{const p=P[t.projectId];return {t,d:dlOf(t)||'9999-12-31',rk:(t.solo?p.rank:t.rank)??1e6}})
+      .sort((a,b)=>(a.d<b.d?-1:a.d>b.d?1:0)||(a.rk-b.rk)||((a.t.created||0)-(b.t.created||0))).map(x=>({...x.t,_pr:x.t.priority||2,_g:dlGroup(dlOf(x.t))}));}
   const P=S.projects,pos={};sortedProjects().forEach((p,i)=>pos[p.id]=i);
   return allTasks().filter(t=>{const p=P[t.projectId];return p&&!p.archived&&(includeDone||!t.done)}).map(t=>{
     const p=P[t.projectId],pr=t.solo?(p.priority||2):(t.priority||p.priority||2),r=t.solo?p.rank:t.rank;
@@ -1574,7 +1590,7 @@ function renderProjects(){
         <span class="grip" data-act="grip" title="Trascina per cambiare ordine o priorità" aria-label="Trascina ${esc(t.title)}">${GRIP}</span>
         <input type="checkbox" class="tcheck" data-act="itemToggle" data-id="${t.id}" ${t.done?'checked':''} aria-label="Segna ${esc(t.title)} come fatta">
         <div class="it-body"><div class="it-title">${esc(t.title)}</div>
-          <div class="it-meta${inf&&inf.late?' late':''}">${solo?'<span class="tag solo">Task</span>':`<button class="tag" data-act="tagFilter" data-id="${p.id}" title="Mostra solo ${esc(p.name)}">${esc(p.name)}</button>`}<span>${t.done?dur(t.minutes||0):dur(left)}${when?' · '+when:''}${t.pin?' · fisso':''}</span></div></div>
+          <div class="it-meta${inf&&inf.late?' late':''}">${solo?'<span class="tag solo">Task</span>':`<button class="tag" data-act="tagFilter" data-id="${p.id}" title="Mostra solo ${esc(p.name)}">${esc(p.name)}</button>`}<span>${manual()?[dlOf(t)?`<b class="dlb ${dlGroup(dlOf(t))}">${dlLabel(dlOf(t))}</b>`:'',t.pin&&inf?`📅 ${shortDate(inf.start.date)} ${hm(inf.start.start)}`:''].filter(Boolean).join(' · '):`${t.done?dur(t.minutes||0):dur(left)}${when?' · '+when:''}${t.pin?' · fisso':''}`}</span></div></div>
         <button class="dots" data-act="imenu" data-id="${t.id}" aria-label="Opzioni" title="Opzioni">${DOTS}</button>
       </div></article>`};
   let html='';
@@ -1592,6 +1608,10 @@ function renderProjects(){
     el.innerHTML=html+`<div class="empty"><strong>Niente da fare</strong><span>Aggiungi una task, un progetto con le sue attività o un evento: il calendario si riempie da solo.</span><button class="btn primary" data-act="newmenu">+ Nuovo</button></div><datalist id="tplList">${TEMPLATES.map(([n])=>`<option value="${esc(n)}">`).join('')}</datalist>`;
     return;
   }
+  if(manual()){const groups=DLG.filter(([g])=>g==='today'||items.some(t=>t._g===g));
+    html+=groups.map(([g,l])=>{const its=items.filter(t=>t._g===g),n=its.filter(t=>!t.done).length;
+      return `<section class="pgroup dlg-${g}${its.length?'':' empty-g'}" data-g="${g}"><div class="pg-h"><span class="dlh">${l}</span><span>${n?n+' da fare':''}</span></div>${its.map(card).join('')}${its.length?'':'<div class="pg-drop">Niente per oggi · trascina qui</div>'}</section>`}).join('');
+    el.innerHTML=html+`<button class="addmore" data-act="newmenu" aria-label="Aggiungi nuovo" title="Aggiungi">+</button><datalist id="tplList">${TEMPLATES.map(([n])=>`<option value="${esc(n)}">`).join('')}</datalist>`;return}
   html+=[1,2,3].map(g=>{
     const its=items.filter(t=>t._pr===g),left=its.filter(t=>!t.done).reduce((a,t)=>a+leftOf(t),0),n=its.filter(t=>!t.done).length;
     return `<section class="pgroup${its.length?'':' empty-g'}" data-g="${g}">
@@ -1827,7 +1847,7 @@ function addTaskFromRow(pid){
 }
 function addTask(pid,title,minutes){
   const ord=Math.max(0,...Object.values(S.tasks).filter(t=>t.projectId===pid).map(t=>t.order||0))+1;
-  put('tasks',{id:uid(),projectId:pid,title,minutes,done:false,order:ord,deadline:null,priority:S.projects[pid]?.priority||2,created:Date.now()});
+  put('tasks',{id:uid(),projectId:pid,title,minutes,done:false,order:ord,deadline:key(new Date()),priority:S.projects[pid]?.priority||2,created:Date.now()});
 }
 function move(id,dir){
   const t=S.tasks[id];
@@ -2194,10 +2214,10 @@ function openSolo(p){
     <div class="field"><label for="sTitle">Cosa devi fare</label><input id="sTitle" value="${esc(p.name)}" placeholder="es. Mandare mail a Luca"></div>
     ${isNew?`<div class="presets" id="presetBox"></div>`:''}
     <div class="row"><div class="field"><label for="sDur">Tempo stimato</label><select id="sDur">${durOptions(p.minutes||30)}</select></div>
-    <div class="field"><label for="sDl">Scadenza (facoltativa)</label><input id="sDl" type="date" value="${p.deadline||''}"></div></div>
-    <div class="field"><span class="lbl">Priorità</span><div class="seg3" id="sPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${p.priority===v}">${PRIO[v]}</button>`).join('')}</div></div>
+    <div class="field"><label for="sDl">Scadenza</label><input id="sDl" type="date" value="${isNew?key(new Date()):p.deadline||''}"></div></div>${dlChips('sDl')}
+    <div class="field" ${manual()?'hidden':''}><span class="lbl">Priorità</span><div class="seg3" id="sPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${p.priority===v}">${PRIO[v]}</button>`).join('')}</div></div>
     ${isNew?'':`<label class="check"><input type="checkbox" id="sDone" ${p.done?'checked':''}> Fatta</label>`}
-    <p class="note">Una task non fa parte di nessun progetto: entra in calendario da sola, in base a priorità e posizione nella lista.${inf?` In calendario ${longDate(inf.start.date)} alle ${hm(inf.start.start)}.`:''}</p>
+    <p class="note">${manual()?'Una task non fa parte di nessun progetto. Nella lista Da fare l’ordine lo decide la scadenza; trascinala nel calendario quando vuoi farla.':'Una task non fa parte di nessun progetto: entra in calendario da sola, in base a priorità e posizione nella lista.'}${inf?` In calendario ${longDate(inf.start.date)} alle ${hm(inf.start.start)}.`:''}</p>
     <div class="acts">${isNew?'':'<button type="button" class="btn danger left" id="sDel">Elimina</button>'}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi task':'Salva'}</button></div>`;
   let prio=p.priority;
   if(isNew)renderPresets();
@@ -2220,8 +2240,8 @@ function openTask(t){
   form.innerHTML=`<h3>${isNew?'Nuova attività':'Attività'}</h3>
     <div class="field"><label for="tTitle">Cosa devi fare</label><input id="tTitle" list="tplList" value="${esc(t.title)}" placeholder="es. Video verticale"></div>
     <div class="row"><div class="field"><label for="tDur">Tempo stimato</label><select id="tDur">${durOptions(t.minutes)}</select></div>
-    <div class="field"><label for="tDl">Scadenza (facoltativa)</label><input id="tDl" type="date" value="${t.deadline||''}"></div></div>
-    <div class="field"><span class="lbl">Priorità</span><div class="seg3" id="tPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${(t.priority||S.projects[t.projectId]?.priority||2)===v}">${PRIO[v]}</button>`).join('')}</div></div>
+    <div class="field"><label for="tDl">Scadenza</label><input id="tDl" type="date" value="${isNew?key(new Date()):t.deadline||''}"></div></div>${dlChips('tDl')}
+    <div class="field" ${manual()?'hidden':''}><span class="lbl">Priorità</span><div class="seg3" id="tPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${(t.priority||S.projects[t.projectId]?.priority||2)===v}">${PRIO[v]}</button>`).join('')}</div></div>
     <div class="field"><label for="tProj">Progetto</label><select id="tProj">${Object.values(S.projects).filter(x=>!isSolo(x)&&(!x.archived||x.id===t.projectId)).map(x=>`<option value="${x.id}" ${x.id===t.projectId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
     ${isNew?'':`<label class="check"><input type="checkbox" id="tDone" ${t.done?'checked':''}> Fatta</label>`}
     ${inf?`<p class="note">In calendario: da ${shortDate(inf.start.date)} ${hm(inf.start.start)} a ${shortDate(inf.endDate)} ${hm(inf.end)}${inf.late?'. Finisce dopo la scadenza: alza la priorità del progetto o libera tempo.':'.'}</p>`:''}
@@ -2754,7 +2774,7 @@ function pdTarget(y){
   if(!g){const first=groups[0].getBoundingClientRect();g=y<first.top?groups[0]:groups[groups.length-1]}
   const cards=[...g.querySelectorAll('.item')].filter(c=>c!==pd.card);
   let idx=cards.findIndex(c=>{const r=c.getBoundingClientRect();return y<r.top+r.height/2});if(idx<0)idx=cards.length;
-  return {g,gv:+g.dataset.g,cards,idx};
+  return {g,gv:manual()?g.dataset.g:+g.dataset.g,cards,idx};
 }
 addEventListener('pointermove',e=>{
   if(!pd)return;
@@ -2779,7 +2799,9 @@ function pdEnd(drop){
   const ids=d.t.cards.map(c=>c.dataset.iid);ids.splice(d.t.idx,0,d.id);
   ids.forEach((id,i)=>{const t=taskById(id);if(!t)return;
     const coll=t.solo?'projects':'tasks',x=t.solo?S.projects[id]:S.tasks[id];
-    const np={...x,rank:i+1};if(id===d.id)np.priority=d.t.gv;else if(!t.solo&&x.priority==null)np.priority=t._pr||d.t.gv;
+    const np={...x,rank:i+1};
+    if(manual()){if(id===d.id&&dlGroup(dlOf(t))!==d.t.gv)np.deadline=dlForGroup(d.t.gv,dlOf(t))}
+    else if(id===d.id)np.priority=d.t.gv;else if(!t.solo&&x.priority==null)np.priority=t._pr||d.t.gv;
     if(np.rank!==x.rank||np.priority!==x.priority)put(coll,np)});
 }
 addEventListener('pointerup',()=>pdEnd(true));
@@ -2850,7 +2872,7 @@ function openSlot(date,start,end){
   $('#cancel').onclick=()=>dlg.close();
   $('#slEv').onclick=()=>openBlock({date,start,end:start+len});
   const add=()=>{const v=$('#slNew').value.trim();if(!v){$('#slNew').focus();return}
-    const sp={id:uid(),kind:'task',name:v,minutes:len,priority:2,deadline:null,done:false,color:'#56606E',created:Date.now(),pin:{d:date,s:start,len}};put('projects',sp);dlg.close()};
+    const sp={id:uid(),kind:'task',name:v,minutes:len,priority:2,deadline:date,done:false,color:'#56606E',created:Date.now(),pin:{d:date,s:start,len}};put('projects',sp);dlg.close()};
   $('#slAdd').onclick=add;$('#slNew').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();add()}};
   const q=$('#slQ');if(q)q.oninput=()=>{const v=N(q.value);form.querySelectorAll('.sl-list li').forEach(li=>{li.hidden=v&&!N(li.textContent).includes(v)})};
   form.querySelectorAll('[data-sid]').forEach(b=>b.onclick=()=>{placeTask(b.dataset.sid,date,start,len);dlg.close()});
@@ -2896,7 +2918,7 @@ function commitQA(){
   if(!v){document.querySelector('.qadd .qa-in')?.focus();return}
   closeQA();
   if(q.type==='ev'){put('blocks',{id:uid(),title:v,color:PALETTE[0],date:q.date,start:q.start,end:q.end,repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()});toast(`📌 ${v} · ${hm(q.start)}`,{label:'Annulla',run:doUndo})}
-  else{put('projects',{id:uid(),kind:'task',name:v,minutes:q.end-q.start,priority:2,deadline:null,done:false,color:'#56606E',created:Date.now(),pin:{d:q.date,s:q.start,len:q.end-q.start}});toast(`✓ ${v} · ${hm(q.start)}`,{label:'Annulla',run:doUndo})}
+  else{put('projects',{id:uid(),kind:'task',name:v,minutes:q.end-q.start,priority:2,deadline:q.date,done:false,color:'#56606E',created:Date.now(),pin:{d:q.date,s:q.start,len:q.end-q.start}});toast(`✓ ${v} · ${hm(q.start)}`,{label:'Annulla',run:doUndo})}
 }
 document.addEventListener('pointerdown',e=>{if(QA&&!e.target.closest('.qadd')&&!e.target.closest('.daycol'))closeQA()},true);
 cal.addEventListener('mousedown',e=>{if(QA&&!e.target.closest('.qadd'))e.preventDefault()});
@@ -3302,7 +3324,7 @@ function runCommand(raw){
       let sprio=2;const spm=/\bpriorit[a]\s+(alta|media|bassa|urgente)\b|\b(urgente)\b/.exec(t.n);if(spm){sprio=PRIOW[spm[1]||spm[2]];cutM(t,spm)}
       const title=cleanTitle(t.o);if(!title)return {text:'Cosa devo aggiungere? Es. "task mandare mail a Luca 15 min" o "aggiungi video verticale 1h30 a spot".',err:1};
       if(!p){
-        const sp={id:uid(),kind:'task',name:title,minutes:d||30,priority:sprio,deadline,done:false,color:'#56606E',created:Date.now()};
+        const sp={id:uid(),kind:'task',name:title,minutes:d||30,priority:sprio,deadline:deadline||key(new Date()),done:false,color:'#56606E',created:Date.now()};
         put('projects',sp);const inf=PLAN.info[sp.id];
         return {text:`Aggiunta la task "${title}" (${dur(sp.minutes)}), priorità ${PRIO[sprio].toLowerCase()}${deadline?', entro '+longDate(deadline):''}.${inf?` In calendario ${longDate(inf.start.date)} alle ${hm(inf.start.start)}.`:''}${d?'':' Durata standard 30 min.'} Per metterla in un progetto scrivi "… a nome progetto".`,undo:1};
       }
