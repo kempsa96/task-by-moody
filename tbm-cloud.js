@@ -188,7 +188,24 @@
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   var standalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
   var swReg = null;
-  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').then(function (r) { swReg = r; }).catch(function (e) { console.warn('sw', e); });
+  /* avviso quando c'è una versione nuova dell'app */
+  var myBuild = (document.querySelector('meta[name="tbm-build"]') || {}).content || '', updShown = false;
+  function checkUpdate() {
+    if (updShown || !navigator.onLine) return;
+    fetch(location.pathname + '?u=' + Date.now(), { cache: 'no-store' }).then(function (r) { return r.ok ? r.text() : ''; }).then(function (t) {
+      var m = /name="tbm-build" content="(\d+)"/.exec(t || '');
+      if (m && myBuild && m[1] > myBuild) {
+        updShown = true;
+        var b = document.createElement('button'); b.className = 'upd-bar'; b.type = 'button';
+        b.innerHTML = '✨ C’è una versione nuova di Tasky · <b>Aggiorna</b>';
+        b.onclick = function () { location.reload(); };
+        document.body.appendChild(b);
+      }
+    }).catch(function () {});
+  }
+  setInterval(checkUpdate, 5 * 60000); setTimeout(checkUpdate, 8000);
+  document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkUpdate(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).then(function (r) { swReg = r; }).catch(function (e) { console.warn('sw', e); });
   function supported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
   function getReg() { return swReg ? Promise.resolve(swReg) : navigator.serviceWorker.ready; }
   function saveSub(sub) {
