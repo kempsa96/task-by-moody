@@ -249,7 +249,7 @@
       '#tbmGate button.alt{background:none;color:var(--accent,#0a84ff);margin-top:8px;font-size:14px}#tbmGate .msg{margin-top:12px;font-size:13px;color:var(--muted,#666);min-height:1em}#tbmGate .msg.err{color:#e5484d}';
     document.head.appendChild(css);
     gate = document.createElement('div'); gate.id = 'tbmGate';
-    gate.innerHTML = '<form class="g" novalidate><h1>Task<small>by Moody</small></h1><p id="tgSub">Accedi per vedere i tuoi impegni su tutti i dispositivi.</p>' +
+    gate.innerHTML = '<form class="g" novalidate><h1>Tasky<small>by Moody</small></h1><p id="tgSub">Accedi per vedere i tuoi impegni su tutti i dispositivi.</p>' +
       '<label for="tgE">Email</label><input id="tgE" type="email" autocomplete="username" required>' +
       '<label for="tgP">Password</label><input id="tgP" type="password" autocomplete="current-password" minlength="6" required>' +
       '<button type="submit" id="tgGo">Accedi</button><button type="button" class="alt" id="tgSw">Prima volta? Crea l’account</button><div class="msg" id="tgMsg"></div></form>';

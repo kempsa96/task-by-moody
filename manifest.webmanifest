@@ -1,6 +1,6 @@
 {
-  "name": "Task by Moody",
-  "short_name": "Task",
+  "name": "Tasky",
+  "short_name": "Tasky",
   "description": "Task e calendario di Moody",
   "lang": "it",
   "start_url": "./",
