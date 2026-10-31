@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202610271256">
+<meta name="tbm-build" content="202610311129">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202610271256"></script>
-<script src="tbm-cloud.js?v=202610271256"></script>
+<script src="supabase.js?v=202610311129"></script>
+<script src="tbm-cloud.js?v=202610311129"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -859,7 +859,39 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .seg.lifted,.blk.lifted{transform:scale(1.04);box-shadow:0 16px 36px rgb(0 0 0/.28);z-index:40;opacity:.9}
 .slot-top{display:flex;gap:8px}.slq{width:100%;box-sizing:border-box;border:0;box-shadow:0 0 0 1px var(--line) inset;border-radius:10px;background:var(--surface-2);padding:9px 10px;font:inherit}
 .sl-list{max-height:280px}
-@media (min-width:821px){.tray{display:none!important}}
+@media (min-width:821px){.tray{display:none!important}.vsw{display:none!important}}
+/* colonne affiancate per sovrapposizioni */
+.seg,.blk{left:calc(var(--l,0%) + 3px);right:calc(var(--r,0%) + 3px)}
+.buf{left:calc(var(--l,0%) + 8px);right:calc(var(--r,0%) + 8px)}
+.seg.split,.blk.split{padding-left:5px;padding-right:4px;box-shadow:0 0 0 1px var(--surface)}
+.seg.split b,.blk.split b{white-space:normal;overflow-wrap:break-word;font-size:11px;line-height:1.2;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical}
+.blk.split b>.bicon{display:none}
+.blk.pause{z-index:1}
+.seg.split .tc,.blk.split em{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+/* intestazione e orari sempre coperti, anche scorrendo */
+.cal-head>.dayh,.cal-head>.wk-nav{background:var(--surface)}
+.cal-head>.dayh.today{background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
+.cal-head>.wk-nav{position:sticky;left:0;z-index:6}
+.gutter{position:sticky;left:0;z-index:4;background:var(--surface)}
+.vsw{display:flex;gap:2px;background:var(--surface);border-radius:999px;padding:3px;box-shadow:0 0 0 1px var(--line) inset}
+.vsw button{border:0;background:none;border-radius:999px;padding:5px 9px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
+.vsw button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
+@media (max-width:820px){
+  .t-c{gap:6px;flex-wrap:nowrap}
+  .t-c .range{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .gutter span{right:5px;font-size:10px}
+  .cal-head .dayh{padding:6px 6px;gap:4px}
+  .cal-head .dayh .dn{font-size:19px}
+  .cal-head .dayh .away{font-size:10.5px;padding:2px 7px}
+  .cal-head .dayh .load{display:none}
+  .cal-head .dayh:last-of-type{padding-right:34px}
+  .wk-next{right:4px}
+  .seg,.blk{font-size:11.5px;padding:4px 6px}
+  .player:not(:has(.pl-bar)){grid-template-columns:minmax(0,1fr) auto auto}
+  .player:not(:has(.pl-bar)) .pl-mid{grid-column:auto;order:0}
+  .pl-p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+@media (max-width:520px){#dayBtn{display:none!important}}
 .qadd{position:absolute;left:3px;width:max(calc(100% - 6px),236px);z-index:45;background:var(--surface);border-radius:14px;box-shadow:0 14px 40px rgb(0 0 0/.22),0 0 0 2px var(--accent);padding:8px;display:flex;flex-direction:column;gap:6px;animation:qapop .18s cubic-bezier(.2,.8,.2,1)}
 .qadd.right{left:auto;right:3px}
 .qadd.sheet{position:fixed;left:12px;right:12px;width:auto;bottom:12px;z-index:90;padding:12px;border-radius:18px;gap:8px}
@@ -903,6 +935,7 @@ dialog{overflow:auto}
         <div class="range" id="range"></div>
         <button class="btn icon ghost" id="next" aria-label="Settimana successiva">›</button>
       </div>
+      <div class="vsw" id="vsw" role="group" aria-label="Giorni visibili"><button type="button" data-v="1">1g</button><button type="button" data-v="3">3g</button><button type="button" data-v="7">7g</button></div>
     </div>
     <div class="t-r">
     <button class="btn" id="dayBtn" hidden></button>
@@ -1513,10 +1546,19 @@ function renderConfirm(){
 /* ---------- visible days ---------- */
 function stepWork(k,dir){let n=k;for(let i=0;i<14;i++){n=addDays(n,dir);if(isWorkWeekday(n))return n}return addDays(k,dir)}
 function weekStart(k){const d=parse(k).getDay();return addDays(k,-((d+6)%7))}
+const isPhone=()=>matchMedia('(max-width:820px)').matches;
+let calView=(()=>{try{return localStorage.getItem('tbm-view')||'3'}catch(e){return '3'}})();
+const viewN=()=>isPhone()?(+calView||3):7;
 function visibleDays(){
-  const mon=weekStart(viewStart);
-  return [0,1,2,3,4,5,6].map(i=>addDays(mon,i));
+  const n=viewN();
+  if(n===7){const mon=weekStart(viewStart);return [0,1,2,3,4,5,6].map(i=>addDays(mon,i))}
+  return Array.from({length:n},(_,i)=>addDays(viewStart,i));
 }
+function shiftDays(dir){
+  viewStart=addDays(viewStart,dir*viewN());miniMonth=null;render();
+  const g=document.querySelector('#calInner .cal-grid:not(.cal-head)');if(g&&!matchMedia('(prefers-reduced-motion: reduce)').matches){g.classList.remove('slide-l','slide-r');void g.offsetWidth;g.classList.add(dir>0?'slide-l':'slide-r')}
+}
+function setCalView(v){calView=String(v);try{localStorage.setItem('tbm-view',calView)}catch(e){}if(viewN()!==7&&visibleDays().indexOf(key(new Date()))<0&&weekStart(viewStart)===weekStart(key(new Date())))viewStart=key(new Date());render();if(viewN()===7)scrollToToday()}
 function scrollToToday(){
   const col=document.querySelector('.daycol[data-date="'+key(new Date())+'"]'),sc=$('#calScroll');
   if(col)sc.scrollLeft=Math.max(0,col.offsetLeft-56);
@@ -1621,8 +1663,9 @@ function renderImp(){
 }
 function renderUndo(){const u=$('#undoBtn'),r=$('#redoBtn');if(u)u.disabled=!undoStack.length&&!batchOpen;if(r)r.disabled=!redoStack.length}
 function renderRange(){
-  const v=visibleDays();
-  $('#range').textContent=v.length===1?shortDate(v[0]):`${shortDate(v[0])} – ${shortDate(v[v.length-1])}`;
+  const v=visibleDays();document.querySelectorAll('#vsw [data-v]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===viewN()));
+  const a=parse(v[0]),z=parse(v[v.length-1]);
+  $('#range').textContent=v.length===1?shortDate(v[0]):isPhone()?(a.getMonth()===z.getMonth()?`${a.getDate()}–${z.getDate()} ${MO[z.getMonth()]}`:`${a.getDate()} ${MO[a.getMonth()]} – ${z.getDate()} ${MO[z.getMonth()]}`):`${shortDate(v[0])} – ${shortDate(v[v.length-1])}`;
 }
 let openAdd=null,tagFilter=null;
 const GRIP='<svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2.5" cy="3" r="1.4"/><circle cx="7.5" cy="3" r="1.4"/><circle cx="2.5" cy="8" r="1.4"/><circle cx="7.5" cy="8" r="1.4"/><circle cx="2.5" cy="13" r="1.4"/><circle cx="7.5" cy="13" r="1.4"/></svg>';
@@ -1679,13 +1722,13 @@ function durOptions(sel){
   return opts.map(m=>`<option value="${m}" ${m===sel?'selected':''}>${dur(m)}</option>`).join('');
 }
 let hoverDay=null;
-function colsFor(days,hk){return '56px '+days.map(k=>{const on=dayIsOn(k),f=(on?1:.5)*(k===hk?1.7:1);return `minmax(${on?110:72}px,${f.toFixed(2)}fr)`}).join(' ')}
+function colsFor(days,hk){if(isPhone()&&days.length<7)return '44px '+days.map(k=>dayIsOn(k)?'minmax(0,1fr)':'minmax(0,.75fr)').join(' ');return (isPhone()?'44px ':'56px ')+days.map(k=>{const on=dayIsOn(k),f=(on?1:.5)*(k===hk?1.7:1);return `minmax(${on?110:72}px,${f.toFixed(2)}fr)`}).join(' ')}
 function applyHover(hk){if(hk===hoverDay)return;hoverDay=hk;const c=colsFor(visibleDays(),hk);document.querySelectorAll('#calInner .cal-grid').forEach(g=>g.style.gridTemplateColumns=c);
   document.querySelectorAll('#calInner .daycol,#calInner .dayh').forEach(el=>el.classList.toggle('hov',!!hk&&el.dataset.date===hk))}
 function renderCal(){
   const days=visibleDays(),[r0,r1]=bounds(),H=(r1-r0)*PPM,s=S.settings,today=key(new Date());
   const cols=colsFor(days,hoverDay);
-  let head=`<div class="cal-grid cal-head" style="grid-template-columns:${cols}"><div class="wk-nav"><button class="wk-arrow" data-wk="-7" aria-label="Settimana precedente" title="Settimana precedente">‹</button></div>`;
+  let head=`<div class="cal-grid cal-head" style="grid-template-columns:${cols}"><div class="wk-nav"><button class="wk-arrow" data-wk="${-viewN()}" aria-label="Giorni precedenti" title="Indietro">‹</button></div>`;
   let body=`<div class="cal-grid" style="grid-template-columns:${cols};height:${H}px"><div class="gutter">`;
   for(let m=r0;m<=r1;m+=60)if(m>r0)body+=`<span style="top:${(m-r0)*PPM}px">${hm(m)}</span>`;
   body+='</div>';
@@ -1725,9 +1768,20 @@ function renderCal(){
     if(k===today){const n=nowMin();if(n>=r0&&n<=r1)body+=`<div class="playhead" style="top:${(n-r0)*PPM}px"></div>`}
     body+='</div>';
   });
-  head+=`<button class="wk-arrow wk-next" data-wk="7" aria-label="Settimana successiva" title="Settimana successiva">›</button></div>`;body+='</div>';
+  head+=`<button class="wk-arrow wk-next" data-wk="${viewN()}" aria-label="Giorni successivi" title="Avanti">›</button></div>`;body+='</div>';
   $('#calInner').innerHTML=head+body;
+  layoutOverlaps();
   {const h=document.querySelector('#calInner .cal-head');if(h)$('#calScroll').style.setProperty('--headH',h.offsetHeight+'px')}
+}
+/* eventi e task che si sovrappongono: affiancati in colonne, come Google Calendar */
+function layoutOverlaps(){
+  document.querySelectorAll('#calInner .daycol').forEach(col=>{
+    const els=[...col.querySelectorAll(':scope>.seg,:scope>.blk:not(.pause)')].map(el=>({el,t:parseFloat(el.style.top)||0,b:(parseFloat(el.style.top)||0)+(parseFloat(el.style.height)||0)})).sort((a,b)=>a.t-b.t||(b.b-b.t)-(a.b-a.t));
+    let cl=[],end=-1;const flush=()=>{if(!cl.length)return;const lanes=[];cl.forEach(x=>{let i=lanes.findIndex(e=>e<=x.t+1);if(i<0){i=lanes.length;lanes.push(0)}lanes[i]=x.b;x.lane=i});
+      const n=lanes.length;cl.forEach(x=>{if(n<2)return;x.el.style.setProperty('--l',(x.lane/n*100)+'%');x.el.style.setProperty('--r',((n-1-x.lane)/n*100)+'%');x.el.classList.add('split');
+        if(x.el.classList.contains('blk')){col.querySelectorAll(`:scope>.buf[data-id="${x.el.dataset.id}"]`).forEach(bf=>{bf.style.setProperty('--l',(x.lane/n*100)+'%');bf.style.setProperty('--r',((n-1-x.lane)/n*100)+'%')})}});cl=[]};
+    els.forEach(x=>{if(x.t>=end-1){flush();end=x.b}else end=Math.max(end,x.b);cl.push(x)});flush();
+  });
 }
 function scrollToWork(){const [r0]=bounds();$('#calScroll').scrollTop=Math.max(0,(S.settings.workStart-r0-30)*PPM)}
 
@@ -1758,7 +1812,10 @@ cal.addEventListener('mousemove',e=>{
   if(el&&el===hxEl){const r=el.getBoundingClientRect(),h=parseFloat(getComputedStyle(el).getPropertyValue('--h'))||18;if(e.clientY>r.top+h*1.09+3)hxOff()}
 });
 cal.addEventListener('pointerdown',()=>hxOff(),true);
-let rz=null,wh=null,bz=null;
+let rz=null,wh=null,bz=null,swipeAt=0,sw=null;
+cal.addEventListener('touchstart',e=>{if(e.touches.length!==1||viewN()===7){sw=null;return}const t=e.touches[0];sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
+cal.addEventListener('touchend',e=>{if(!sw)return;const s=sw;sw=null;if(justMoved||mv||(typeof xd!=='undefined'&&xd&&xd.on))return;const t=e.changedTouches[0],dx=t.clientX-s.x,dy=t.clientY-s.y;
+  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)&&Date.now()-s.t<800){swipeAt=Date.now();if(typeof closeQA==='function'&&QA)closeQA();shiftDays(dx<0?1:-1)}},{passive:true});
 cal.addEventListener('pointerdown',e=>{
   if(readOnly||e.button!==0)return;
   const rh=e.target.closest('.rz');
@@ -1792,7 +1849,7 @@ cal.addEventListener('pointerdown',e=>{
   }
   const col=e.target.closest('.daycol');
   if(!col||e.target.closest('.seg,.blk,.away')||e.button!==0||readOnly)return;
-  drag={col,date:col.dataset.date,m0:minAt(col,e),m1:minAt(col,e),type:e.pointerType,y0:e.clientY,moved:false,ghost:null};
+  drag={col,date:col.dataset.date,m0:minAt(col,e),m1:minAt(col,e),type:e.pointerType,y0:e.clientY,x0:e.clientX,moved:false,ghost:null};
   if(e.pointerType==='mouse'){
     e.preventDefault();col.setPointerCapture(e.pointerId);
     drag.ghost=document.createElement('div');drag.ghost.className="dragbox";col.appendChild(drag.ghost);updGhost();
@@ -1858,7 +1915,7 @@ cal.addEventListener('pointerup',e=>{
     let [a,b]=dragRange(d);
     if(!d.moved){a=f15(d.m0);b=a+60}
     openQuick(d.date,a,Math.min(1440,b));
-  }else if(Math.abs(e.clientY-d.y0)<10){const a=f15(d.m0);openQuick(d.date,a,Math.min(1440,a+60))}
+  }else if(Math.abs(e.clientY-d.y0)<10&&Math.abs(e.clientX-(d.x0??e.clientX))<12&&Date.now()-swipeAt>400){const a=f15(d.m0);openQuick(d.date,a,Math.min(1440,a+60))}
 });
 cal.addEventListener('pointercancel',()=>{if(lp){clearTimeout(lp.timer);lp=null}previewReflow(null);if(mv)mv.el.classList.remove('lifted');if(rz||wh||bz){rz=null;wh=null;bz=null;render()}if(mv){if(mv.ghost)mv.ghost.remove();mv.el.style.opacity='';mv=null}if(drag&&drag.ghost)drag.ghost.remove();drag=null});
 
@@ -2101,8 +2158,9 @@ document.addEventListener('input',e=>{
 });
 $('#openSettings').onclick=()=>openSettings();
 $('#today').onclick=()=>{viewStart=key(new Date());miniMonth=null;render();scrollToWork();scrollToToday()};
-$('#prev').onclick=()=>{viewStart=addDays(viewStart,-7);miniMonth=null;render()};
-$('#next').onclick=()=>{viewStart=addDays(viewStart,7);miniMonth=null;render()};
+$('#prev').onclick=()=>shiftDays(-1);
+$('#next').onclick=()=>shiftDays(1);
+$('#vsw').addEventListener('click',e=>{const b=e.target.closest('[data-v]');if(b)setCalView(b.dataset.v)});
 $('#showDone').onchange=e=>{showDone=e.target.checked;renderProjects()};
 $('#tabCal').onclick=()=>setTab('cal');$('#tabProj').onclick=()=>setTab('proj');
 function setTab(t){if(typeof closeFin==='function')closeFin();$('#main').dataset.tab=t;$('#tabCal').setAttribute('aria-selected',t==='cal');$('#tabProj').setAttribute('aria-selected',t==='proj')}
@@ -3940,9 +3998,10 @@ function daysLabel(days){
   return out.join(', ');
 }
 const fixInvNo=(v,ym)=>{v=String(v||'').trim();return /^\d+$/.test(v)?`${v}/${String(ym||key(new Date())).slice(0,4)}`:v};
+function jobDefColor(j){const c=S.clients[j.clientId];return (S.projects[j.projectId]||{}).color||c?.color||'#3B6FE0'}
 function syncJobBlocks(j){
   const mine=Object.values(S.blocks).filter(b=>b.jobId===j.id),want=j.cal&&j.cal.on?(j.days||[]):[];
-  const c=S.clients[j.clientId],title=j.title||c?.name||'Lavoro',color=(S.projects[j.projectId]||{}).color||c?.color||'#7C8796';
+  const c=S.clients[j.clientId],title=j.title||c?.name||'Lavoro',color=(j.cal&&j.cal.color)||jobDefColor(j);
   mine.forEach(b=>{if(!want.includes(b.date))del('blocks',b.id)});
   want.forEach(k=>{const b=mine.find(x=>x.date===k),nb={...(b||{id:uid(),repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()}),date:k,start:j.cal.start,end:j.cal.end,title,color,projectId:j.projectId||null,jobId:j.id};
     if(!b||JSON.stringify(b)!==JSON.stringify(nb))put('blocks',nb)});
@@ -3960,7 +4019,8 @@ function openJob(j,preset){
     <div class="row"><div class="field"><label for="jM">Mese</label><input id="jM" type="month" value="${j.month}"></div><div class="field"><label for="jD">Giorno/i</label><input id="jD" value="${esc(j.day||'')}" placeholder="scegli qui sotto o scrivi"></div></div>
     <div class="jdays"><div class="jd-h"><span class="lbl">Giorni di lavoro</span><span class="jd-q"><button type="button" data-jq="wd">Lun–Ven</button><button type="button" data-jq="all">Tutti</button><button type="button" data-jq="none">Nessuno</button></span></div><div class="jd-g" id="jGrid"></div>
       <label class="chk"><input type="checkbox" id="jCal" ${cal.on?'checked':''}> Blocca questi giorni nel calendario</label>
-      <div class="row" id="jCalT" ${cal.on?'':'hidden'}><div class="field"><label for="jCs">Dalle</label><input id="jCs" type="time" step="900" value="${hm(cal.start)}"></div><div class="field"><label for="jCe">Alle</label><input id="jCe" type="time" step="900" value="${hm(cal.end)}"></div></div></div>
+      <div class="row" id="jCalT" ${cal.on?'':'hidden'}><div class="field"><label for="jCs">Dalle</label><input id="jCs" type="time" step="900" value="${hm(cal.start)}"></div><div class="field"><label for="jCe">Alle</label><input id="jCe" type="time" step="900" value="${hm(cal.end)}"></div></div>
+      <div class="field" id="jColF" ${cal.on?'':'hidden'}><span class="lbl">Colore degli eventi</span>${swatches(cal.color||jobDefColor(j))}</div></div>
     <div class="field"><label for="jQ">Preventivo</label><select id="jQ"><option value="">Nessuno</option>${qs.map(q=>`<option value="${q.id}" ${q.id===j.quoteId?'selected':''}>${esc(qCode(q))} · ${esc(q.title||'')}</option>`).join('')}<option value="__url" ${!j.quoteId&&j.quoteUrl?'selected':''}>Link esterno…</option></select><input id="jQu" type="url" value="${esc(j.quoteUrl||'')}" placeholder="Incolla il link al preventivo (Google Drive, Sheets…)" hidden></div>
     <div class="row"><div class="field"><label for="jA">Fatturato €</label><input id="jA" inputmode="decimal" value="${j.amount?String(j.amount).replace('.',','):''}" placeholder="0,00"></div><div class="field"><label for="jK">Contanti / non fatturato €</label><input id="jK" inputmode="decimal" value="${j.cash?String(j.cash).replace('.',','):''}" placeholder="0,00"></div></div>
     <div class="jcalc" id="jCalc"></div>
@@ -3988,7 +4048,8 @@ function openJob(j,preset){
     days=new Set();if(q!=='none')for(let d=1;d<=n;d++){const k=`${ym}-${String(d).padStart(2,'0')}`,wd=parse(k).getDay();if(q==='all'||(wd>0&&wd<6))days.add(k)}
     grid();if(q==='none')$('#jD').value='';else syncDay()};
   M.addEventListener('change',()=>{grid();syncDay()});
-  $('#jCal').onchange=()=>{$('#jCalT').hidden=!$('#jCal').checked};
+  $('#jCal').onchange=()=>{$('#jCalT').hidden=$('#jColF').hidden=!$('#jCal').checked};
+  let jcol=cal.color||jobDefColor(j);$('#jColF').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{jcol=b.dataset.c;$('#jColF').querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b))});
   const upd=()=>{const a0=num($('#jA').value),a=a0+($('#jIR').checked?a0*0.04:0),k=num($('#jK').value),yy=+(M.value||'').slice(0,4)||y,t=taxCalc(a,yy);
     $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
     const c=S.clients[C.value],miss=c&&a>0?billMissing(c):[],w=$('#jWarn');
@@ -4007,7 +4068,7 @@ function openJob(j,preset){
     let cid=C.value||null;if(cid==='__new'){const n=Cn.value.trim();if(!n){Cn.focus();return}cid=findOrCreateClient(n).id}
     let pid=P.value||null;if(pid==='__new'){const n=Pn.value.trim();if(!n){Pn.focus();return}const c=S.clients[cid];const np={id:uid(),name:n,client:c?.name||'',clientId:cid,color:c?.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pid=np.id}
     const mo=M.value||j.month,qv=Q.value,cs=toMin($('#jCs').value||'09:00'),ce=Math.max(toMin($('#jCe').value||'18:00'),cs+15);
-    const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
+    const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce,color:jcol},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
       amount:num($('#jA').value),cash:num($('#jK').value),status:$('#jS').value,invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
     put('jobs',nj);syncJobBlocks(nj);
     const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
