@@ -840,7 +840,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .seg.lifted,.blk.lifted{transform:scale(1.04);box-shadow:0 16px 36px rgb(0 0 0/.28);z-index:40;opacity:.9}
 .slot-top{display:flex;gap:8px}.slq{width:100%;box-sizing:border-box;border:0;box-shadow:0 0 0 1px var(--line) inset;border-radius:10px;background:var(--surface-2);padding:9px 10px;font:inherit}
 .sl-list{max-height:280px}
-@media (min-width:821px){.tray{display:none!important}.vsw{display:none!important}}
+@media (min-width:821px){.tray{display:none!important}}
 /* colonne affiancate per sovrapposizioni */
 .seg,.blk{left:calc(var(--l,0%) + 3px);right:calc(var(--r,0%) + 3px)}
 .buf{left:calc(var(--l,0%) + 8px);right:calc(var(--r,0%) + 8px)}
@@ -854,6 +854,14 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .cal-head>.dayh.today{background:color-mix(in srgb,var(--accent) 6%,var(--surface))}
 .cal-head>.wk-nav{position:sticky;left:0;z-index:6}
 .gutter{position:sticky;left:0;z-index:4;background:var(--surface)}
+#calInner .cal-grid{min-width:min-content}
+.daycol.wk0,.cal-head>.dayh.wk0{border-left:2px solid color-mix(in srgb,var(--fg) 26%,transparent)}
+.wkn{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);text-transform:none;margin-left:2px}
+.cal-scroll.free{scroll-snap-type:x proximity;scroll-padding-left:var(--gw,56px)}
+.cal-scroll.free .daycol{scroll-snap-align:start}
+.cal-scroll.free .wk-arrow{display:none}
+.cal-scroll.free .cal-head .dayh:last-of-type{padding-right:10px}
+@media (max-width:820px){.cal-scroll.free{scroll-snap-type:x mandatory;--gw:44px}}
 .vsw{display:flex;gap:2px;background:var(--surface);border-radius:999px;padding:3px;box-shadow:0 0 0 1px var(--line) inset}
 .vsw button{border:0;background:none;border-radius:999px;padding:5px 9px;font:inherit;font-size:13px;font-weight:700;color:var(--muted);cursor:pointer}
 .vsw button[aria-pressed="true"]{background:var(--fg);color:var(--bg)}
@@ -916,7 +924,7 @@ dialog{overflow:auto}
         <div class="range" id="range"></div>
         <button class="btn icon ghost" id="next" aria-label="Settimana successiva">›</button>
       </div>
-      <div class="vsw" id="vsw" role="group" aria-label="Giorni visibili"><button type="button" data-v="1">1g</button><button type="button" data-v="3">3g</button><button type="button" data-v="7">7g</button></div>
+      <div class="vsw" id="vsw" role="group" aria-label="Giorni visibili"><button type="button" data-v="week" title="Una settimana alla volta">Settimana</button><button type="button" data-v="free" title="Scorri liberamente tra i giorni">Libera</button></div>
     </div>
     <div class="t-r">
     <button class="btn" id="dayBtn" hidden></button>
@@ -1528,19 +1536,35 @@ function renderConfirm(){
 function stepWork(k,dir){let n=k;for(let i=0;i<14;i++){n=addDays(n,dir);if(isWorkWeekday(n))return n}return addDays(k,dir)}
 function weekStart(k){const d=parse(k).getDay();return addDays(k,-((d+6)%7))}
 const isPhone=()=>matchMedia('(max-width:820px)').matches;
-let calView=(()=>{try{return localStorage.getItem('tbm-view')||'3'}catch(e){return '3'}})();
-const viewN=()=>isPhone()?(+calView||3):7;
+let calMode=(()=>{try{return localStorage.getItem('tbm-mode')==='free'?'free':'week'}catch(e){return 'week'}})();
+const isFree=()=>calMode==='free';
+let freeFrom=null,freeN=42,revealed=null,lastDW=0,freeT=null;
+const viewN=()=>7;
+const gutW=()=>isPhone()?44:56;
+const freeVis=()=>isPhone()?3:7;
+function dayW(){const w=($('#calScroll')&&$('#calScroll').clientWidth)||360;return Math.max(90,Math.floor((w-gutW())/freeVis()))}
 function visibleDays(){
-  const n=viewN();
-  if(n===7){const mon=weekStart(viewStart);return [0,1,2,3,4,5,6].map(i=>addDays(mon,i))}
-  return Array.from({length:n},(_,i)=>addDays(viewStart,i));
+  if(isFree()){if(!freeFrom)freeFrom=addDays(weekStart(viewStart),-14);return Array.from({length:freeN},(_,i)=>addDays(freeFrom,i))}
+  const mon=weekStart(viewStart);return [0,1,2,3,4,5,6].map(i=>addDays(mon,i));
 }
+function shownDays(){return isFree()?Array.from({length:freeVis()},(_,i)=>addDays(viewStart,i)):visibleDays()}
 function shiftDays(dir){
-  viewStart=addDays(viewStart,dir*viewN());miniMonth=null;render();
+  if(isFree()){$('#calScroll').scrollBy({left:dir*dayW()*freeVis(),behavior:'smooth'});return}
+  viewStart=addDays(viewStart,dir*7);miniMonth=null;render();
   const g=document.querySelector('#calInner .cal-grid:not(.cal-head)');if(g&&!matchMedia('(prefers-reduced-motion: reduce)').matches){g.classList.remove('slide-l','slide-r');void g.offsetWidth;g.classList.add(dir>0?'slide-l':'slide-r')}
 }
-function setCalView(v){calView=String(v);try{localStorage.setItem('tbm-view',calView)}catch(e){}if(viewN()!==7&&visibleDays().indexOf(key(new Date()))<0&&weekStart(viewStart)===weekStart(key(new Date())))viewStart=key(new Date());render();if(viewN()===7)scrollToToday()}
-function scrollToToday(){
+function setCalView(v){calMode=v==='free'?'free':'week';try{localStorage.setItem('tbm-mode',calMode)}catch(e){}
+  if(isFree()){const t=key(new Date());if(weekStart(viewStart)===weekStart(t))viewStart=isPhone()?t:weekStart(t);freeFrom=null;freeN=42;revealed=null}
+  render();if(!isFree())scrollToToday()}
+/* vista libera: scorrendo si caricano altri giorni prima e dopo */
+function onFreeScroll(){
+  if(!isFree()||!freeFrom)return;const sc=$('#calScroll'),dw=dayW(),i=Math.max(0,Math.round(sc.scrollLeft/dw));
+  const first=addDays(freeFrom,i);if(first!==viewStart){viewStart=first;revealed=first;miniMonth=null;renderRange();if(typeof renderMini==='function')renderMini()}
+  if(i<7){const sl=sc.scrollLeft;freeFrom=addDays(freeFrom,-14);freeN=Math.min(freeN+14,98);render();sc.scrollLeft=sl+14*dw}
+  else if(i>freeN-freeVis()-7){if(freeN>=98){const sl=sc.scrollLeft;freeFrom=addDays(freeFrom,14);render();sc.scrollLeft=sl-14*dw}else{freeN+=14;render()}}
+}
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7)}
+function scrollToToday(){if(isFree())return;
   const col=document.querySelector('.daycol[data-date="'+key(new Date())+'"]'),sc=$('#calScroll');
   if(col)sc.scrollLeft=Math.max(0,col.offsetLeft-56);
 }
@@ -1560,7 +1584,7 @@ let miniMonth=null,miniMin=false;try{miniMin=localStorage.getItem('tbm.miniMin')
 function renderMini(){
   const el=$('#mini');if(!el)return;
   const vs=visibleDays(),today=key(new Date());
-  if(!miniMonth)miniMonth=vs[0].slice(0,7);
+  if(!miniMonth)miniMonth=(isFree()?viewStart:vs[0]).slice(0,7);
   const [y,m]=miniMonth.split('-').map(Number),first=new Date(y,m-1,1);
   const label=first.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
   if(miniMin){const td=new Date();el.classList.add('min');el.innerHTML=`<button class="mini-ico" data-mini="open" aria-label="Apri il calendario del mese" title="Apri il calendario del mese"><span class="mi-m">${esc(td.toLocaleDateString('it-IT',{weekday:'short'}).replace('.',''))}</span><span class="mi-d">${td.getDate()}</span></button>`;return}
@@ -1644,7 +1668,7 @@ function renderImp(){
 }
 function renderUndo(){const u=$('#undoBtn'),r=$('#redoBtn');if(u)u.disabled=!undoStack.length&&!batchOpen;if(r)r.disabled=!redoStack.length}
 function renderRange(){
-  const v=visibleDays();document.querySelectorAll('#vsw [data-v]').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===viewN()));
+  const v=shownDays();document.querySelectorAll('#vsw [data-v]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===calMode));
   const a=parse(v[0]),z=parse(v[v.length-1]);
   $('#range').textContent=v.length===1?shortDate(v[0]):isPhone()?(a.getMonth()===z.getMonth()?`${a.getDate()}–${z.getDate()} ${MO[z.getMonth()]}`:`${a.getDate()} ${MO[a.getMonth()]} – ${z.getDate()} ${MO[z.getMonth()]}`):`${shortDate(v[0])} – ${shortDate(v[v.length-1])}`;
 }
@@ -1703,10 +1727,11 @@ function durOptions(sel){
   return opts.map(m=>`<option value="${m}" ${m===sel?'selected':''}>${dur(m)}</option>`).join('');
 }
 let hoverDay=null;
-function colsFor(days,hk){if(isPhone()&&days.length<7)return '44px '+days.map(k=>dayIsOn(k)?'minmax(0,1fr)':'minmax(0,.75fr)').join(' ');return (isPhone()?'44px ':'56px ')+days.map(k=>{const on=dayIsOn(k),f=(on?1:.5)*(k===hk?1.7:1);return `minmax(${on?110:72}px,${f.toFixed(2)}fr)`}).join(' ')}
+function colsFor(days,hk){if(isFree())return `${gutW()}px repeat(${days.length},${dayW()}px)`;return (isPhone()?'44px ':'56px ')+days.map(k=>{const on=dayIsOn(k),f=(on?1:.5)*(k===hk?1.7:1);return `minmax(${on?110:72}px,${f.toFixed(2)}fr)`}).join(' ')}
 function applyHover(hk){if(hk===hoverDay)return;hoverDay=hk;const c=colsFor(visibleDays(),hk);document.querySelectorAll('#calInner .cal-grid').forEach(g=>g.style.gridTemplateColumns=c);
   document.querySelectorAll('#calInner .daycol,#calInner .dayh').forEach(el=>el.classList.toggle('hov',!!hk&&el.dataset.date===hk))}
 function renderCal(){
+  if(isFree()&&freeFrom&&(viewStart<freeFrom||viewStart>addDays(freeFrom,freeN-freeVis()-1))){freeFrom=addDays(weekStart(viewStart),-14);freeN=42;revealed=null}
   const days=visibleDays(),[r0,r1]=bounds(),H=(r1-r0)*PPM,s=S.settings,today=key(new Date());
   const cols=colsFor(days,hoverDay);
   let head=`<div class="cal-grid cal-head" style="grid-template-columns:${cols}"><div class="wk-nav"><button class="wk-arrow" data-wk="${-viewN()}" aria-label="Giorni precedenti" title="Indietro">‹</button></div>`;
@@ -1717,10 +1742,11 @@ function renderCal(){
     const d=parse(k),on=dayIsOn(k);
     const segs=PLAN.segs.filter(x=>x.date===k),blks=blocksOn(k);
     const load=segs.reduce((a,x)=>a+x.end-x.start,0),custom=(S.settings.dayHours||{})[k];
-    head+=`<div class="dayh${k===today?' today':''}${k===hoverDay?' hov':''}" data-date="${k}"><div><div class="wd">${WD[d.getDay()]}</div><div class="dn">${d.getDate()}</div></div>
+    const wk0=isFree()&&d.getDay()===1;
+    head+=`<div class="dayh${k===today?' today':''}${k===hoverDay?' hov':''}${wk0?' wk0':''}" data-date="${k}"><div><div class="wd">${WD[d.getDay()]}${wk0?` <span class="wkn">sett. ${isoWeek(d)}</span>`:''}</div><div class="dn">${d.getDate()}</div></div>
       <span class="load">${custom?hm(custom[0])+'–'+hm(custom[1])+'<br>':''}${load?dur(load):''}</span><span class="brk"></span>
       <button class="away" data-act="away" data-date="${k}" aria-pressed="${!on}" title="Cambia: al lavoro / libero">${on?'Al lavoro':'Libero'}</button>${(()=>{const ad=allDayOn(k);return ad.length?`<div class="adrow">${ad.map(b=>`<button type="button" class="adchip" data-act="editBlock" data-id="${b.id}" data-occ="${k}" style="--c:${b.color}" title="${esc(b.title||'Evento')} · tutto il giorno">${esc((b.title||'Evento').replace(/compleanno\s+(di\s+)?/i,''))}</button>`).join('')}</div>`:''})()}</div>`;
-    body+=`<div class="daycol${on?'':' off'}" data-date="${k}">`;
+    body+=`<div class="daycol${on?'':' off'}${wk0?' wk0':''}" data-date="${k}">`;
     const [hs,he]=hoursFor(k);body+=`<div class="work" style="top:${(hs-r0)*PPM}px;height:${(he-hs)*PPM}px"></div>`;
     if(on)body+=`<div class="wh top" data-wh="s" data-date="${k}" style="top:${(hs-r0)*PPM}px" title="Trascina per cambiare l'inizio della giornata"><span>▲▼ ${hm(hs)}</span></div><div class="wh bot" data-wh="e" data-date="${k}" style="top:${(he-r0)*PPM}px" title="Trascina per cambiare la fine della giornata"><span>▲▼ ${hm(he)}</span></div>`;
     for(let m=r0+30;m<r1;m+=30)body+=`<div class="hl${m%60?' half':''}" style="top:${(m-r0)*PPM}px"></div>`;
@@ -1750,8 +1776,10 @@ function renderCal(){
     body+='</div>';
   });
   head+=`<button class="wk-arrow wk-next" data-wk="${viewN()}" aria-label="Giorni successivi" title="Avanti">›</button></div>`;body+='</div>';
+  const sc=$('#calScroll');sc.classList.toggle('free',isFree());
   $('#calInner').innerHTML=head+body;
   layoutOverlaps();
+  if(isFree()){const dw=dayW();if(revealed!==viewStart||lastDW!==dw){const i=Math.round((parse(viewStart)-parse(freeFrom))/864e5);sc.scrollLeft=Math.max(0,i*dw);revealed=viewStart;lastDW=dw}}
   {const h=document.querySelector('#calInner .cal-head');if(h)$('#calScroll').style.setProperty('--headH',h.offsetHeight+'px')}
 }
 /* eventi e task che si sovrappongono: affiancati in colonne, come Google Calendar */
@@ -1794,9 +1822,7 @@ cal.addEventListener('mousemove',e=>{
 });
 cal.addEventListener('pointerdown',()=>hxOff(),true);
 let rz=null,wh=null,bz=null,swipeAt=0,sw=null;
-cal.addEventListener('touchstart',e=>{if(e.touches.length!==1||viewN()===7){sw=null;return}const t=e.touches[0];sw={x:t.clientX,y:t.clientY,t:Date.now()}},{passive:true});
-cal.addEventListener('touchend',e=>{if(!sw)return;const s=sw;sw=null;if(justMoved||mv||(typeof xd!=='undefined'&&xd&&xd.on))return;const t=e.changedTouches[0],dx=t.clientX-s.x,dy=t.clientY-s.y;
-  if(Math.abs(dx)>60&&Math.abs(dx)>2*Math.abs(dy)&&Date.now()-s.t<800){swipeAt=Date.now();if(typeof closeQA==='function'&&QA)closeQA();shiftDays(dx<0?1:-1)}},{passive:true});
+cal.addEventListener('scroll',()=>{if(!isFree()||freeT)return;freeT=requestAnimationFrame(()=>{freeT=null;onFreeScroll()})},{passive:true});
 cal.addEventListener('pointerdown',e=>{
   if(readOnly||e.button!==0)return;
   const rh=e.target.closest('.rz');
@@ -1966,8 +1992,7 @@ $('#addBtn').onclick=e=>{
 $('#listImp').onclick=()=>openBlockList();
 $('#brandHome').onclick=()=>{closeQA&&closeQA();if(dlg.open)dlg.close();closeFin();setTab('cal');$('#today').click()};
 $('#undoBtn').onclick=doUndo;$('#redoBtn').onclick=doRedo;
-$('#calInner').addEventListener('click',e=>{const b=e.target.closest('[data-wk]');if(!b)return;e.stopPropagation();viewStart=addDays(viewStart,+b.dataset.wk);miniMonth=null;render();
-  const g=document.querySelector('#calInner .cal-grid:not(.cal-head)');if(g&&!matchMedia('(prefers-reduced-motion: reduce)').matches){g.classList.remove('slide-l','slide-r');void g.offsetWidth;g.classList.add(+b.dataset.wk>0?'slide-l':'slide-r')}});
+$('#calInner').addEventListener('click',e=>{const b=e.target.closest('[data-wk]');if(!b)return;e.stopPropagation();shiftDays(+b.dataset.wk>0?1:-1)});
 /* mini calendario trascinabile e che si sposta quando c'è la chat */
 let miniPos=null,miniDrag=null,miniMoved=false;try{miniPos=JSON.parse(localStorage.getItem('tbm.miniPos2')||'null')}catch(e){}
 function placeMini(){
@@ -3213,7 +3238,7 @@ function cleanTitle(s){
 }
 const PRIOW={alta:1,media:2,bassa:3,urgente:1};
 const longDate=k=>{const d=parse(k);return `${WDL[d.getDay()].toLowerCase()} ${d.getDate()} ${MO[d.getMonth()]}`};
-function goTo(k){if(!visibleDays().includes(k)){viewStart=k}}
+function goTo(k){if(isFree()){viewStart=k;return}if(!visibleDays().includes(k)){viewStart=k}}
 const HELP=`Scrivimi cosa fare, per esempio:
 • mercoledì 21 sono libero
 • dal 27 al 29 sono in ferie
