@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611011951">
+<meta name="tbm-build" content="202611011959">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611011951"></script>
-<script src="tbm-cloud.js?v=202611011951"></script>
+<script src="supabase.js?v=202611011959"></script>
+<script src="tbm-cloud.js?v=202611011959"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -3824,7 +3824,7 @@ function aiConnectCard(){
     <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nei Conti. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
     <div class="aic-opt"><b>Gemini di Google — gratis</b><ol><li>Apri <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e accedi col tuo account Google.</li><li>Tocca <b>Crea chiave API</b> (Create API key), copiala e incollala qui sotto.</li></ol><small>Gratis con un limite di messaggi al giorno, più che sufficiente per l'uso normale.</small></div>
     <details class="aic-opt"><summary><b>Claude</b> — a consumo, circa 1–2 centesimi a comando</summary><ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, in <b>Billing</b> aggiungi un po' di credito.</li><li>In <b>API Keys</b> crea una chiave e incollala qui sotto.</li></ol></details>
-    <div class="aic-f"><input id="aiKey" type="password" placeholder="AIza…  oppure  sk-ant-…" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
+    <div class="aic-f"><input id="aiKey" type="password" placeholder="Incolla qui la chiave" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
     ${AI.st.err&&!/Accedi/.test(AI.st.err)?`<p class="aic-e">${esc(AI.st.err)}</p>`:''}
     <p class="aic-n">Riconosco da solo se la chiave è di Gemini o di Claude. Resta salvata sul server di Tasky, non sul telefono, e puoi scollegarla quando vuoi dal menu ⋯.</p>
     <button type="button" class="aic-off" id="aiOffline">Per ora usa i comandi offline</button>
