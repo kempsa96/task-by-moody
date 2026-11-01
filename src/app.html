@@ -372,6 +372,10 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .aic a{color:var(--accent);font-weight:600}
 .aic-f{display:flex;gap:6px}.aic-f input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:16px;background:var(--surface)}
 .aic-e{color:var(--danger);font-weight:600}
+.aic-opt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.aic-opt small{color:var(--muted);font-size:12px}
+details.aic-opt summary{cursor:pointer;list-style:revert}
+details.aic-opt ol{margin-top:6px}
 .aic-n{font-size:12px;color:var(--muted)}
 .aic-off{align-self:flex-start;border:0;background:none;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
 .typing{display:inline-flex;gap:3px;vertical-align:middle}
@@ -3776,6 +3780,7 @@ const AI={st:null,checking:false,msgs:[],busy:false,offline:false,voice:false,fa
 try{AI.voice=localStorage.getItem('tbm-ai-voice')==='1'}catch(e){}
 const aiAvail=()=>typeof window.tbmAI==='function'&&mode==='cloud';
 const aiOn=()=>aiAvail()&&!AI.offline&&AI.st&&AI.st.connected;
+const aiName=()=>AI.st&&AI.st.provider==='gemini'?'Gemini':'Claude';
 function aiStatus(force){
   if(!aiAvail()||AI.checking||(AI.st&&!force))return;
   AI.checking=true;
@@ -3784,33 +3789,36 @@ function aiStatus(force){
 function aiHeader(){
   const h=$('#chat .chat-h');if(!h)return;
   const on=aiOn();
-  h.querySelector('b').textContent=on?'Claude':'Assistente';
+  h.querySelector('b').textContent=on?aiName():'Assistente';
   h.querySelector('span').textContent=on?(AI.fast?'collegato · veloce':'collegato · solo Tasky'):AI.offline||!aiAvail()?'comandi in italiano · offline':AI.st&&!AI.st.connected?'da collegare':'…';
   $('#aiVoice').hidden=!on;$('#aiVoice').setAttribute('aria-pressed',AI.voice);
   $('#aiMenu').hidden=!aiAvail();
   $('#cchips').hidden=on||(!AI.offline&&aiAvail());
-  $('#chatIn').placeholder=on?'Scrivi o detta a Claude…':'es. mercoledì 21 sono libero';
+  $('#chatForm').style.display=aiAvail()&&!AI.offline&&!on?'none':'';
+  $('#chatIn').placeholder=on?`Scrivi o detta a ${aiName()}…`:'es. mercoledì 21 sono libero';
 }
 const mdLite=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm,'<b>$1</b>').replace(/`([^`]+)`/g,'$1');
 function aiConnectCard(){
-  if(!AI.st)return `<div class="msg bot">Controllo il collegamento con Claude…</div>`;
+  if(!AI.st)return `<div class="msg bot">Controllo il collegamento dell'assistente…</div>`;
   return `<div class="aic">
-    <b class="aic-t">Collega Claude a Tasky</b>
-    <p>Così mi parli come in una chat normale (anche a voce) e faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nei Conti. Non vado su internet: vedo e modifico solo Tasky.</p>
-    <ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (stesso account di Claude o uno nuovo).</li><li>In <b>Billing</b> aggiungi un po' di credito (bastano 5 $: ogni comando costa circa 1–2 centesimi).</li><li>In <b>API Keys</b> crea una chiave, copiala e incollala qui.</li></ol>
-    <div class="aic-f"><input id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
+    <b class="aic-t">Collega l'assistente a Tasky</b>
+    <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nei Conti. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
+    <div class="aic-opt"><b>Gemini di Google — gratis</b><ol><li>Apri <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e accedi col tuo account Google.</li><li>Tocca <b>Crea chiave API</b> (Create API key), copiala e incollala qui sotto.</li></ol><small>Gratis con un limite di messaggi al giorno, più che sufficiente per l'uso normale.</small></div>
+    <details class="aic-opt"><summary><b>Claude</b> — a consumo, circa 1–2 centesimi a comando</summary><ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, in <b>Billing</b> aggiungi un po' di credito.</li><li>In <b>API Keys</b> crea una chiave e incollala qui sotto.</li></ol></details>
+    <div class="aic-f"><input id="aiKey" type="password" placeholder="AIza…  oppure  sk-ant-…" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
     ${AI.st.err&&!/Accedi/.test(AI.st.err)?`<p class="aic-e">${esc(AI.st.err)}</p>`:''}
-    <p class="aic-n">La chiave resta salvata sul server di Tasky, non sul telefono. Puoi scollegarla quando vuoi dal menu ⋯.</p>
+    <p class="aic-n">Riconosco da solo se la chiave è di Gemini o di Claude. Resta salvata sul server di Tasky, non sul telefono, e puoi scollegarla quando vuoi dal menu ⋯.</p>
     <button type="button" class="aic-off" id="aiOffline">Per ora usa i comandi offline</button>
   </div>`;
 }
 const AI_SUGG=['Cosa ho domani?','Aggiungi una task: mandare preventivo a Rilastil, scadenza venerdì','Sabato sono libero','Che lavori ho a novembre e quanto ho fatturato?'];
-function aiGreeting(){return `<div class="msg bot">Ciao Francesco! Sono Claude, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
+function aiGreeting(){return `<div class="msg bot">Ciao Francesco! Sono ${aiName()}, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
 
 /* ---------- contesto: cosa vede Claude a ogni messaggio ---------- */
-const AI_STATIC=`Sei Claude, l'assistente integrato in Tasky: l'app di task, calendario e conti di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
+const aiStatic=()=>`Sei ${aiName()}, l'assistente integrato in Tasky: l'app di task, calendario e conti di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
 
-Cosa puoi fare: solo leggere e modificare i dati di Tasky con gli strumenti a disposizione. Non hai accesso a internet, email, meteo, notizie o altre app: se te lo chiedono, dillo in una riga e proponi cosa puoi fare dentro Tasky. Puoi comunque ragionare con lui su organizzazione, priorità e carico di lavoro usando i suoi dati.
+Il tuo compito è SOLO gestire Tasky: leggere e modificare task, eventi, progetti, clienti, giorni e lavori nei Conti con gli strumenti a disposizione, e rispondere a domande sui suoi impegni e sui suoi dati (es. "cosa ho domani?", "quanto ho fatturato a ottobre?", "come mi organizzo la settimana?").
+NON rispondere a nient'altro: niente cultura generale, notizie, meteo, ricette, traduzioni, codice, consigli medici o legali, testi da scrivere, chiacchiere fuori tema. Non hai accesso a internet né ad altre app. Se la richiesta non riguarda Tasky, rispondi con una sola frase gentile tipo "Qui posso aiutarti solo con Tasky: task, eventi, progetti e conti." e proponi cosa puoi fare. Saluti e ringraziamenti: rispondi in breve e torna operativo.
 
 Come funziona Tasky:
 - Task: cose da fare con una scadenza (data). Possono essere "singole" oppure dentro un progetto. Se non dice la scadenza usa oggi. Una task NON va nel calendario a un orario preciso se non lo chiede: per metterla in calendario usa pianifica_task.
@@ -3982,7 +3990,7 @@ async function aiSend(text){
   const before=takeSnap();let changed=false;const bot={who:'bot',text:'',typing:true,md:true};chatLog.push(bot);renderChat();
   try{
     for(let step=0;step<10;step++){
-      const r=await window.tbmAI({action:'chat',system:[{text:AI_STATIC,cache:true},{text:aiSnapshot()}],messages:AI.msgs,tools:AI_TOOLS});
+      const r=await window.tbmAI({action:'chat',system:[{text:aiStatic(),cache:true},{text:aiSnapshot()}],messages:AI.msgs,tools:AI_TOOLS});
       if(!r||r.error){if(r&&r.needKey){AI.st={connected:false,err:r.error};aiHeader()}throw new Error(r&&r.error||'nessuna risposta')}
       const content=(r.content||[]).filter(c=>c.type==='text'||c.type==='tool_use');AI.msgs.push({role:'assistant',content:content.length?content:[{type:'text',text:'…'}]});
       const said=content.filter(c=>c.type==='text').map(c=>c.text).join('\n').trim();if(said){bot.text=(bot.text?bot.text+'\n\n':'')+said;renderChat()}
@@ -4012,7 +4020,7 @@ function aiSpeak(t){
 function aiConnect(){
   const inp=$('#aiKey'),k=(inp&&inp.value||'').trim();if(!k){inp&&inp.focus();return}
   const b=$('#aiConnect');b.disabled=true;b.textContent='Collego…';
-  window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true};AI.model=d.model;AI.offline=false;chatLog.length=0;toast('Claude è collegato ✓')}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
+  window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true,provider:d.provider};AI.model=d.model;AI.fast=false;AI.offline=false;AI.msgs=[];chatLog.length=0;toast(`${aiName()} è collegato ✓`)}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
     .catch(e=>{AI.st={connected:false,err:String(e.message||e)}}).finally(()=>{aiHeader();renderChat()});
 }
 function aiMenu(){
@@ -4020,8 +4028,8 @@ function aiMenu(){
   if(aiOn()){items.push({label:'Nuova conversazione',run:()=>{AI.msgs=[];chatLog.length=0;renderChat()}});
     items.push({label:AI.fast?'✓ Modalità veloce (più economica)':'Modalità veloce (più economica)',run:()=>{AI.fast=!AI.fast;aiHeader();window.tbmAI({action:'speed',fast:AI.fast})}});
     items.push({label:'Usa i comandi offline',run:()=>{AI.offline=true;chatLog.length=0;aiHeader();renderChips();renderChat()}});
-    items.push({label:'Scollega Claude',run:()=>{window.tbmAI({action:'disconnect'}).then(()=>{AI.st={connected:false};AI.msgs=[];chatLog.length=0;aiHeader();renderChat();toast('Claude scollegato: la chiave è stata cancellata dal server')})}})}
-  else items.push({label:AI.st&&AI.st.connected?'Torna a Claude':'Collega Claude',run:()=>{AI.offline=false;chatLog.length=0;aiHeader();renderChat()}});
+    items.push({label:`Scollega ${aiName()} / cambia chiave`,run:()=>{const n=aiName();window.tbmAI({action:'disconnect'}).then(()=>{AI.st={connected:false};AI.msgs=[];chatLog.length=0;aiHeader();renderChat();toast(`${n} scollegato: la chiave è stata cancellata dal server`)})}})}
+  else items.push({label:AI.st&&AI.st.connected?`Torna a ${aiName()}`:'Collega l\'assistente',run:()=>{AI.offline=false;chatLog.length=0;aiHeader();renderChat()}});
   showCtx(Math.max(8,r.right-240),r.bottom+4,items);
 }
 
