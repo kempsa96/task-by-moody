@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611012156">
+<meta name="tbm-build" content="202611012215">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611012156"></script>
-<script src="tbm-cloud.js?v=202611012156"></script>
+<script src="supabase.js?v=202611012215"></script>
+<script src="tbm-cloud.js?v=202611012215"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -3780,18 +3780,27 @@ $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
   if(v.startsWith('!')){chipLevel='root';renderChips();send(v.slice(1));return}
   const i=$('#chatIn');i.value=v;i.focus();const pos=v.indexOf('  a ');const c=pos>=0?pos+1:v.length;i.setSelectionRange(c,c);chipLevel='root';renderChips()});
 (()=>{const SR=window.SpeechRecognition||window.webkitSpeechRecognition,b=$('#micBtn');if(!SR){b.hidden=true;return}
-  let rec=null;
-  b.onclick=()=>{if(rec){rec.stop();return}
+  // dettatura come nelle chat: tocchi per parlare, tocchi di nuovo per fermare; il messaggio lo invii tu con "Invia"
+  let rec=null,want=false,done='',inp=null,sent=false;const micIco=b.innerHTML,stopIco='<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="2" fill="currentColor"/></svg>';
+  const ui=on=>{b.classList.toggle('on',on);b.innerHTML=on?stopIco:micIco;b.setAttribute('aria-label',on?'Ferma la dettatura':'Detta con il microfono');b.title=on?'Ferma la dettatura':'Detta (serve internet)'};
+  const stop=()=>{want=false;if(rec)try{rec.stop()}catch(e){}ui(false)};
+  const start=()=>{
+    try{rec=new SR()}catch(e){toast('Microfono non disponibile su questo dispositivo');stop();return}
+    rec.lang='it-IT';rec.interimResults=true;rec.continuous=true;rec.maxAlternatives=1;
+    const base=done;
+    rec.onresult=ev=>{if(sent)return;let fin='',tmp='';for(let i=0;i<ev.results.length;i++){const t=ev.results[i][0].transcript;if(ev.results[i].isFinal)fin+=t;else tmp+=t}
+      done=(base+' '+fin).replace(/\s+/g,' ').trim();inp.value=(done+' '+tmp).replace(/\s+/g,' ').trim();inp.dataset.dict='1'};
+    rec.onerror=ev=>{if(ev.error==='not-allowed'||ev.error==='service-not-allowed'){toast('Consenti l’uso del microfono per questa app (impostazioni del browser / dell’iPhone)');stop()}else if(ev.error!=='aborted'&&ev.error!=='no-speech'&&ev.error!=='network'){toast('Il microfono non ha funzionato, riprova');stop()}};
+    // se il telefono chiude l'ascolto da solo dopo una pausa, riparto: si ferma solo quando lo decidi tu
+    rec.onend=()=>{rec=null;if(want){setTimeout(()=>{if(want)start()},150);return}ui(false);if(!sent){inp.value=done||inp.value;inp.focus()}};
+    try{rec.start()}catch(e){rec=null;stop()}
+  };
+  b.onclick=()=>{if(want){stop();return}
     if(!navigator.onLine){toast('Il microfono funziona solo quando sei connesso a internet');return}
-    const inp=$('#chatIn'),base=inp.value.trim()?inp.value.trim()+' ':'';
-    try{rec=new SR()}catch(e){toast('Microfono non disponibile su questo dispositivo');return}
-    rec.lang='it-IT';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
-    rec.onresult=e=>{let t='',fin=false;for(let i=0;i<e.results.length;i++){t+=e.results[i][0].transcript;if(e.results[i].isFinal)fin=true}inp.value=base+t;if(fin)inp.dataset.dict='1'};
-    rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Consenti l’uso del microfono per questa app (impostazioni del browser / dell’iPhone)');else if(e.error!=='aborted'&&e.error!=='no-speech')toast('Il microfono non ha funzionato, riprova')};
-    rec.onend=()=>{rec=null;b.classList.remove('on');
-      if(aiOn()&&inp.dataset.dict==='1'&&inp.value.trim()){AI.handsfree=AI.voice;$('#chatForm').requestSubmit?$('#chatForm').requestSubmit():$('#chatForm').dispatchEvent(new Event('submit',{cancelable:true}));return}
-      inp.focus()};
-    b.classList.add('on');try{rec.start()}catch(e){rec=null;b.classList.remove('on')}};
+    try{speechSynthesis.cancel()}catch(e){}
+    inp=$('#chatIn');done=inp.value.trim();sent=false;want=true;ui(true);start()};
+  // quando invii, la dettatura si ferma
+  $('#chatForm').addEventListener('submit',()=>{sent=true;if(want)stop();done=''},true);
 })();
 $('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn'),v=i.value;if(!v.trim())return;
   const clear=()=>{i.value='';delete i.dataset.dict};clear();
@@ -4060,7 +4069,7 @@ function aiSpeak(t){
   if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel()}catch(e){}
   const u=new SpeechSynthesisUtterance(t.replace(/\*\*/g,'').replace(/^- /gm,'').replace(/\[[^\]]*\]/g,''));u.lang='it-IT';u.rate=1.05;
   const v=speechSynthesis.getVoices().find(v=>/^it/i.test(v.lang));if(v)u.voice=v;
-  u.onend=()=>{if(AI.handsfree&&!$('#chat').hidden){AI.handsfree=false;setTimeout(()=>$('#micBtn').click(),250)}};
+  
   speechSynthesis.speak(u);
 }
 function aiConnect(){
