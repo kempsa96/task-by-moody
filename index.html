@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611011959">
+<meta name="tbm-build" content="202611012023">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611011959"></script>
-<script src="tbm-cloud.js?v=202611011959"></script>
+<script src="supabase.js?v=202611012023"></script>
+<script src="tbm-cloud.js?v=202611012023"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -3771,7 +3771,12 @@ $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
       inp.focus()};
     b.classList.add('on');try{rec.start()}catch(e){rec=null;b.classList.remove('on')}};
 })();
-$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn');if(AI.busy&&aiOn())return;send(i.value);i.value='';delete i.dataset.dict;i.focus()});
+$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn'),v=i.value;if(!v.trim())return;
+  const clear=()=>{i.value='';delete i.dataset.dict};clear();
+  // su iPhone la dettatura della tastiera può rimettere il testo nel campo subito dopo l'invio: lo ripulisco
+  const sent=v.trim();[60,250,700,1500].forEach(ms=>setTimeout(()=>{const now=i.value.trim();if(now&&(now===sent||sent.startsWith(now)||now.startsWith(sent)))clear()},ms));
+  const go=()=>{if(AI.busy&&aiOn()){setTimeout(go,300);return}send(v)};go();
+  if(matchMedia('(hover:hover)').matches)i.focus()});
 $('#chatLog').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='aiKey'){e.preventDefault();aiConnect()}});
 $('#aiVoice').onclick=()=>{AI.voice=!AI.voice;try{localStorage.setItem('tbm-ai-voice',AI.voice?'1':'0')}catch(e){}aiHeader();if(!AI.voice)try{speechSynthesis.cancel()}catch(e){};toast(AI.voice?'Leggo le risposte ad alta voce 🔊':'Lettura ad alta voce spenta')};
 $('#aiMenu').onclick=e=>{e.stopPropagation();aiMenu()};
