@@ -166,6 +166,18 @@
     })().finally(function () { remBusy = null; });
   };
 
+  /* ---------- assistente Claude (funzione "assistant": la chiave resta sul server) ---------- */
+  window.tbmAI = function (body) {
+    return sb.functions.invoke('assistant', { body: body }).then(function (r) {
+      if (r.error) {
+        var ctx = r.error.context;
+        if (ctx && typeof ctx.json === 'function') return ctx.json().catch(function () { throw r.error; });
+        throw r.error;
+      }
+      return r.data;
+    });
+  };
+
   /* ---------- luoghi e tragitti (funzione "route" su Supabase) ---------- */
   var routeCache = {};
   function invoke(body) {

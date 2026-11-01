@@ -366,6 +366,20 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .msg.me{align-self:flex-end;background:var(--fg);color:var(--bg);border-bottom-right-radius:4px}
 .msg.bot{align-self:flex-start;background:var(--surface-2);border:1px solid var(--line);border-bottom-left-radius:4px}
 .msg.bot.err{border-color:var(--danger)}
+.aic{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:1.45}
+.aic-t{font-size:16px}
+.aic p{margin:0}.aic ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:3px}
+.aic a{color:var(--accent);font-weight:600}
+.aic-f{display:flex;gap:6px}.aic-f input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:16px;background:var(--surface)}
+.aic-e{color:var(--danger);font-weight:600}
+.aic-n{font-size:12px;color:var(--muted)}
+.aic-off{align-self:flex-start;border:0;background:none;padding:0;color:var(--muted);text-decoration:underline;cursor:pointer;font:inherit;font-size:13px}
+.typing{display:inline-flex;gap:3px;vertical-align:middle}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--muted);animation:tdot 1s infinite ease-in-out}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes tdot{0%,80%,100%{opacity:.25;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+#aiVoice[aria-pressed="true"]{color:var(--accent)}
+.chat{z-index:55}.ctx{z-index:60}
 .msg .undo{margin-top:6px;display:block;font-size:12px;border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;color:var(--muted)}
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
 .chat-f{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:10px;border-top:1px solid var(--line)}
@@ -966,7 +980,7 @@ dialog{overflow:auto}
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z"/></svg>Scrivi cosa fare
 </button>
 <section class="chat" id="chat" hidden aria-label="Assistente">
-  <div class="chat-h"><b>Assistente</b><span>comandi in italiano · offline</span><button class="btn icon ghost" id="chatClose" aria-label="Chiudi">✕</button></div>
+  <div class="chat-h"><b>Assistente</b><span>comandi in italiano · offline</span><button class="btn icon ghost" id="aiVoice" hidden aria-pressed="false" aria-label="Leggi le risposte ad alta voce" title="Leggi le risposte ad alta voce"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></button><button class="btn icon ghost" id="aiMenu" hidden aria-label="Opzioni assistente" title="Opzioni">⋯</button><button class="btn icon ghost" id="chatClose" aria-label="Chiudi">✕</button></div>
   <div class="chat-log" id="chatLog" aria-live="polite"></div>
   <div class="cchips" id="cchips"></div>
   <form class="chat-f" id="chatForm"><input id="chatIn" placeholder="es. mercoledì 21 sono libero" autocomplete="off" aria-label="Comando"><button class="mic" type="button" id="micBtn" aria-label="Detta con il microfono" title="Detta (serve internet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button><button class="btn primary" type="submit">Invia</button></form>
@@ -3677,10 +3691,11 @@ function ctrlHtml(c){
 }
 function renderChat(){
   const el=$('#chatLog');
-  if(!chatLog.length){
+  if(!chatLog.length&&aiAvail()&&!AI.offline){el.innerHTML=aiOn()?aiGreeting():aiConnectCard()}
+  else if(!chatLog.length){
     el.innerHTML=`<div class="msg bot">Ciao Francesco, scrivimi cosa fare e lo metto in calendario.\nPuoi anche dettare: tocca il microfono della tastiera su iPhone, oppure premi Win + H su Windows.</div><div class="sugg">${SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
   }else{
-    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.opts&&m.opts.length&&i===chatLog.length-1?`<span class="copts">${m.opts.map(o=>`<button type="button" class="chip" data-opt="${esc(o[1])}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.acts&&m.acts.length&&!(m.confirm&&m.resolved&&m.acts.some(a=>a[1]==='__jobform'))?`<span class="copts">${m.acts.map(o=>`<button type="button" class="chip act" data-act2="${esc(o[1])}" data-mi="${i}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
+    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${m.typing&&!m.text?'<span class="typing"><i></i><i></i><i></i></span>':m.md?mdLite(m.text)+(m.typing?' <span class="typing"><i></i><i></i><i></i></span>':''):esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.opts&&m.opts.length&&i===chatLog.length-1?`<span class="copts">${m.opts.map(o=>`<button type="button" class="chip" data-opt="${esc(o[1])}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.acts&&m.acts.length&&!(m.confirm&&m.resolved&&m.acts.some(a=>a[1]==='__jobform'))?`<span class="copts">${m.acts.map(o=>`<button type="button" class="chip act" data-act2="${esc(o[1])}" data-mi="${i}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
   }
   el.scrollTop=el.scrollHeight;
 }
@@ -3692,6 +3707,7 @@ function resolveConfirm(i,yes){
 }
 function send(text){
   text=text.trim();if(!text)return;
+  if(aiOn()){aiSend(text);return}
   if(WIZ&&!chatLog.some(m=>m.confirm&&!m.resolved)){chatLog.push({who:'me',text});let r;try{r=wizAnswer(text)}catch(e){WIZ=null;r={text:'Mi sono perso: riprova a scrivere il lavoro dall’inizio.',err:1}}
     chatLog.push({who:'bot',text:r.text,err:r.err,confirm:r.confirm,opts:r.opts,acts:r.acts,draft:r.draft});renderChat();return}
   const pi=chatLog.findIndex(m=>m.confirm&&!m.resolved);
@@ -3727,11 +3743,18 @@ $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
     rec.lang='it-IT';rec.interimResults=true;rec.continuous=false;rec.maxAlternatives=1;
     rec.onresult=e=>{let t='',fin=false;for(let i=0;i<e.results.length;i++){t+=e.results[i][0].transcript;if(e.results[i].isFinal)fin=true}inp.value=base+t;if(fin)inp.dataset.dict='1'};
     rec.onerror=e=>{if(e.error==='not-allowed'||e.error==='service-not-allowed')toast('Consenti l’uso del microfono per questa app (impostazioni del browser / dell’iPhone)');else if(e.error!=='aborted'&&e.error!=='no-speech')toast('Il microfono non ha funzionato, riprova')};
-    rec.onend=()=>{rec=null;b.classList.remove('on');inp.focus()};
+    rec.onend=()=>{rec=null;b.classList.remove('on');
+      if(aiOn()&&inp.dataset.dict==='1'&&inp.value.trim()){AI.handsfree=AI.voice;$('#chatForm').requestSubmit?$('#chatForm').requestSubmit():$('#chatForm').dispatchEvent(new Event('submit',{cancelable:true}));return}
+      inp.focus()};
     b.classList.add('on');try{rec.start()}catch(e){rec=null;b.classList.remove('on')}};
 })();
-$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn');send(i.value);i.value='';i.focus()});
+$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn');if(AI.busy&&aiOn())return;send(i.value);i.value='';delete i.dataset.dict;i.focus()});
+$('#chatLog').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='aiKey'){e.preventDefault();aiConnect()}});
+$('#aiVoice').onclick=()=>{AI.voice=!AI.voice;try{localStorage.setItem('tbm-ai-voice',AI.voice?'1':'0')}catch(e){}aiHeader();if(!AI.voice)try{speechSynthesis.cancel()}catch(e){};toast(AI.voice?'Leggo le risposte ad alta voce 🔊':'Lettura ad alta voce spenta')};
+$('#aiMenu').onclick=e=>{e.stopPropagation();aiMenu()};
 $('#chatLog').addEventListener('click',e=>{
+  if(e.target.closest('#aiConnect')){aiConnect();return}
+  if(e.target.closest('#aiOffline')){AI.offline=true;aiHeader();renderChips();renderChat();return}
   const op=e.target.closest('[data-opt]');if(op){send(op.dataset.opt);return}
   const ac=e.target.closest('[data-act2]');if(ac){const a=ac.dataset.act2;
     if(a==='__fin'||a==='__fatt'||a==='__report'){toggleChat(false);openFin(a==='__fatt'?'fatt':a==='__report'?'report':'mesi');return}
@@ -3745,7 +3768,264 @@ $('#chatLog').addEventListener('click',e=>{
   const no=e.target.closest('[data-no]');if(no){resolveConfirm(+no.dataset.no,false);return}
   const u=e.target.closest('[data-undo]');if(u){const m=chatLog[+u.dataset.undo];if(m&&m.snap){markChange();restore(m.snap);m.undone=true;renderChat()}}
 });
-function toggleChat(open){setTimeout(placeMini,0);if(open){chipLevel='root';renderChips()}$('#chat').hidden=!open;$('#fab').hidden=open;$('#fab').setAttribute('aria-expanded',open);if(open){renderChat();$('#chatIn').focus()}}
+/* =====================================================================
+   ASSISTENTE CLAUDE — parla come in chat, agisce solo dentro Tasky
+   (niente internet: Claude riceve solo gli strumenti dell'app qui sotto)
+   ===================================================================== */
+const AI={st:null,checking:false,msgs:[],busy:false,offline:false,voice:false,fast:false,handsfree:false,model:null};
+try{AI.voice=localStorage.getItem('tbm-ai-voice')==='1'}catch(e){}
+const aiAvail=()=>typeof window.tbmAI==='function'&&mode==='cloud';
+const aiOn=()=>aiAvail()&&!AI.offline&&AI.st&&AI.st.connected;
+function aiStatus(force){
+  if(!aiAvail()||AI.checking||(AI.st&&!force))return;
+  AI.checking=true;
+  window.tbmAI({action:'status'}).then(d=>{AI.st=d&&!d.error?d:{connected:false,err:d&&d.error};AI.fast=!!(d&&d.fast);AI.model=d&&d.model}).catch(e=>{AI.st={connected:false,err:'Non riesco a contattare il server: '+(e.message||e)}}).finally(()=>{AI.checking=false;aiHeader();if(!$('#chat').hidden)renderChat()});
+}
+function aiHeader(){
+  const h=$('#chat .chat-h');if(!h)return;
+  const on=aiOn();
+  h.querySelector('b').textContent=on?'Claude':'Assistente';
+  h.querySelector('span').textContent=on?(AI.fast?'collegato · veloce':'collegato · solo Tasky'):AI.offline||!aiAvail()?'comandi in italiano · offline':AI.st&&!AI.st.connected?'da collegare':'…';
+  $('#aiVoice').hidden=!on;$('#aiVoice').setAttribute('aria-pressed',AI.voice);
+  $('#aiMenu').hidden=!aiAvail();
+  $('#cchips').hidden=on||(!AI.offline&&aiAvail());
+  $('#chatIn').placeholder=on?'Scrivi o detta a Claude…':'es. mercoledì 21 sono libero';
+}
+const mdLite=s=>esc(s).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/^#{1,4}\s*(.+)$/gm,'<b>$1</b>').replace(/`([^`]+)`/g,'$1');
+function aiConnectCard(){
+  if(!AI.st)return `<div class="msg bot">Controllo il collegamento con Claude…</div>`;
+  return `<div class="aic">
+    <b class="aic-t">Collega Claude a Tasky</b>
+    <p>Così mi parli come in una chat normale (anche a voce) e faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nei Conti. Non vado su internet: vedo e modifico solo Tasky.</p>
+    <ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a> (stesso account di Claude o uno nuovo).</li><li>In <b>Billing</b> aggiungi un po' di credito (bastano 5 $: ogni comando costa circa 1–2 centesimi).</li><li>In <b>API Keys</b> crea una chiave, copiala e incollala qui.</li></ol>
+    <div class="aic-f"><input id="aiKey" type="password" placeholder="sk-ant-…" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
+    ${AI.st.err&&!/Accedi/.test(AI.st.err)?`<p class="aic-e">${esc(AI.st.err)}</p>`:''}
+    <p class="aic-n">La chiave resta salvata sul server di Tasky, non sul telefono. Puoi scollegarla quando vuoi dal menu ⋯.</p>
+    <button type="button" class="aic-off" id="aiOffline">Per ora usa i comandi offline</button>
+  </div>`;
+}
+const AI_SUGG=['Cosa ho domani?','Aggiungi una task: mandare preventivo a Rilastil, scadenza venerdì','Sabato sono libero','Che lavori ho a novembre e quanto ho fatturato?'];
+function aiGreeting(){return `<div class="msg bot">Ciao Francesco! Sono Claude, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
+
+/* ---------- contesto: cosa vede Claude a ogni messaggio ---------- */
+const AI_STATIC=`Sei Claude, l'assistente integrato in Tasky: l'app di task, calendario e conti di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
+
+Cosa puoi fare: solo leggere e modificare i dati di Tasky con gli strumenti a disposizione. Non hai accesso a internet, email, meteo, notizie o altre app: se te lo chiedono, dillo in una riga e proponi cosa puoi fare dentro Tasky. Puoi comunque ragionare con lui su organizzazione, priorità e carico di lavoro usando i suoi dati.
+
+Come funziona Tasky:
+- Task: cose da fare con una scadenza (data). Possono essere "singole" oppure dentro un progetto. Se non dice la scadenza usa oggi. Una task NON va nel calendario a un orario preciso se non lo chiede: per metterla in calendario usa pianifica_task.
+- Progetti: raccolgono task, possono avere un cliente e una scadenza.
+- Eventi: impegni fissi con data e orario (riprese, call, appuntamenti). Tipo "lavoro" o "personale". Possono durare tutto il giorno e ripetersi. Compleanni = tutto il giorno, ogni anno, tipo personale. Rinnovi/abbonamenti = ogni mese.
+- Giorni: lavorativi o liberi (giorno_libero). Gli eventi restano anche nei giorni liberi.
+- Conti: lavori del mese con importo fatturato, contanti, stato (prev=previsto, corso=in corso, fatt=da fatturare, attesa=attesa pagamento, pagato=incassato), giorni di lavoro che possono bloccare il calendario.
+
+Regole:
+- Date YYYY-MM-DD, orari HH:MM (24h), fuso Europa/Roma. Calcola "domani", "lunedì prossimo", "tra una settimana" partendo dalla data di oggi indicata sotto.
+- Per modificare o eliminare usa gli id che trovi nei dati sotto o con lo strumento cerca. Non mostrare mai gli id a Francesco.
+- Se manca un'informazione davvero necessaria fai UNA domanda breve; altrimenti scegli un default sensato e fallo.
+- Prima di eliminare qualcosa chiedi conferma, a meno che la richiesta sia esplicita e senza ambiguità.
+- Se un progetto o cliente nominato non esiste, chiedi se crearlo (o crea una task singola se è chiaramente una cosa veloce).
+- Dopo aver agito conferma in una o due frasi cosa hai fatto, con giorno e orario in forma leggibile (es. "giovedì 6 novembre alle 15:00"). Niente tabelle; al massimo elenchi brevi con "-" e qualche **grassetto**.
+- Francesco può annullare tutto quello che hai fatto in un messaggio con il pulsante "Annulla" sotto la tua risposta.
+- Colori disponibili (hex): ${PALETTE.join(', ')}.`;
+function aiSnapshot(){
+  const now=new Date(),today=key(now),st=S.settings,L=[];
+  const d0=parse(today);
+  L.push(`OGGI: ${WDL[d0.getDay()].toLowerCase()} ${today}, ore ${hm(nowMin())}. Orario di lavoro standard ${hm(st.workStart)}–${hm(st.workEnd)}.`);
+  const days=[];for(let i=0;i<14;i++){const k=addDays(today,i);days.push(`${k} ${WD[parse(k).getDay()]}${dayIsOn(k)?'':' (libero)'}`)}
+  L.push('PROSSIMI GIORNI: '+days.join(' · '));
+  const cl=Object.values(S.clients);if(cl.length)L.push('CLIENTI: '+cl.map(c=>`${c.name} [${c.id}]`).join('; '));
+  const ps=activeProjects();
+  const pr=ps.filter(p=>!isSolo(p));if(pr.length)L.push('PROGETTI:\n'+pr.map(p=>`- ${p.name} [${p.id}]${p.client||S.clients[p.clientId]?.name?' · cliente '+(S.clients[p.clientId]?.name||p.client):''}${p.deadline?' · scadenza '+p.deadline:''}`).join('\n'));
+  const open=allTasks().filter(t=>!t.done&&!S.projects[t.projectId]?.archived);
+  if(open.length)L.push('TASK DA FARE:\n'+open.slice(0,120).map(t=>{const p=S.projects[t.projectId];return `- ${t.title} [${t.id}]${t.solo?'':' · progetto '+(p?.name||'?')} · scadenza ${dlOf(t)||'nessuna'}${t.pin&&t.pin.d?` · in calendario ${t.pin.d} ${hm(t.pin.s)}–${hm(t.pin.s+pinLen(t))}`:''}`}).join('\n'));
+  const done=allTasks().filter(t=>t.done&&t.doneAt&&Date.now()-t.doneAt<7*864e5);if(done.length)L.push('TASK FATTE NEGLI ULTIMI 7 GIORNI: '+done.map(t=>`${t.title} [${t.id}]`).join('; '));
+  const ev=[];for(let i=-3;i<45;i++){const k=addDays(today,i);blocksOn(k,true).forEach(b=>{if(b.id==='lunch'||b.id==='prep')return;ev.push(`- ${k} ${b.allDay?'tutto il giorno':hm(b.start)+'–'+hm(b.end)} ${b.title||'Evento'} [${b.id}]${isRec(S.blocks[b.id])?' (ricorrente: '+repLabel(S.blocks[b.id])+')':''}${b.life==='pers'?' · personale':''}${b.place&&b.place.label?' · '+b.place.label:''}${b.notes?' · note: '+b.notes.slice(0,80).replace(/\n/g,' '):''}`)})}
+  L.push('EVENTI (da 3 giorni fa ai prossimi 45 giorni):\n'+(ev.slice(0,220).join('\n')||'nessuno'));
+  const L0=S.blocks.lunch;if(L0)L.push(`PAUSA PRANZO nei giorni lavorativi ${hm(L0.start)}–${hm(L0.end)}.`);
+  const ym=today.slice(0,7),jobs=Object.values(S.jobs||{}).filter(j=>j.month>=addDays(today,-62).slice(0,7)||j.status!=='pagato');
+  if(jobs.length)L.push('LAVORI NEI CONTI:\n'+jobs.sort((a,b)=>a.month<b.month?-1:1).slice(0,80).map(j=>`- ${j.month} ${j.title||'(senza titolo)'} [${j.id}] · cliente ${S.clients[j.clientId]?.name||'-'} · ${eur(j.amount)}${j.cash?' + contanti '+eur(j.cash):''} · stato ${j.status}${j.days&&j.days.length?' · giorni '+j.days.map(x=>x.slice(8)).join(','):''}${j.invoiceNo?' · fattura '+j.invoiceNo:''}`).join('\n'));
+  return L.join('\n\n');
+}
+
+/* ---------- strumenti ---------- */
+const S_DATE={type:'string',description:'YYYY-MM-DD'},S_TIME={type:'string',description:'HH:MM 24h'};
+const S_REP={type:'object',description:'Ripetizione',properties:{frequenza:{type:'string',enum:['none','daily','workdays','weekly','monthly','yearly']},ogni:{type:'integer',description:'ogni quante unità (default 1)'},volte:{type:'integer',description:'termina dopo N volte'},fino_al:S_DATE}};
+const AI_TOOLS=[
+ {name:'cerca',description:'Cerca in Tasky task, progetti, eventi (anche lontani nel tempo o passati), clienti e lavori. Usalo quando ciò che serve non è già nei dati del contesto.',input_schema:{type:'object',properties:{testo:{type:'string',description:'parole da cercare (vuoto = tutto)'},dal:S_DATE,al:S_DATE}}},
+ {name:'aggiungi_task',description:'Crea una task. Se progetto è indicato la mette in quel progetto (id o nome esistente), altrimenti è una task singola.',input_schema:{type:'object',properties:{titolo:{type:'string'},progetto:{type:'string'},scadenza:{type:'string',description:'YYYY-MM-DD, oppure "nessuna"'},durata_min:{type:'integer'},in_calendario:{type:'object',description:'solo se chiede di metterla a un orario',properties:{data:S_DATE,inizio:S_TIME,durata_min:{type:'integer'}},required:['data','inizio']}},required:['titolo']}},
+ {name:'modifica_task',description:'Modifica una task esistente (anche segnarla fatta o da fare).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},scadenza:{type:'string',description:'YYYY-MM-DD oppure "nessuna"'},durata_min:{type:'integer'},fatta:{type:'boolean'},progetto:{type:'string',description:'id o nome del progetto in cui spostarla'}},required:['id']}},
+ {name:'pianifica_task',description:'Mette una task nel calendario a un orario (le task già lì dopo scorrono per non sovrapporsi). Con data "nessuna" la toglie dal calendario.',input_schema:{type:'object',properties:{id:{type:'string'},data:{type:'string'},inizio:S_TIME,durata_min:{type:'integer'}},required:['id','data']}},
+ {name:'elimina_task',description:'Elimina una task.',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
+ {name:'crea_progetto',description:'Crea un progetto (contenitore di task).',input_schema:{type:'object',properties:{nome:{type:'string'},cliente:{type:'string',description:'nome o id; se non esiste viene creato'},scadenza:S_DATE,colore:{type:'string'}},required:['nome']}},
+ {name:'modifica_progetto',description:'Modifica, archivia o ripristina un progetto.',input_schema:{type:'object',properties:{id:{type:'string'},nome:{type:'string'},cliente:{type:'string'},scadenza:{type:'string',description:'YYYY-MM-DD oppure "nessuna"'},colore:{type:'string'},archiviato:{type:'boolean'}},required:['id']}},
+ {name:'elimina_progetto',description:'Elimina un progetto e tutte le sue task.',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
+ {name:'aggiungi_evento',description:'Crea un evento in calendario.',input_schema:{type:'object',properties:{titolo:{type:'string'},data:S_DATE,inizio:S_TIME,fine:S_TIME,tutto_il_giorno:{type:'boolean'},ripeti:S_REP,tipo:{type:'string',enum:['lavoro','personale']},descrizione:{type:'string'},luogo:{type:'string'},progetto:{type:'string'},colore:{type:'string'},prima_min:{type:'integer',description:'minuti di viaggio/preparazione prima'},dopo_min:{type:'integer',description:'minuti di rientro dopo'}},required:['titolo','data']}},
+ {name:'modifica_evento',description:'Modifica un evento. Per un evento ricorrente indica data_occorrenza e solo_questa=true per cambiare solo quel giorno, false per tutta la serie.',input_schema:{type:'object',properties:{id:{type:'string'},data_occorrenza:S_DATE,solo_questa:{type:'boolean'},titolo:{type:'string'},data:S_DATE,inizio:S_TIME,fine:S_TIME,tutto_il_giorno:{type:'boolean'},ripeti:S_REP,tipo:{type:'string',enum:['lavoro','personale']},descrizione:{type:'string'},luogo:{type:'string'},colore:{type:'string'},prima_min:{type:'integer'},dopo_min:{type:'integer'}},required:['id']}},
+ {name:'elimina_evento',description:'Elimina un evento. Se ricorrente: solo_questa=true + data_occorrenza toglie solo quel giorno.',input_schema:{type:'object',properties:{id:{type:'string'},data_occorrenza:S_DATE,solo_questa:{type:'boolean'}},required:['id']}},
+ {name:'giorno_libero',description:'Segna uno o più giorni come liberi (non lavora) o di nuovo lavorativi.',input_schema:{type:'object',properties:{date:{type:'array',items:S_DATE},libero:{type:'boolean'}},required:['date','libero']}},
+ {name:'aggiungi_cliente',description:'Crea un cliente (se esiste già con quel nome restituisce quello).',input_schema:{type:'object',properties:{nome:{type:'string'}},required:['nome']}},
+ {name:'aggiungi_lavoro',description:'Aggiunge un lavoro nei Conti (fatturato del mese).',input_schema:{type:'object',properties:{titolo:{type:'string'},cliente:{type:'string'},progetto:{type:'string'},mese:{type:'string',description:'YYYY-MM'},giorni:{type:'array',items:S_DATE,description:'giorni di lavoro'},importo:{type:'number',description:'fatturato in euro'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},blocca_calendario:{type:'boolean',description:'crea eventi nei giorni di lavoro'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['titolo','mese']}},
+ {name:'modifica_lavoro',description:'Modifica un lavoro nei Conti (stato, importi, fattura, giorni...).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},importo:{type:'number'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},numero_fattura:{type:'string'},data_fattura:S_DATE,fattura_inviata:{type:'boolean'},giorni:{type:'array',items:S_DATE},blocca_calendario:{type:'boolean'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['id']}},
+ {name:'elimina_lavoro',description:'Elimina un lavoro dai Conti (e i suoi eventi).',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}}
+];
+const aiNorm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+const aiDate=v=>{if(v==null||v==='')return undefined;if(/^(nessuna|null|none)$/i.test(v))return null;if(!/^\d{4}-\d{2}-\d{2}$/.test(v))throw new Error('data non valida: '+v+' (serve YYYY-MM-DD)');return v};
+const aiTime=v=>{const m=/^(\d{1,2})[:.](\d{2})$/.exec(String(v||'').trim());if(!m)throw new Error('orario non valido: '+v+' (serve HH:MM)');return Math.min(1440,(+m[1])*60+(+m[2]))};
+function aiProj(ref,{create=false,clientRef}={}){
+  if(!ref)return null;if(S.projects[ref]&&!isSolo(S.projects[ref]))return S.projects[ref];
+  const n=aiNorm(ref),ps=Object.values(S.projects).filter(p=>!isSolo(p));
+  const p=ps.find(p=>aiNorm(p.name)===n&&!p.archived)||ps.find(p=>aiNorm(p.name)===n)||ps.find(p=>!p.archived&&aiNorm(p.name).includes(n))||ps.find(p=>!p.archived&&n.includes(aiNorm(p.name))&&p.name.length>3);
+  if(p||!create)return p||null;
+  const c=clientRef?aiClient(clientRef,true):null;const np={id:uid(),name:ref,client:c?.name||'',clientId:c?.id||null,color:c?.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);return np;
+}
+function aiClient(ref,create){if(!ref)return null;if(S.clients[ref])return S.clients[ref];const n=aiNorm(ref);const c=Object.values(S.clients).find(c=>aiNorm(c.name)===n)||Object.values(S.clients).find(c=>aiNorm(c.name).includes(n)||n.includes(aiNorm(c.name))&&c.name.length>2);return c||(create?findOrCreateClient(String(ref).trim()):null)}
+const aiColor=v=>v&&/^#[0-9a-f]{6}$/i.test(v)?v:null;
+const aiRep=r=>{if(!r||!r.frequenza||r.frequenza==='none')return {freq:'none',interval:1,endType:'never'};const v={freq:r.frequenza,interval:Math.max(1,+r.ogni||1),endType:'never',count:null,until:null};if(r.volte){v.endType='count';v.count=Math.max(1,+r.volte)}else if(r.fino_al){v.endType='until';v.until=aiDate(r.fino_al)}return v};
+const aiDesc=b=>`${b.title||'Evento'} ${b.allDay?'(tutto il giorno)':hm(b.start)+'–'+hm(b.end)}`;
+function aiTask(id){const t=taskById(id);if(!t)throw new Error('task non trovata: '+id);return t}
+function aiTaskPut(t,patch){if(t.solo){const p=S.projects[t.id];const q={...p};if('title' in patch)q.name=patch.title;['minutes','deadline','done','doneAt','pin'].forEach(f=>{if(f in patch)q[f]=patch[f]});put('projects',q)}else put('tasks',{...S.tasks[t.id],...patch})}
+function aiEventFields(a,base){
+  const o={};if(a.titolo!=null)o.title=a.titolo;if(a.data)o.date=aiDate(a.data);
+  if(a.tutto_il_giorno===true){o.allDay=true;o.start=0;o.end=1440;o.before=0;o.after=0}
+  else{if(a.tutto_il_giorno===false)o.allDay=false;if(a.inizio)o.start=aiTime(a.inizio);if(a.fine)o.end=aiTime(a.fine);
+    const s=o.start??base?.start,e=o.end??base?.end;if(s!=null&&(e==null||e<=s)){o.end=Math.min(1440,s+60)}}
+  if(a.tipo)o.life=a.tipo==='personale'?'pers':'work';if(a.descrizione!=null)o.notes=a.descrizione;if(a.luogo!=null)o.place=a.luogo?{label:a.luogo}:null;
+  if(aiColor(a.colore))o.color=a.colore;if(a.prima_min!=null)o.before=Math.max(0,+a.prima_min);if(a.dopo_min!=null)o.after=Math.max(0,+a.dopo_min);
+  return o;
+}
+function aiSearch(a){
+  const q=aiNorm(a.testo||''),w=q.split(/\s+/).filter(Boolean),hit=s=>!w.length||w.every(x=>aiNorm(s).includes(x));
+  const from=aiDate(a.dal)||addDays(key(new Date()),-30),to=aiDate(a.al)||addDays(key(new Date()),180),out={eventi:[],task:[],progetti:[],clienti:[],lavori:[]};
+  for(let k=from,i=0;k<=to&&i<800;k=addDays(k,1),i++)blocksOn(k,true).forEach(b=>{if(b.id!=='lunch'&&b.id!=='prep'&&hit(b.title+' '+(b.notes||'')+' '+(b.place?.label||'')))out.eventi.push(`${k} ${aiDesc(b)} [${b.id}]${isRec(S.blocks[b.id])?' ricorrente':''}`)});
+  out.eventi=out.eventi.slice(0,80);
+  out.task=allTasks().filter(t=>hit(t.title)).slice(0,60).map(t=>`${t.title} [${t.id}] ${t.done?'fatta':'da fare'} · scadenza ${dlOf(t)||'nessuna'}${t.solo?'':' · progetto '+(S.projects[t.projectId]?.name||'?')}`);
+  out.progetti=Object.values(S.projects).filter(p=>!isSolo(p)&&hit(p.name)).map(p=>`${p.name} [${p.id}]${p.archived?' archiviato':''}`);
+  out.clienti=Object.values(S.clients).filter(c=>hit(c.name)).map(c=>`${c.name} [${c.id}]`);
+  out.lavori=Object.values(S.jobs||{}).filter(j=>hit((j.title||'')+' '+(S.clients[j.clientId]?.name||''))&&(!a.dal||j.month>=from.slice(0,7))&&(!a.al||j.month<=to.slice(0,7))).slice(0,60).map(j=>`${j.month} ${j.title} [${j.id}] ${eur(j.amount)} stato ${j.status}`);
+  return out;
+}
+async function aiRun(name,a){
+  a=a||{};
+  switch(name){
+  case 'cerca':return {ok:true,risultati:aiSearch(a)};
+  case 'aggiungi_task':{
+    const dl=a.scadenza===undefined?key(new Date()):aiDate(a.scadenza);
+    let pr=null;if(a.progetto){pr=aiProj(a.progetto);if(!pr)return {ok:false,errore:`Progetto "${a.progetto}" non trovato. Progetti esistenti: ${realProjects().map(p=>p.name).join(', ')||'nessuno'}`}}
+    let id;const min=Math.max(15,+a.durata_min||(pr?60:30));
+    if(pr){id=uid();const order=Math.max(0,...Object.values(S.tasks).filter(x=>x.projectId===pr.id).map(x=>x.order||0))+1;put('tasks',{id,projectId:pr.id,title:a.titolo,minutes:min,done:false,deadline:dl??null,created:Date.now(),order,priority:pr.priority||2})}
+    else{id=uid();put('projects',{id,kind:'task',name:a.titolo,minutes:min,priority:2,deadline:dl??null,done:false,color:'#56606E',created:Date.now()})}
+    if(a.in_calendario){const c=a.in_calendario;placeWithReflow(id,aiDate(c.data),aiTime(c.inizio),Math.max(15,+c.durata_min||min||60))}
+    return {ok:true,id,progetto:pr?.name||'(task singola)',scadenza:dl??'nessuna'}}
+  case 'modifica_task':{
+    const t=aiTask(a.id),p={};if(a.titolo)p.title=a.titolo;if(a.scadenza!==undefined)p.deadline=aiDate(a.scadenza)??null;if(a.durata_min)p.minutes=Math.max(15,+a.durata_min);
+    if(a.fatta!=null){p.done=!!a.fatta;p.doneAt=a.fatta?Date.now():null}
+    if(a.progetto&&!t.solo){const pr=aiProj(a.progetto);if(!pr)return {ok:false,errore:'progetto non trovato'};p.projectId=pr.id}
+    aiTaskPut(t,p);return {ok:true}}
+  case 'pianifica_task':{
+    const t=aiTask(a.id);if(/^(nessuna|null|none)$/i.test(a.data||'')){aiTaskPut(t,{pin:null});return {ok:true,tolta:true}}
+    if(!a.inizio)return {ok:false,errore:'serve inizio HH:MM'};
+    const n=placeWithReflow(t.id,aiDate(a.data),aiTime(a.inizio),Math.max(15,+a.durata_min||pinLen(t)));return {ok:true,altre_task_spostate:n}}
+  case 'elimina_task':{const t=aiTask(a.id);if(t.solo)del('projects',t.id);else del('tasks',t.id);return {ok:true}}
+  case 'crea_progetto':{
+    if(aiProj(a.nome)&&aiNorm(aiProj(a.nome).name)===aiNorm(a.nome))return {ok:false,errore:'esiste già un progetto con questo nome',id:aiProj(a.nome).id};
+    const c=a.cliente?aiClient(a.cliente,true):null;const np={id:uid(),name:a.nome,client:c?.name||'',clientId:c?.id||null,color:aiColor(a.colore)||c?.color||freeColor(),priority:2,deadline:aiDate(a.scadenza)??null,created:Date.now()};put('projects',np);return {ok:true,id:np.id}}
+  case 'modifica_progetto':{
+    const p=S.projects[a.id];if(!p||isSolo(p))throw new Error('progetto non trovato');const q={...p};
+    if(a.nome)q.name=a.nome;if(a.scadenza!==undefined)q.deadline=aiDate(a.scadenza)??null;if(aiColor(a.colore))q.color=a.colore;
+    if(a.cliente){const c=aiClient(a.cliente,true);q.clientId=c.id;q.client=c.name}
+    put('projects',q);if(a.archiviato!=null)archiveProject(S.projects[a.id],!!a.archiviato);return {ok:true}}
+  case 'elimina_progetto':{const p=S.projects[a.id];if(!p)throw new Error('progetto non trovato');if(isSolo(p))del('projects',p.id);else deleteProject(p);return {ok:true}}
+  case 'aggiungi_evento':{
+    const o=aiEventFields(a,null);if(!o.date)throw new Error('serve la data');
+    if(!o.allDay&&o.start==null)return {ok:false,errore:'serve l\'orario di inizio (o tutto_il_giorno=true)'};
+    const pr=a.progetto?aiProj(a.progetto):null;
+    const b={id:uid(),title:a.titolo,color:o.color||pr?.color||(o.life==='pers'?'#33B679':'#3B6FE0'),date:o.date,start:o.start??0,end:o.end??Math.min(1440,(o.start??0)+60),repeat:aiRep(a.ripeti),exceptions:{},before:o.before??0,after:o.after??0,created:Date.now(),life:o.life||'work',...(o.allDay?{allDay:true}:{}),...(o.notes?{notes:o.notes}:{}),...(o.place?{place:o.place}:{}),...(pr?{projectId:pr.id}:{})};
+    put('blocks',b);return {ok:true,id:b.id}}
+  case 'modifica_evento':{
+    const b=S.blocks[a.id];if(!b)throw new Error('evento non trovato');const occ=aiDate(a.data_occorrenza)||b.date;
+    const cur=blocksOn(occ,true).find(x=>x.id===b.id)||b;const o=aiEventFields(a,cur);
+    const nb={title:o.title??b.title,color:o.color||b.color,date:o.date||occ,start:o.start??cur.start,end:o.end??cur.end,allDay:o.allDay??!!b.allDay,before:o.before??b.before,after:o.after??b.after};
+    ['life','notes','place'].forEach(f=>{if(f in o)nb[f]=o[f]});
+    if(isRec(b)){if(a.solo_questa){applyOnly(b,occ,nb);return {ok:true,solo:occ}}applyAll(b,occ,nb,a.ripeti?aiRep(a.ripeti):undefined);return {ok:true,serie:true}}
+    put('blocks',{...b,...nb,...(a.ripeti?{repeat:aiRep(a.ripeti)}:{})});return {ok:true}}
+  case 'elimina_evento':{
+    const b=S.blocks[a.id];if(!b)throw new Error('evento non trovato');
+    if(b.jobId)return {ok:false,errore:'questo evento viene da un lavoro nei Conti: togli il giorno dal lavoro con modifica_lavoro'};
+    if(isRec(b)&&a.solo_questa){const occ=aiDate(a.data_occorrenza);if(!occ)throw new Error('serve data_occorrenza');put('blocks',{...b,exceptions:{...(b.exceptions||{}),[occ]:'skip'}});return {ok:true,solo:occ}}
+    del('blocks',b.id);return {ok:true}}
+  case 'giorno_libero':{(a.date||[]).forEach(k=>setPresence(aiDate(k),!a.libero));saveSettings();return {ok:true}}
+  case 'aggiungi_cliente':{const c=findOrCreateClient(String(a.nome).trim());return {ok:true,id:c.id}}
+  case 'aggiungi_lavoro':{
+    if(!/^\d{4}-\d{2}$/.test(a.mese||''))throw new Error('mese non valido (YYYY-MM)');
+    const c=a.cliente?aiClient(a.cliente,true):null,pr=a.progetto?aiProj(a.progetto):null;
+    const st=S.settings,days=(a.giorni||[]).map(aiDate).filter(k=>k&&k.startsWith(a.mese)).sort();
+    const j={id:uid(),month:a.mese,day:days.map(k=>+k.slice(8)).join(', '),days,clientId:c?.id||null,projectId:pr?.id||null,title:a.titolo,amount:+a.importo||0,cash:+a.contanti||0,status:a.stato||'prev',invRivalsa:true,created:Date.now(),notes:a.note||'',
+      cal:{on:!!a.blocca_calendario&&days.length>0,start:a.dalle?aiTime(a.dalle):st.workStart,end:a.alle?aiTime(a.alle):st.workEnd,color:aiColor(a.colore)||undefined}};
+    if(!j.cal.color)delete j.cal.color;put('jobs',j);syncJobBlocks(j);if(typeof renderFin==='function')renderFin();return {ok:true,id:j.id,giorni_bloccati:j.cal.on?days.length:0}}
+  case 'modifica_lavoro':{
+    const j0=S.jobs[a.id];if(!j0)throw new Error('lavoro non trovato');const j={...j0,cal:{...(j0.cal||{on:false,start:S.settings.workStart,end:S.settings.workEnd})}};
+    if(a.titolo)j.title=a.titolo;if(a.importo!=null)j.amount=+a.importo;if(a.contanti!=null)j.cash=+a.contanti;if(a.stato)j.status=a.stato;if(a.note!=null)j.notes=a.note;
+    if(a.numero_fattura!=null)j.invoiceNo=fixInvNo(a.numero_fattura,j.month);if(a.data_fattura)j.invoiceDate=aiDate(a.data_fattura);if(a.fattura_inviata!=null)j.invoiceSent=!!a.fattura_inviata;
+    if(a.giorni){j.days=a.giorni.map(aiDate).filter(k=>k&&k.startsWith(j.month)).sort();j.day=j.days.map(k=>+k.slice(8)).join(', ')}
+    if(a.blocca_calendario!=null)j.cal.on=!!a.blocca_calendario;if(a.dalle)j.cal.start=aiTime(a.dalle);if(a.alle)j.cal.end=aiTime(a.alle);if(aiColor(a.colore))j.cal.color=a.colore;
+    put('jobs',j);syncJobBlocks(j);if(typeof renderFin==='function')renderFin();return {ok:true}}
+  case 'elimina_lavoro':{const j=S.jobs[a.id];if(!j)throw new Error('lavoro non trovato');Object.values(S.blocks).filter(b=>b.jobId===j.id).forEach(b=>del('blocks',b.id));del('jobs',j.id);if(typeof renderFin==='function')renderFin();return {ok:true}}
+  }
+  return {ok:false,errore:'strumento sconosciuto'};
+}
+const AI_RO=new Set(['cerca']);
+function aiTrim(){while(AI.msgs.length>40){AI.msgs.shift();while(AI.msgs.length&&!(AI.msgs[0].role==='user'&&typeof AI.msgs[0].content==='string'))AI.msgs.shift()}}
+async function aiSend(text){
+  if(AI.busy)return;AI.busy=true;
+  aiTrim();const base0=AI.msgs.length;chatLog.push({who:'me',text});AI.msgs.push({role:'user',content:text});
+  const before=takeSnap();let changed=false;const bot={who:'bot',text:'',typing:true,md:true};chatLog.push(bot);renderChat();
+  try{
+    for(let step=0;step<10;step++){
+      const r=await window.tbmAI({action:'chat',system:[{text:AI_STATIC,cache:true},{text:aiSnapshot()}],messages:AI.msgs,tools:AI_TOOLS});
+      if(!r||r.error){if(r&&r.needKey){AI.st={connected:false,err:r.error};aiHeader()}throw new Error(r&&r.error||'nessuna risposta')}
+      const content=(r.content||[]).filter(c=>c.type==='text'||c.type==='tool_use');AI.msgs.push({role:'assistant',content:content.length?content:[{type:'text',text:'…'}]});
+      const said=content.filter(c=>c.type==='text').map(c=>c.text).join('\n').trim();if(said){bot.text=(bot.text?bot.text+'\n\n':'')+said;renderChat()}
+      const uses=content.filter(c=>c.type==='tool_use');
+      if(!uses.length||r.stop_reason!=='tool_use')break;
+      const res=[];
+      for(const u of uses){let out;try{out=await aiRun(u.name,u.input);if(!AI_RO.has(u.name)&&out&&out.ok!==false)changed=true}catch(e){out={ok:false,errore:String(e.message||e)}}
+        res.push({type:'tool_result',tool_use_id:u.id,content:JSON.stringify(out),...(out&&out.ok===false?{is_error:true}:{})})}
+      AI.msgs.push({role:'user',content:res});
+      if(step===9)bot.text+=(bot.text?'\n\n':'')+'(Mi fermo qui: dimmi se devo continuare.)';
+    }
+  }catch(e){bot.err=1;bot.text=(bot.text?bot.text+'\n\n':'')+'⚠ '+(e.message||e);
+    AI.msgs.length=base0; // la conversazione resta valida: tolgo questo scambio rimasto a metà
+  }
+  bot.typing=false;if(!bot.text)bot.text='Fatto.';
+  if(changed){bot.undo=1;bot.snap=before}
+  AI.busy=false;renderChat();
+  if(AI.voice&&!bot.err)aiSpeak(bot.text);
+}
+function aiSpeak(t){
+  if(!('speechSynthesis' in window))return;try{speechSynthesis.cancel()}catch(e){}
+  const u=new SpeechSynthesisUtterance(t.replace(/\*\*/g,'').replace(/^- /gm,'').replace(/\[[^\]]*\]/g,''));u.lang='it-IT';u.rate=1.05;
+  const v=speechSynthesis.getVoices().find(v=>/^it/i.test(v.lang));if(v)u.voice=v;
+  u.onend=()=>{if(AI.handsfree&&!$('#chat').hidden){AI.handsfree=false;setTimeout(()=>$('#micBtn').click(),250)}};
+  speechSynthesis.speak(u);
+}
+function aiConnect(){
+  const inp=$('#aiKey'),k=(inp&&inp.value||'').trim();if(!k){inp&&inp.focus();return}
+  const b=$('#aiConnect');b.disabled=true;b.textContent='Collego…';
+  window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true};AI.model=d.model;AI.offline=false;chatLog.length=0;toast('Claude è collegato ✓')}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
+    .catch(e=>{AI.st={connected:false,err:String(e.message||e)}}).finally(()=>{aiHeader();renderChat()});
+}
+function aiMenu(){
+  const r=$('#aiMenu').getBoundingClientRect();const items=[];
+  if(aiOn()){items.push({label:'Nuova conversazione',run:()=>{AI.msgs=[];chatLog.length=0;renderChat()}});
+    items.push({label:AI.fast?'✓ Modalità veloce (più economica)':'Modalità veloce (più economica)',run:()=>{AI.fast=!AI.fast;aiHeader();window.tbmAI({action:'speed',fast:AI.fast})}});
+    items.push({label:'Usa i comandi offline',run:()=>{AI.offline=true;chatLog.length=0;aiHeader();renderChips();renderChat()}});
+    items.push({label:'Scollega Claude',run:()=>{window.tbmAI({action:'disconnect'}).then(()=>{AI.st={connected:false};AI.msgs=[];chatLog.length=0;aiHeader();renderChat();toast('Claude scollegato: la chiave è stata cancellata dal server')})}})}
+  else items.push({label:AI.st&&AI.st.connected?'Torna a Claude':'Collega Claude',run:()=>{AI.offline=false;chatLog.length=0;aiHeader();renderChat()}});
+  showCtx(Math.max(8,r.right-240),r.bottom+4,items);
+}
+
+function toggleChat(open){setTimeout(placeMini,0);if(open){chipLevel='root';renderChips();aiStatus();aiHeader()}$('#chat').hidden=!open;$('#fab').hidden=open;$('#fab').setAttribute('aria-expanded',open);if(open){renderChat();$('#chatIn').focus()}}
 $('#fab').onclick=()=>toggleChat(true);
 $('#chatClose').onclick=()=>toggleChat(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#chat').hidden&&!dlg.open)toggleChat(false)});
