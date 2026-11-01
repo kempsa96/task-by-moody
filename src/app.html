@@ -372,6 +372,7 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .aic a{color:var(--accent);font-weight:600}
 .aic-f{display:flex;gap:6px}.aic-f input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:16px;background:var(--surface)}
 .aic-e{color:var(--danger);font-weight:600}
+.nf-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:14px}.nf-row label{display:flex;align-items:center;gap:6px}.nf-row input[type=time]{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;background:var(--surface)}
 .aic-opt{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
 .aic-opt small{color:var(--muted);font-size:12px}
 details.aic-opt summary{cursor:pointer;list-style:revert}
@@ -1623,8 +1624,22 @@ function render(){migrate();schedule();renderRange();renderProjects();const qaS=
 let remT=null,remSig='';
 function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if(force){remSig='';clearTimeout(remT);remT=null}if(remT)return;remT=setTimeout(()=>{remT=null;try{const L=buildReminders(),sig=JSON.stringify(L);if(sig!==remSig){remSig=sig;window.tbmReminders(L)}}catch(e){console.error(e)}},force?300:4000)}
 window.tbmForceReminders=()=>queueReminders(true);
+function briefFor(k){
+  const d=parse(k),cut=(s,l=44)=>s.length>l?s.slice(0,l-1)+'…':s;
+  const all=blocksOn(k,true).filter(b=>!isPause(b)&&b.id!=='lunch'&&b.id!=='prep'&&eventDone(b,k)!=='no');
+  const ad=all.filter(b=>b.allDay),tm=all.filter(b=>!b.allDay).sort((a,b)=>a.start-b.start);
+  const due=allTasks().filter(t=>!t.done&&dlOf(t)===k&&!S.projects[t.projectId]?.archived);
+  const late=allTasks().filter(t=>!t.done&&dlOf(t)&&dlOf(t)<k&&!S.projects[t.projectId]?.archived);
+  const L=[];
+  ad.forEach(b=>L.push((/^\p{Extended_Pictographic}/u.test(b.title||'')?'':'📌 ')+cut(b.title||'Evento')));
+  tm.forEach(b=>L.push(`🕒 ${hm(b.start)} ${cut(b.title||'Evento',34)}${b.place&&b.place.label?' · 📍'+cut(b.place.label.split(',')[0],18):''}`));
+  if(due.length){L.push(`✅ ${due.length===1?'1 task in scadenza':due.length+' task in scadenza'}:`);due.slice(0,5).forEach(t=>L.push(`• ${cut(t.title)}${t.pin&&t.pin.d===k?' ('+hm(t.pin.s)+')':''}`));if(due.length>5)L.push(`…e altre ${due.length-5}`)}
+  if(late.length)L.push(`⚠️ ${late.length===1?'1 task in ritardo':late.length+' task in ritardo'}`);
+  const head=[tm.length?`${tm.length} ${tm.length===1?'evento':'eventi'}`:'',due.length?`${due.length} task`:''].filter(Boolean).join(' · ');
+  return {title:`☀️ Buongiorno! ${WDL[d.getDay()]} ${d.getDate()} ${MO[d.getMonth()]}${head?' — '+head:''}`,body:L.length?L.join('\n'):(dayIsOn(k)?'Niente eventi né task in scadenza: giornata tutta da organizzare 💪':'Giornata libera, niente in programma. Goditela 🙌')};
+}
 function buildReminders(){
-  const n=S.settings.notif||{},ev=n.ev!==false,tk=n.task!==false,dy=n.day!==false,lead=n.lead??10;
+  const n=S.settings.notif||{},ev=n.ev!==false,tk=n.task!==false,dy=n.day!==false,lead=n.lead??10,br=n.brief!==false,brAt=n.briefAt??480,td=n.todo!==false,tdAt=n.todoAt??900;
   const now=Date.now(),lim=now+36*3600000,out=[],q=x=>'«'+x+'»',cut=(s,l=38)=>s.length>l?s.slice(0,l-1)+'…':s;
   const add=(id,ms,title,body,url)=>{if(ms>now+20000&&ms<lim)out.push({id,at:new Date(ms).toISOString(),title,body:body||'',...(url?{url}:{})})};
   const tripPlain=b=>{const t=b.travel;if(!t)return '';const ic=(TMODES.find(x=>x[0]===t.mode)||TMODES[0])[1];return `${ic} ${dur(t.minutes)}${t.lines&&t.lines.length?' · linee '+t.lines.join(' → '):''}`};
@@ -1660,6 +1675,11 @@ function buildReminders(){
       add(`t:${x.id}:${x.date}:${x.start}`,msOf(x.date,x.start),`▶ Inizia: ${cut(t.title)}`,[t.solo?'':p?.name,`fino alle ${hm(x.end)}`,nx?`poi ${q(cut(taskById(nx.id)?.title||'',24))}`:''].filter(Boolean).join(' · '))});
     Object.entries(PLAN.info).forEach(([id,v])=>{const t=taskById(id);if(t&&v.endDate)add(`te:${id}:${v.endDate}:${v.end}`,msOf(v.endDate,v.end),`⏱ Tempo finito: ${cut(t.title)}`,'L’hai finita? Apri l’app: ✓ fatto oppure +30 min')});
   }
+  // riepilogo del mattino (calcolato per 7 giorni, così arriva anche se non apri l'app per qualche giorno)
+  if(br)for(let d=0;d<7;d++){const k=addDays(k0,d),ms=msOf(k,brAt);if(ms<=now+20000)continue;const b=briefFor(k);out.push({id:`br:${k}`,at:new Date(ms).toISOString(),title:b.title,body:b.body})}
+  // promemoria pomeridiano con le task di oggi ancora da fare
+  if(td)for(let d=0;d<2;d++){const k=addDays(k0,d),left=allTasks().filter(t=>!t.done&&dlOf(t)===k&&!S.projects[t.projectId]?.archived);if(!left.length)continue;
+    add(`td:${k}`,msOf(k,tdAt),`📝 ${left.length===1?'Ti manca ancora 1 task':`Ti mancano ancora ${left.length} task`} per oggi`,left.slice(0,6).map(t=>'• '+cut(t.title,46)).join('\n')+(left.length>6?`\n…e altre ${left.length-6}`:''))}
   // una sola notifica per minuto tra inizio giornata / inizio task / fine task
   const rank=id=>id.startsWith('ds:')?0:id.startsWith('t:')?1:id.startsWith('te:')?2:-1,taken={};
   out.sort((a,b)=>a.at<b.at?-1:a.at>b.at?1:rank(a.id)-rank(b.id));
@@ -2800,6 +2820,8 @@ function openSettings(){
       <p class="note" id="nfState" style="margin:0">Controllo…</p>
       <div class="padd"><button type="button" class="btn primary" id="nfOn" hidden>Attiva su questo dispositivo</button><button type="button" class="btn" id="nfTest" hidden>Manda una prova</button></div>
       <div class="days"><label><input type="checkbox" id="nfEv" ${n.ev!==false?'checked':''}> Eventi e partenze</label><label><input type="checkbox" id="nfTk" ${n.task!==false?'checked':''}> Inizio e fine task</label><label><input type="checkbox" id="nfDy" ${n.day!==false?'checked':''}> Inizio e fine giornata</label></div>
+      <div class="nf-row"><label><input type="checkbox" id="nfBr" ${n.brief!==false?'checked':''}> ☀️ Riepilogo della giornata alle</label><input type="time" id="nfBrT" step="900" value="${hm(n.briefAt??480)}"></div>
+      <div class="nf-row"><label><input type="checkbox" id="nfTd" ${n.todo!==false?'checked':''}> 📝 Task di oggi ancora da fare alle</label><input type="time" id="nfTdT" step="900" value="${hm(n.todoAt??900)}"></div>
       <div class="field" style="margin-top:8px"><label for="nfLead">Avvisami degli eventi</label><select id="nfLead">${[[0,'All’ora esatta'],[5,'5 minuti prima'],[10,'10 minuti prima'],[15,'15 minuti prima'],[30,'30 minuti prima']].map(([v,l])=>`<option value="${v}" ${(n.lead??10)===v?'selected':''}>${l}</option>`).join('')}</select></div>
       <p class="note" style="margin:6px 0 0">Account: <b>${esc(window.tbmPush.email()||'')}</b> · <button type="button" class="btn ghost" id="nfOut" style="padding:2px 8px">Esci</button></p></div>`})():''}
     <div class="cedit"><span class="lbl">Backup</span>
@@ -2832,7 +2854,7 @@ function openSettings(){
     const days=[...form.querySelectorAll('.days input:checked')].map(i=>+i.value);
     Object.assign(s,{workStart:ws,workEnd:we,workDays:days.length?days:[1,2,3,4,5],bufBefore:+$('#sBufB').value,bufAfter:+$('#sBufA').value});
     {const hv=$('#sHome').value.trim();s.home=!hv?null:home&&home.label===hv?home:(s.home&&s.home.label===hv?s.home:{label:hv,lat:null,lon:null});s.travelMode=$('#sMode').value}
-    if($('#nfEv'))s.notif={ev:$('#nfEv').checked,task:$('#nfTk').checked,day:$('#nfDy').checked,lead:+$('#nfLead').value};
+    if($('#nfEv'))s.notif={ev:$('#nfEv').checked,task:$('#nfTk').checked,day:$('#nfDy').checked,lead:+$('#nfLead').value,brief:$('#nfBr').checked,briefAt:toMin($('#nfBrT').value||'08:00'),todo:$('#nfTd').checked,todoAt:toMin($('#nfTdT').value||'15:00')};
     s.planMode=$('#sPlan').value;
     {const pm=+$('#sPrep').value;if(pm!==prepMin()||(pm&&ws!==oldWs))setPrep(pm,ws)}
     saveSettings();dlg.close();scrollToWork()};

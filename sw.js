@@ -1,5 +1,5 @@
 /* Task by Moody — service worker: notifiche + funzionamento offline */
-const CACHE = 'tbm-v3';
+const CACHE = 'tbm-v4';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
 
@@ -19,7 +19,7 @@ self.addEventListener('push', (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch (x) { d = { title: 'Tasky', body: e.data ? e.data.text() : '' }; }
   e.waitUntil(self.registration.showNotification(d.title || 'Tasky', {
-    body: d.body || '', tag: d.tag, icon: 'icon-192-v2.png', badge: 'icon-192-v2.png', data: { url: d.url || './' }
+    body: d.body || '', tag: d.tag, renotify: !!d.tag, timestamp: Date.now(), icon: 'icon-192-v2.png', badge: 'icon-192-v2.png', data: { url: d.url || './' }
   }));
 });
 

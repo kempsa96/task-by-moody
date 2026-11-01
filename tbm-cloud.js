@@ -167,8 +167,13 @@
   };
 
   /* ---------- assistente Claude (funzione "assistant": la chiave resta sul server) ---------- */
-  window.tbmAI = function (body) {
+  window.tbmAI = function (body, retried) {
     return sb.functions.invoke('assistant', { body: body }).then(function (r) {
+      if (r.error && r.error.name === 'FunctionsFetchError') {
+        // connessione caduta (rete del telefono, app in background): riprovo una volta, poi spiego
+        if (!retried) return new Promise(function (ok) { setTimeout(ok, 1200); }).then(function () { return window.tbmAI(body, true); });
+        return { error: 'Connessione con il server persa: controlla internet e riprova.' };
+      }
       if (r.error) {
         var ctx = r.error.context;
         if (ctx && typeof ctx.json === 'function') return ctx.json().catch(function () { throw r.error; });
