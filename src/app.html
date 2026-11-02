@@ -826,7 +826,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .qe-prev{position:sticky;top:48px;background:color-mix(in srgb,var(--fg) 6%,var(--bg));border-radius:16px;padding:12px;overflow:hidden}
 .qe-paper{--qs:.6;position:relative;overflow:hidden}
 .qe-paper>.qdoc{transform:scale(var(--qs));transform-origin:top left;box-shadow:0 8px 30px rgb(0 0 0/.15)}
-.qe-prevbtn{display:none}
+.qe-prevbtn{display:none}.qe-prevbar{display:none}
 .bimg{min-height:60px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-radius:10px;padding:10px}.bimg img{max-height:90px;max-width:100%}
 .bsign{width:100%;aspect-ratio:3/1;background:#fff;border:1px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair}
 /* il documento (A4) */
@@ -878,6 +878,9 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .qd-contacts a{color:#1155cc;text-decoration:underline}
 .cbill summary{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none}.cbill summary::-webkit-details-marker{display:none}.cbill summary::after{content:'›';margin-left:auto;transform:rotate(90deg);color:var(--muted);transition:transform .2s}.cbill:not([open]) summary::after{transform:none}.cbill[open]{gap:10px}
 #qPrint{display:none}
+.qpdf-sheet{position:fixed;inset:0;z-index:200;background:rgb(0 0 0/.35);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
+.qpdf-box{background:var(--surface);color:var(--fg);border-radius:18px;box-shadow:var(--shadow);padding:18px;width:min(420px,100%);display:flex;flex-direction:column;gap:8px}
+.qpdf-n{margin:0;font-size:13px;color:var(--muted);word-break:break-word}.qpdf-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}.qpdf-acts .btn{text-decoration:none}
 @media print{
   html,body.qprint{height:auto!important;overflow:visible!important;background:#fff!important}
   body.qprint>*:not(#qPrint){display:none!important}
@@ -892,7 +895,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
   .qpt-foot{position:fixed;left:67px;right:67px;bottom:0;text-align:center;background:#fff;padding-top:6px;border-top:1px solid #000;line-height:15px;font-family:"Libre Franklin","Figtree",Helvetica,Arial,sans-serif;font-size:9.27px;color:#111}
   .qpt-foot a{color:#1155cc;text-decoration:underline}
 }
-@media (max-width:1100px){.kpis.big6{grid-template-columns:repeat(3,minmax(0,1fr))}.fgrid{grid-template-columns:minmax(0,1fr)}.qe-grid{grid-template-columns:minmax(0,1fr)}.qe-prev{display:none;position:static}.qe-prev.show{display:block}.qe-prevbtn{display:inline-block}}
+@media (max-width:1100px){.kpis.big6{grid-template-columns:repeat(3,minmax(0,1fr))}.fgrid{grid-template-columns:minmax(0,1fr)}.qe-grid{grid-template-columns:minmax(0,1fr)}.qe-prev{display:none;position:static}.qe-prev.show{display:block;position:fixed;inset:0;z-index:80;border-radius:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 12px calc(24px + env(safe-area-inset-bottom));background:var(--bg)}.qe-prev.show .qe-prevbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:var(--bg);margin:0 -12px 12px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;border-bottom:1px solid var(--line)}.qe-prevbar b{flex:1;text-align:center}.qe-prevbtn{display:inline-block}}
 @media (max-width:820px){
   .app[data-view="fin"] .t-c{display:none}
   .fin-head{gap:8px}.fin-biz{padding:6px 8px;font-size:13px}
@@ -1083,6 +1086,7 @@ const uid=()=>(crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Mat
 function key(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 function parse(k){const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)}
 function addDays(k,n){const d=parse(k);d.setDate(d.getDate()+n);return key(d)}
+function addMonth1(k){const d=parse(k),day=d.getDate();d.setDate(1);d.setMonth(d.getMonth()+1);d.setDate(Math.min(day,new Date(d.getFullYear(),d.getMonth()+1,0).getDate()));return key(d)}
 function hm(m){m=Math.round(m);return String(Math.floor(m/60)).padStart(2,'0')+':'+String(m%60).padStart(2,'0')}
 function toMin(s){const [h,m]=s.split(':').map(Number);return h*60+(m||0)}
 function dur(m){const h=Math.floor(m/60),r=m%60;return h&&r?`${h}h ${r}m`:h?`${h}h`:`${r}m`}
@@ -3973,7 +3977,8 @@ const AI={st:null,checking:false,msgs:[],busy:false,offline:false,voice:false,fa
 try{AI.voice=localStorage.getItem('tbm-ai-voice')==='1'}catch(e){}
 const aiAvail=()=>typeof window.tbmAI==='function'&&mode==='cloud';
 const aiOn=()=>aiAvail()&&!AI.offline&&AI.st&&AI.st.connected;
-const aiName=()=>AI.st&&AI.st.provider==='gemini'?'Gemini':'Claude';
+const aiName=()=>'TaskAI';
+const aiProv=()=>AI.st&&AI.st.provider==='gemini'?'Gemini':'Claude';
 function aiStatus(force){
   if(!aiAvail()||AI.checking||(AI.st&&!force))return;
   AI.checking=true;
@@ -4226,7 +4231,7 @@ async function aiRun(name,a){
   case 'verifica_partita_iva':{const r=await window.tbmAI({action:'vies',vat:a.partita_iva});return r||{ok:false}}
   case 'crea_preventivo':{
     const b=biz(),today=key(new Date()),lang=a.lingua||b.qLang||'en';
-    const q={id:uid(),num:nextQuoteNum(),year:+today.slice(0,4),date:today,valid:addDays(today,+b.qValid||90),lang,clientId:null,title:'',desc:'',items:[],discount:0,rivalsa:b.rivalsa!==false,bollo:b.bollo!==false,terms:lang==='en'?b.termsEn:b.termsIt,notes:lang==='en'?b.notesEn:b.notesIt,status:'bozza',created:Date.now()};
+    const q={id:uid(),num:nextQuoteNum(),year:+today.slice(0,4),date:today,valid:qValidFrom(today),lang,clientId:null,title:'',desc:'',items:[],discount:0,rivalsa:b.rivalsa!==false,bollo:b.bollo!==false,terms:lang==='en'?b.termsEn:b.termsIt,notes:lang==='en'?b.notesEn:b.notesIt,status:'bozza',created:Date.now()};
     aiQuoteApply(q,a);put('quotes',q);AI.quoteId=q.id;aiOpenQuote(q.id);return {ok:true,id:q.id,numero:qCode(q),totale:qTotals(q).tot}}
   case 'modifica_preventivo':{
     const q0=S.quotes[a.id];if(!q0)throw new Error('preventivo non trovato');const q=JSON.parse(JSON.stringify(q0));
@@ -4276,7 +4281,7 @@ function aiSpeak(t){
 function aiConnect(){
   const inp=$('#aiKey'),k=(inp&&inp.value||'').trim();if(!k){inp&&inp.focus();return}
   const b=$('#aiConnect');b.disabled=true;b.textContent='Collego…';
-  window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true,provider:d.provider};AI.model=d.model;AI.fast=false;AI.offline=false;AI.msgs=[];chatLog.length=0;toast(`${aiName()} è collegato ✓`)}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
+  window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true,provider:d.provider};AI.model=d.model;AI.fast=false;AI.offline=false;AI.msgs=[];chatLog.length=0;toast(`TaskAI è collegato (${aiProv()}) ✓`)}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
     .catch(e=>{AI.st={connected:false,err:String(e.message||e)}}).finally(()=>{aiHeader();renderChat()});
 }
 /* foto e screenshot da mandare all'assistente */
@@ -4294,7 +4299,7 @@ function aiMenu(){
   if(aiOn()){items.push({label:'Nuova conversazione',run:()=>{AI.msgs=[];chatLog.length=0;renderChat()}});
     items.push({label:AI.fast?'✓ Modalità veloce (più economica)':'Modalità veloce (più economica)',run:()=>{AI.fast=!AI.fast;aiHeader();window.tbmAI({action:'speed',fast:AI.fast})}});
     items.push({label:'Usa i comandi offline',run:()=>{AI.offline=true;chatLog.length=0;aiHeader();renderChips();renderChat()}});
-    items.push({label:`Scollega ${aiName()} / cambia chiave`,run:()=>{const n=aiName();window.tbmAI({action:'disconnect'}).then(()=>{AI.st={connected:false};AI.msgs=[];chatLog.length=0;aiHeader();renderChat();toast(`${n} scollegato: la chiave è stata cancellata dal server`)})}})}
+    items.push({label:`Scollega ${aiProv()} / cambia chiave`,run:()=>{const n=aiProv();window.tbmAI({action:'disconnect'}).then(()=>{AI.st={connected:false};AI.msgs=[];chatLog.length=0;aiHeader();renderChat();toast(`${n} scollegato: la chiave è stata cancellata dal server`)})}})}
   else items.push({label:AI.st&&AI.st.connected?`Torna a ${aiName()}`:'Collega l\'assistente',run:()=>{AI.offline=false;chatLog.length=0;aiHeader();renderChat()}});
   showCtx(Math.max(8,r.right-240),r.bottom+4,items);
 }
@@ -4321,7 +4326,7 @@ const NOTES_EN='This quote refers exclusively to the services described in the �
 const TERMS_IT='Una volta firmato, invia il preventivo via e-mail a info@moodyvideomilano.it.\nOperazione effettuata in regime forfettario, esente IVA ai sensi dell’art. 1, commi 54-89, Legge 190/2014. Rivalsa INPS 4% e marca da bollo da € 2,00 a carico del cliente.';
 const TERMS_EN='Once signed, please e-mail the quote to info@moodyvideomilano.it.\nTransaction carried out under the flat-rate tax regime, VAT-exempt pursuant to Art. 1, paragraphs 54-89, Law 190/2014. 4% INPS contribution and €2.00 stamp duty are charged to the client.';
 const BDEF={id:'profile',name:'Moody di Francesco Zampaglione',brand:'MOODY',owner:'Francesco Zampaglione',role:'Owner – Moody',vat:'12056090967',city:'Milan - Italy',address:'',phone:'+39 3891788943',email:'info@moodyvideomilano.it',web:'www.moodyvideomilano.it',tagline:'Unleashing Business Impact Through Video',
-  logo:null,sign:null,qColor:'#004269',qLang:'en',qNext:152,qFmt:'P-{n}_{yyyy}',qValid:90,termsIt:TERMS_IT,termsEn:TERMS_EN,notesIt:NOTES_IT,notesEn:NOTES_EN,rivalsa:true,bollo:true};
+  logo:null,sign:null,qColor:'#004269',qLang:'en',qNext:152,qFmt:'P-{n}_{yyyy}',qValid:'',termsIt:TERMS_IT,termsEn:TERMS_EN,notesIt:NOTES_IT,notesEn:NOTES_EN,rivalsa:true,bollo:true};
 const biz=()=>({...BDEF,...(S.biz.profile||{})});
 const fisc=()=>({...FDEF,...(biz().fiscal||{})});
 function taxRate(year){const f=fisc();if(f.taxMode!=='auto')return +f.tax||0;const sy=+(String(f.start||'').slice(0,4));return sy&&year-sy<5?5:15}
@@ -4341,6 +4346,7 @@ function sumJobs(list){return list.reduce((a,j)=>{const c=jobCalc(j);a.amount+=c
 function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.piva||b.cf))m.push('P.IVA o codice fiscale');if(!b.addr)m.push('indirizzo');if(!b.city)m.push('città');if(!(b.sdi||b.pec))m.push('codice SDI o PEC');return m}
 
 /* ---------- preventivi ---------- */
+const qValidFrom=d=>{const n=parseInt(biz().qValid);return n>0&&n!==90?addDays(d,n):addMonth1(d)};
 const qCode=q=>(biz().qFmt||'P-{n}_{yyyy}').replace('{n}',q.num).replace('{yyyy}',q.year).replace('{yy}',String(q.year).slice(2));
 function qTotals(q){
   const sub=(q.items||[]).reduce((a,it)=>a+num(it.price)*(num(it.qty)||0),0),disc=Math.min(sub,num(q.discount)),imp=sub-disc;
@@ -4389,6 +4395,7 @@ function quoteDoc(q){
 }
 const eur2=n=>'€'+(+n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 function printQuote(q){
+  if(QPDF_MOBILE())return quotePdfMobile(q);
   let root=$('#qPrint');if(!root){root=document.createElement('div');root.id='qPrint';document.body.appendChild(root)}
   const doc=quoteDoc(q),m=doc.match(/<div class="qd-contacts">([\s\S]*?)<\/div><\/div>\s*<\/div>\s*<\/div>\s*$/);
   root.innerHTML=`<table class="qpt"><tbody><tr><td>${doc}</td></tr></tbody><tfoot><tr><td><div class="qpt-sp"></div></td></tr></tfoot></table>${m?`<div class="qpt-foot">${m[1]}</div>`:''}`;
@@ -4399,6 +4406,64 @@ function printQuote(q){
   window.addEventListener('afterprint',done);
   const imgs=[...root.querySelectorAll('img')].map(i=>i.complete?null:new Promise(r=>{i.onload=i.onerror=r})).filter(Boolean);
   Promise.all(imgs).then(()=>setTimeout(()=>{window.print();setTimeout(()=>window.addEventListener('focus',done,{once:true}),400)},60));
+}
+
+/* ---------- PDF generato sul telefono (iOS/Android non stampano dalla web-app) ---------- */
+const QPDF_MOBILE=()=>/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+const loadJS=src=>new Promise((ok,ko)=>{if(document.querySelector(`script[src="${src}"]`)&&loadJS.done[src])return ok();const t=document.createElement('script');t.src=src;t.onload=()=>{loadJS.done[src]=1;ok()};t.onerror=()=>ko(new Error('Non riesco a scaricare il generatore PDF: controlla la connessione'));document.head.appendChild(t)});loadJS.done={};
+const quoteFileName=q=>{const c=S.clients[q.clientId],cb=(c&&c.bill)||{},b=biz();return [qCode(q),cb.ragione||c?.name,(b.brand||'').toUpperCase()].filter(Boolean).join(' - ').replace(/[\\/:*?"<>|]/g,'')};
+async function quotePdfBlob(q){
+  await loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  await loadJS('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const W=794,H=1123,TOP=60,BOT=30,GAP=14;
+  const host=document.createElement('div');host.style.cssText='position:absolute;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
+  host.innerHTML=quoteDoc(q);document.body.appendChild(host);
+  try{
+    const doc=host.firstElementChild;doc.style.minHeight='0';doc.style.boxShadow='none';
+    const ct=doc.querySelector('.qd-contacts');const foot=document.createElement('div');
+    foot.style.cssText='width:660px;margin-left:67px;box-sizing:border-box;border-top:1px solid #000;padding-top:6px;text-align:center;line-height:15px;font-family:"Libre Franklin","Figtree",Helvetica,Arial,sans-serif;font-size:9.27px;color:#111;background:#fff';
+    foot.innerHTML=ct?ct.innerHTML:'';foot.querySelectorAll('a').forEach(a=>a.style.cssText='color:#1155cc;text-decoration:underline');
+    if(ct)ct.style.display='none';host.appendChild(foot);
+    await Promise.all([...host.querySelectorAll('img')].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
+    try{await document.fonts.ready}catch(e){}
+    const fH=foot.offsetHeight,limBot=H-BOT-fH-GAP;
+    /* punti dove NON si può tagliare: righe di testo, immagini, righe tabella, firme */
+    const o=doc.getBoundingClientRect().top,units=[];
+    const tw=document.createTreeWalker(doc,NodeFilter.SHOW_TEXT);let n;const rg=document.createRange();
+    while(n=tw.nextNode()){if(!n.textContent.trim())continue;rg.selectNodeContents(n);for(const r of rg.getClientRects())if(r.height)units.push([r.top-o-2,r.bottom-o+2])}
+    doc.querySelectorAll('img,.qd-items tr,.qd-line,.qd-h,.qd-signs').forEach(e=>{const r=e.getBoundingClientRect();if(r.height&&r.height<700)units.push([r.top-o-2,r.bottom-o+2])});
+    const heads=[...doc.querySelectorAll('.qd-h,.qd-items thead')].map(e=>{const r=e.getBoundingClientRect();return[r.top-o-2,r.bottom-o]});
+    const total=doc.offsetHeight,cuts=[0];let y=0,first=true;
+    while(true){const room=first?limBot:limBot-TOP;if(total-y<=room)break;let c=y+room,moved=true;
+      while(moved){moved=false;for(const [a,b] of units)if(a<c&&b>c&&a>y+40){c=a;moved=true}for(const [a,b] of heads)if(b<=c&&c-b<40&&a>y+40){c=a;moved=true}}
+      cuts.push(c);y=c;first=false}
+    cuts.push(total);
+    const sc=Math.max(1.5,Math.min(2.6,Math.sqrt(15e6/(W*total))));
+    const opt={scale:sc,backgroundColor:'#ffffff',useCORS:true,logging:false};
+    const big=await html2canvas(doc,opt),fc=await html2canvas(foot,opt);
+    const pdf=new window.jspdf.jsPDF({unit:'pt',format:'a4',compress:true}),pw=595.28,k=pw/W;
+    for(let i=0;i<cuts.length-1;i++){
+      if(i)pdf.addPage();
+      const y0=cuts[i],h=cuts[i+1]-y0,dy=i?TOP:0,pc=document.createElement('canvas');
+      pc.width=Math.round(W*sc);pc.height=Math.round(H*sc);const g=pc.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,pc.width,pc.height);
+      g.drawImage(big,0,Math.round(y0*sc),big.width,Math.round(h*sc),0,Math.round(dy*sc),big.width,Math.round(h*sc));
+      g.drawImage(fc,0,Math.round((H-BOT-fH)*sc));
+      pdf.addImage(pc.toDataURL('image/jpeg',.9),'JPEG',0,0,pw,H*k)}
+    pdf.setProperties({title:quoteFileName(q)});
+    return pdf.output('blob');
+  }finally{host.remove()}
+}
+function quotePdfMobile(q){
+  const name=quoteFileName(q)+'.pdf';
+  const sh=document.createElement('div');sh.className='qpdf-sheet';sh.innerHTML=`<div class="qpdf-box"><b>Preparo il PDF…</b><p class="qpdf-n">${esc(name)}</p><div class="qpdf-acts"><button type="button" class="btn" data-x>Annulla</button></div></div>`;
+  document.body.appendChild(sh);const close=()=>sh.remove();sh.querySelector('[data-x]').onclick=close;
+  quotePdfBlob(q).then(blob=>{if(!sh.isConnected)return;const file=new File([blob],name,{type:'application/pdf'}),url=URL.createObjectURL(blob);
+    const canShare=navigator.canShare&&navigator.canShare({files:[file]});
+    sh.querySelector('b').textContent='PDF pronto ✓';
+    sh.querySelector('.qpdf-acts').innerHTML=`<button type="button" class="btn" data-x>Chiudi</button>${canShare?'<button type="button" class="btn primary" data-share>Salva o invia</button>':`<a class="btn primary" href="${url}" download="${esc(name)}">Scarica</a>`}`;
+    sh.querySelector('[data-x]').onclick=()=>{URL.revokeObjectURL(url);close()};
+    const bs=sh.querySelector('[data-share]');if(bs)bs.onclick=()=>navigator.share({files:[file],title:name.replace(/\.pdf$/,'')}).then(()=>{URL.revokeObjectURL(url);close()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Condivisione non riuscita: '+(e.message||e))});
+  }).catch(e=>{if(!sh.isConnected)return;sh.querySelector('b').textContent='Non sono riuscito a creare il PDF';sh.querySelector('.qpdf-n').textContent=e.message||String(e);console.error(e)});
 }
 
 /* ---------- tempo speso (task + eventi collegati) ---------- */
@@ -4655,7 +4720,7 @@ function openJob(j,preset){
 /* ---------- editor del preventivo ---------- */
 function newQuote(){
   const b=biz(),today=key(new Date()),y=+today.slice(0,4),lang=b.qLang||'en';
-  const q={id:uid(),num:nextQuoteNum(),year:y,date:today,valid:addDays(today,+b.qValid||90),lang,clientId:null,title:'',desc:'',
+  const q={id:uid(),num:nextQuoteNum(),year:y,date:today,valid:qValidFrom(today),lang,clientId:null,title:'',desc:'',
     items:[{id:uid(),title:'',desc:'',price:'',qty:1}],discount:0,rivalsa:!!b.rivalsa,bollo:!!b.bollo,terms:lang==='en'?b.termsEn:b.termsIt,notes:lang==='en'?b.notesEn:b.notesIt,status:'bozza',created:Date.now()};
   put('quotes',q);FIN.view='prev';FIN.year=y;FIN.q=q.id;renderFin(true);
 }
@@ -4670,7 +4735,7 @@ function renderQuoteEditor(el,q){
     </div>`;
   el.innerHTML=`<div class="qe">
     <div class="qe-bar"><button type="button" class="btn ghost" data-qa="back">‹ Preventivi</button><b class="qe-code">${esc(qCode(q))}</b><span class="qe-saved" id="qeSaved">Salvato</span>
-      <div class="qe-act"><button type="button" class="btn qe-ai" data-qa="ai">✨ Compila con l'assistente</button><button type="button" class="btn ghost qe-prevbtn" data-qa="preview">Anteprima</button><button type="button" class="btn" data-qa="job">${Object.values(S.jobs).some(j=>j.quoteId===q.id)?'Lavoro collegato ✓':'Aggiungi ai lavori'}</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div></div>
+      <div class="qe-act"><button type="button" class="btn qe-ai" data-qa="ai">✨ Compila con TaskAI</button><button type="button" class="btn ghost qe-prevbtn" data-qa="preview">Anteprima</button><button type="button" class="btn" data-qa="job">${Object.values(S.jobs).some(j=>j.quoteId===q.id)?'Lavoro collegato ✓':'Aggiungi ai lavori'}</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div></div>
     <div class="qe-grid">
       <div class="qe-form">
         <div class="row3"><div class="field"><label>Numero</label><input id="qN" inputmode="numeric" value="${q.num}"></div><div class="field"><label>Data</label><input id="qD" type="date" value="${q.date}"></div><div class="field"><label>Valido fino al</label><input id="qV" type="date" value="${q.valid}"></div></div>
@@ -4692,7 +4757,7 @@ function renderQuoteEditor(el,q){
         <div class="acts"><button type="button" class="btn danger left" id="qDel">Elimina preventivo</button><button type="button" class="btn" data-qa="dup">Duplica</button></div>
         ${!b.sign||!S.biz.profile?`<p class="note">Logo, firma e i tuoi dati si impostano in <button type="button" class="linkbtn" data-qa="biz">Dati attività</button>.</p>`:''}
       </div>
-      <div class="qe-prev" id="qPrev"><div class="qe-paper" id="qPaper">${quoteDoc(q)}</div></div>
+      <div class="qe-prev" id="qPrev"><div class="qe-prevbar"><button type="button" class="btn ghost" data-qa="preview">‹ Chiudi</button><b>Anteprima</b><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div><div class="qe-paper" id="qPaper">${quoteDoc(q)}</div></div>
     </div></div>`;
   let cur=JSON.parse(JSON.stringify(q)),saveT=null;
   const paper=$('#qPaper'),prev=$('#qPrev'),saved=$('#qeSaved');
@@ -4720,10 +4785,10 @@ function renderQuoteEditor(el,q){
     if(a==='back'){read();clearTimeout(saveT);put('quotes',cur);FIN.q=null;renderFin(true)}
     else if(a==='additem'){read();cur.items.push({id:uid(),title:'',desc:'',price:'',qty:1});redrawItems();const l=el.querySelectorAll('.qi-t');l[l.length-1].focus()}
     else if(a==='pdf'){read();clearTimeout(saveT);put('quotes',cur);printQuote(cur)}
-    else if(a==='preview'){prev.classList.toggle('show');fit()}
+    else if(a==='preview'){prev.classList.toggle('show');prev.scrollTop=0;requestAnimationFrame(fit)}
     else if(a==='biz')openBiz();
     else if(a==='ai'){read();clearTimeout(saveT);put('quotes',cur);aiQuoteMode(cur.id)}
-    else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=addDays(n.date,+biz().qValid||90);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}
+    else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=qValidFrom(n.date);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}
     else if(a==='job'){read();put('quotes',cur);const ex=Object.values(S.jobs).find(j=>j.quoteId===cur.id);if(ex){FIN.q=null;FIN.view='mesi';const [yy,mm]=ex.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;renderFin(true);openJob(ex);return}
       const t=qTotals(cur),mo=cur.date.slice(0,7);put('jobs',{id:uid(),month:mo,day:'',clientId:cur.clientId,projectId:null,title:cur.title,quoteId:cur.id,amount:t.imp,cash:0,status:cur.status==='accettato'?'corso':'prev',created:Date.now()});
       e.target.textContent='Lavoro collegato ✓';toast(`Aggiunto ai lavori di ${MESI[+mo.slice(5)-1].toLowerCase()}`)}};
@@ -4756,7 +4821,7 @@ function openBiz(){
       <p class="note">Calcolo: fatturato × coefficiente = imponibile; su questo l'INPS; sull'imponibile meno l'INPS l'imposta sostitutiva. Con questi dati 1.000 € → ${eur(taxCalc(1000,new Date().getFullYear()).tot)} di tasse. È una stima: per gli importi esatti fa fede il commercialista.</p></div>
     <div class="cedit"><span class="lbl">Preventivi</span>
       <div class="row">${fld('qNext','Prossimo numero',nextQuoteNum())}${fld('qFmt','Formato del codice',b.qFmt,'P-{n}_{yyyy}')}</div>
-      <div class="row"><div class="field"><label for="qLang">Lingua predefinita</label><select id="qLang"><option value="it" ${b.qLang==='it'?'selected':''}>Italiano</option><option value="en" ${b.qLang==='en'?'selected':''}>English</option></select></div>${fld('qValid','Validità (giorni)',b.qValid)}</div>
+      <div class="row"><div class="field"><label for="qLang">Lingua predefinita</label><select id="qLang"><option value="it" ${b.qLang==='it'?'selected':''}>Italiano</option><option value="en" ${b.qLang==='en'?'selected':''}>English</option></select></div>${fld('qValid','Validità in giorni (vuoto = 1 mese)',b.qValid===90?'':b.qValid)}</div>
       <div class="field"><span class="lbl">Colore del documento</span>${swatches(b.qColor)}</div>
       <label class="chk"><input type="checkbox" id="qRiv" ${b.rivalsa?'checked':''}> Rivalsa INPS 4% già spuntata nei nuovi preventivi</label>
       <label class="chk"><input type="checkbox" id="qBol" ${b.bollo?'checked':''}> Marca da bollo già spuntata nei nuovi preventivi</label>
@@ -4787,7 +4852,7 @@ function openBiz(){
     if(signDirty){const blank=!cx.getImageData(0,0,cv.width,cv.height).data.some((v,i)=>i%4===3&&v>0);sign=blank?null:cv.toDataURL('image/png')}
     const v=id=>$('#'+id).value.trim();
     put('biz',{...(S.biz.profile||{}),id:'profile',name:v('bName'),brand:v('bBrand'),owner:v('bOwner'),role:v('bRole'),vat:v('bVat'),city:v('bCity'),address:v('bAddr'),phone:v('bPhone'),email:v('bEmail'),web:v('bWeb'),tagline:v('bTag'),logo,sign,
-      qNext:parseInt(v('qNext'))||1,qFmt:v('qFmt')||'P-{n}_{yyyy}',qLang:$('#qLang').value,qValid:parseInt(v('qValid'))||90,qColor:getC(),rivalsa:$('#qRiv').checked,bollo:$('#qBol').checked,
+      qNext:parseInt(v('qNext'))||1,qFmt:v('qFmt')||'P-{n}_{yyyy}',qLang:$('#qLang').value,qValid:parseInt(v('qValid'))||'',qColor:getC(),rivalsa:$('#qRiv').checked,bollo:$('#qBol').checked,
       notesIt:$('#qNIt').value,notesEn:$('#qNEn').value,termsIt:$('#qTIt').value,termsEn:$('#qTEn').value,
       fiscal:{regime:'forfettario',ateco:v('fAteco'),start:v('fStart'),coeff:num(v('fCoeff')),inps:num(v('fInps')),taxMode:$('#fTaxM').value==='auto'?'auto':'man',tax:num(v('fTax'))}});
     dlg.close();renderFin(true);toast('Dati attività salvati');
