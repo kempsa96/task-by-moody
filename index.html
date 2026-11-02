@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611020119">
+<meta name="tbm-build" content="202611020120">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611020119"></script>
-<script src="tbm-cloud.js?v=202611020119"></script>
+<script src="supabase.js?v=202611020120"></script>
+<script src="tbm-cloud.js?v=202611020120"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -849,7 +849,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .bimg{min-height:60px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-radius:10px;padding:10px}.bimg img{max-height:90px;max-width:100%}
 .bsign{width:100%;aspect-ratio:3/1;background:#fff;border:1px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair}
 /* il documento (A4) */
-.qdoc{--qc:#004269;width:794px;min-height:1123px;background:#fff;color:#111;font-family:"Libre Franklin","Figtree",Helvetica,Arial,sans-serif;font-size:9.27px;line-height:1.42;padding:72px 120px 40px;box-sizing:border-box;position:relative;text-align:left}
+.qdoc{-webkit-text-size-adjust:none;text-size-adjust:none;--qc:#004269;width:794px;min-height:1123px;background:#fff;color:#111;font-family:"Libre Franklin","Figtree",Helvetica,Arial,sans-serif;font-size:9.27px;line-height:1.42;padding:72px 120px 40px;box-sizing:border-box;position:relative;text-align:left}
 .qd-band{position:absolute;left:67px;right:67px;top:72px;height:17px;background:var(--qc)}
 .qd-top{display:flex;justify-content:space-between;align-items:flex-start;margin-top:30px;min-height:76px}
 .qd-logo{height:36px;width:auto;margin-top:16px;object-fit:contain}
@@ -874,7 +874,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .qd-incl{color:#777;font-style:italic;font-size:9.27px}
 .qd-tot td{border:0;padding:1px 4px;line-height:15px}
 .qd-tot td.e{border:0}
-.qd-tot td.l{border-left:1px solid #000;font-size:10.43px;color:#000}.qd-tot td.v{text-align:right;border-right:1px solid #000;font-size:10.43px}
+.qd-tot td.l{white-space:nowrap;border-left:1px solid #000;font-size:10.43px;color:#000}.qd-tot td.v{text-align:right;border-right:1px solid #000;font-size:10.43px}
 .qd-tot tr:first-child td.l,.qd-tot tr:first-child td.v{border-top:0}
 .qd-tot td.s{color:#434343;font-size:10.43px}.qd-tot td.v.s{font-size:9.27px}
 .qd-tot tr.g td.l{border:1px solid #000;font-weight:700;font-size:11.6px;color:#000}
@@ -4435,7 +4435,7 @@ async function quotePdfBlob(q){
   await loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   await loadJS('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   const W=794,H=1123,TOP=60,BOT=30,GAP=14;
-  const host=document.createElement('div');host.style.cssText='position:absolute;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
+  const host=document.createElement('div');host.style.cssText='-webkit-text-size-adjust:none;text-size-adjust:none;position:absolute;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
   host.innerHTML=quoteDoc(q);document.body.appendChild(host);
   try{
     const doc=host.firstElementChild;doc.style.minHeight='0';doc.style.boxShadow='none';
@@ -4458,7 +4458,7 @@ async function quotePdfBlob(q){
       cuts.push(c);y=c;first=false}
     cuts.push(total);
     const sc=Math.max(1.5,Math.min(2.6,Math.sqrt(15e6/(W*total))));
-    const opt={scale:sc,backgroundColor:'#ffffff',useCORS:true,logging:false};
+    const opt={scale:sc,backgroundColor:'#ffffff',useCORS:true,logging:false,windowWidth:1200,onclone:d=>{const st=d.createElement('style');st.textContent='html,body,*{-webkit-text-size-adjust:none!important;text-size-adjust:none!important}';d.head.appendChild(st);d.documentElement.style.webkitTextSizeAdjust='none'}};
     const big=await html2canvas(doc,opt),fc=await html2canvas(foot,opt);
     const pdf=new window.jspdf.jsPDF({unit:'pt',format:'a4',compress:true}),pw=595.28,k=pw/W;
     for(let i=0;i<cuts.length-1;i++){
