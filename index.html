@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611020120">
+<meta name="tbm-build" content="202611020123">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611020120"></script>
-<script src="tbm-cloud.js?v=202611020120"></script>
+<script src="supabase.js?v=202611020123"></script>
+<script src="tbm-cloud.js?v=202611020123"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -4800,11 +4800,16 @@ function renderQuoteEditor(el,q){
   el.querySelector('.qe-form').addEventListener('click',e=>{const r=e.target.closest('.qi');
     if(e.target.matches('[data-qx]')){read();cur.items.splice(+r.dataset.i,1);redrawItems()}
     else if(e.target.matches('[data-qm]')){read();const i=+r.dataset.i,j=i+ +e.target.dataset.qm;if(j<0||j>=cur.items.length)return;[cur.items[i],cur.items[j]]=[cur.items[j],cur.items[i]];redrawItems()}});
+  document.querySelectorAll('body>.qe-prev').forEach(x=>x.remove());
+  const ph=document.createComment('qprev');prev.before(ph);
+  const showPrev=on=>{if(on){document.body.appendChild(prev);prev.classList.add('show');prev.scrollTop=0;requestAnimationFrame(fit)}else{prev.classList.remove('show');if(ph.parentNode)ph.after(prev);else prev.remove();requestAnimationFrame(fit)}};
+  prev.onclick=e=>{if(prev.parentNode===document.body)el.onclick(e)};
   el.onclick=e=>{const a=e.target.closest('[data-qa]')?.dataset.qa;if(!a)return;
+    if(a!=='preview'&&a!=='pdf'&&prev.classList.contains('show'))showPrev(false);
     if(a==='back'){read();clearTimeout(saveT);put('quotes',cur);FIN.q=null;renderFin(true)}
     else if(a==='additem'){read();cur.items.push({id:uid(),title:'',desc:'',price:'',qty:1});redrawItems();const l=el.querySelectorAll('.qi-t');l[l.length-1].focus()}
     else if(a==='pdf'){read();clearTimeout(saveT);put('quotes',cur);printQuote(cur)}
-    else if(a==='preview'){prev.classList.toggle('show');prev.scrollTop=0;requestAnimationFrame(fit)}
+    else if(a==='preview')showPrev(!prev.classList.contains('show'))
     else if(a==='biz')openBiz();
     else if(a==='ai'){read();clearTimeout(saveT);put('quotes',cur);aiQuoteMode(cur.id)}
     else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=qValidFrom(n.date);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}

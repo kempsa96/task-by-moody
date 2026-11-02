@@ -4781,11 +4781,16 @@ function renderQuoteEditor(el,q){
   el.querySelector('.qe-form').addEventListener('click',e=>{const r=e.target.closest('.qi');
     if(e.target.matches('[data-qx]')){read();cur.items.splice(+r.dataset.i,1);redrawItems()}
     else if(e.target.matches('[data-qm]')){read();const i=+r.dataset.i,j=i+ +e.target.dataset.qm;if(j<0||j>=cur.items.length)return;[cur.items[i],cur.items[j]]=[cur.items[j],cur.items[i]];redrawItems()}});
+  document.querySelectorAll('body>.qe-prev').forEach(x=>x.remove());
+  const ph=document.createComment('qprev');prev.before(ph);
+  const showPrev=on=>{if(on){document.body.appendChild(prev);prev.classList.add('show');prev.scrollTop=0;requestAnimationFrame(fit)}else{prev.classList.remove('show');if(ph.parentNode)ph.after(prev);else prev.remove();requestAnimationFrame(fit)}};
+  prev.onclick=e=>{if(prev.parentNode===document.body)el.onclick(e)};
   el.onclick=e=>{const a=e.target.closest('[data-qa]')?.dataset.qa;if(!a)return;
+    if(a!=='preview'&&a!=='pdf'&&prev.classList.contains('show'))showPrev(false);
     if(a==='back'){read();clearTimeout(saveT);put('quotes',cur);FIN.q=null;renderFin(true)}
     else if(a==='additem'){read();cur.items.push({id:uid(),title:'',desc:'',price:'',qty:1});redrawItems();const l=el.querySelectorAll('.qi-t');l[l.length-1].focus()}
     else if(a==='pdf'){read();clearTimeout(saveT);put('quotes',cur);printQuote(cur)}
-    else if(a==='preview'){prev.classList.toggle('show');prev.scrollTop=0;requestAnimationFrame(fit)}
+    else if(a==='preview')showPrev(!prev.classList.contains('show'))
     else if(a==='biz')openBiz();
     else if(a==='ai'){read();clearTimeout(saveT);put('quotes',cur);aiQuoteMode(cur.id)}
     else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=qValidFrom(n.date);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}
