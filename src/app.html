@@ -4464,7 +4464,7 @@ function quotePdfMobile(q){
     sh.querySelector('b').textContent='PDF pronto ✓';
     sh.querySelector('.qpdf-acts').innerHTML=`<button type="button" class="btn" data-x>Chiudi</button>${canShare?'<button type="button" class="btn primary" data-share>Salva o invia</button>':`<a class="btn primary" href="${url}" download="${esc(name)}">Scarica</a>`}`;
     sh.querySelector('[data-x]').onclick=()=>{URL.revokeObjectURL(url);close()};
-    const bs=sh.querySelector('[data-share]');if(bs)bs.onclick=()=>navigator.share({files:[file],title:name.replace(/\.pdf$/,'')}).then(()=>{URL.revokeObjectURL(url);close()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Condivisione non riuscita: '+(e.message||e))});
+    const bs=sh.querySelector('[data-share]');if(bs)bs.onclick=()=>navigator.share({files:[file]}).then(()=>{URL.revokeObjectURL(url);close()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Condivisione non riuscita: '+(e.message||e))});
   }).catch(e=>{if(!sh.isConnected)return;sh.querySelector('b').textContent='Non sono riuscito a creare il PDF';sh.querySelector('.qpdf-n').textContent=e.message||String(e);console.error(e)});
 }
 

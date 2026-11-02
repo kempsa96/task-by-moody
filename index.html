@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611020135">
+<meta name="tbm-build" content="202611020143">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611020135"></script>
-<script src="tbm-cloud.js?v=202611020135"></script>
+<script src="supabase.js?v=202611020143"></script>
+<script src="tbm-cloud.js?v=202611020143"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -4483,7 +4483,7 @@ function quotePdfMobile(q){
     sh.querySelector('b').textContent='PDF pronto ✓';
     sh.querySelector('.qpdf-acts').innerHTML=`<button type="button" class="btn" data-x>Chiudi</button>${canShare?'<button type="button" class="btn primary" data-share>Salva o invia</button>':`<a class="btn primary" href="${url}" download="${esc(name)}">Scarica</a>`}`;
     sh.querySelector('[data-x]').onclick=()=>{URL.revokeObjectURL(url);close()};
-    const bs=sh.querySelector('[data-share]');if(bs)bs.onclick=()=>navigator.share({files:[file],title:name.replace(/\.pdf$/,'')}).then(()=>{URL.revokeObjectURL(url);close()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Condivisione non riuscita: '+(e.message||e))});
+    const bs=sh.querySelector('[data-share]');if(bs)bs.onclick=()=>navigator.share({files:[file]}).then(()=>{URL.revokeObjectURL(url);close()}).catch(e=>{if(e&&e.name!=='AbortError')toast('Condivisione non riuscita: '+(e.message||e))});
   }).catch(e=>{if(!sh.isConnected)return;sh.querySelector('b').textContent='Non sono riuscito a creare il PDF';sh.querySelector('.qpdf-n').textContent=e.message||String(e);console.error(e)});
 }
 
