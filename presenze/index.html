@@ -166,8 +166,8 @@ main{max-width:980px;margin:0 auto;padding:0 16px 40px}
 <section id="login">
   <div class="login-card">
     <div class="dots"><i style="background:var(--nick)"></i><i style="background:var(--tia)"></i><i style="background:var(--frank)"></i><i style="background:var(--punzi)"></i></div>
-    <h1>Presenze<br>Media Lab</h1>
-    <p>Turni e ore, novembre 2026 – agosto 2027.</p>
+    <h1>Foglio presenze partita IVA</h1>
+    <p>Turni e ore, settembre 2026 – agosto 2027.</p>
     <form id="loginForm">
       <input class="field" id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
       <button class="btn btn-dark" type="submit" id="loginBtn">Entra</button>
@@ -234,7 +234,7 @@ const PEOPLE = [
   {id:"Frank", c:"var(--frank)", t:"var(--frank-t)"},
   {id:"Punzi", c:"var(--punzi)", t:"var(--punzi-t)"},
 ];
-const FIRST = {y:2026, m:10}; // novembre 2026 (mesi 0-based)
+const FIRST = {y:2026, m:8}; // settembre 2026 (mesi 0-based)
 const LAST  = {y:2027, m:7};  // agosto 2027
 const HOLIDAYS = {
   "2026-11-01":"Ognissanti","2026-12-07":"Sant'Ambrogio","2026-12-08":"Immacolata",
@@ -359,10 +359,12 @@ function renderMonth(){
   setHdrVar();
 }
 function renderSum(){
-  const months = [{y:2026,m:9,old:true}];
+  const months = [];
   for(let y=FIRST.y, m=FIRST.m; y*12+m <= LAST.y*12+LAST.m; m++){ if(m>11){m=0;y++} months.push({y,m}); }
   const grand = {}; PEOPLE.forEach(p=>grand[p.id]=0);
-  const rows = months.map(({y,m,old}) => {
+  const rows = months.map(({y,m}) => {
+    const hasT = Object.values(turni).some(t => t.giorno.startsWith(monthKey(y,m)+"-"));
+    const old = !hasT && PEOPLE.some(p => storico[p.id+"|"+monthKey(y,m)] != null);
     let vals;
     if(old){ vals = {}; PEOPLE.forEach(p=>vals[p.id]=storico[p.id+"|"+monthKey(y,m)]||0); }
     else { const t = monthTotals(y,m); vals = {}; PEOPLE.forEach(p=>vals[p.id]=t[p.id].h); }
