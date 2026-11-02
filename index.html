@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611020123">
+<meta name="tbm-build" content="202611020127">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611020123"></script>
-<script src="tbm-cloud.js?v=202611020123"></script>
+<script src="supabase.js?v=202611020127"></script>
+<script src="tbm-cloud.js?v=202611020127"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -897,6 +897,8 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .qd-contacts a{color:#1155cc;text-decoration:underline}
 .cbill summary{cursor:pointer;display:flex;align-items:center;gap:8px;list-style:none}.cbill summary::-webkit-details-marker{display:none}.cbill summary::after{content:'›';margin-left:auto;transform:rotate(90deg);color:var(--muted);transition:transform .2s}.cbill:not([open]) summary::after{transform:none}.cbill[open]{gap:10px}
 #qPrint{display:none}
+.qpdf .qd-items{border-collapse:separate;border-spacing:0}.qpdf .qd-items tbody:not(.qd-tot) td{border:0;border-right:1px solid #000;border-bottom:1px solid #000}.qpdf .qd-items tbody:not(.qd-tot) td:first-child{border-left:1px solid #000}.qpdf .qd-tot tr:first-child td.l,.qpdf .qd-tot tr:first-child td.v{border-top:0}.qpdf .qd-tot tr.g td.l{border-right:0}
+.qpdf .qdoc{font-kerning:normal;text-rendering:geometricPrecision}
 .qpdf-sheet{position:fixed;inset:0;z-index:200;background:rgb(0 0 0/.35);display:flex;align-items:flex-end;justify-content:center;padding:16px 16px calc(16px + env(safe-area-inset-bottom))}
 .qpdf-box{background:var(--surface);color:var(--fg);border-radius:18px;box-shadow:var(--shadow);padding:18px;width:min(420px,100%);display:flex;flex-direction:column;gap:8px}
 .qpdf-n{margin:0;font-size:13px;color:var(--muted);word-break:break-word}.qpdf-acts{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}.qpdf-acts .btn{text-decoration:none}
@@ -4435,7 +4437,7 @@ async function quotePdfBlob(q){
   await loadJS('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   await loadJS('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
   const W=794,H=1123,TOP=60,BOT=30,GAP=14;
-  const host=document.createElement('div');host.style.cssText='-webkit-text-size-adjust:none;text-size-adjust:none;position:absolute;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
+  const host=document.createElement('div');host.className='qpdf';host.style.cssText='-webkit-text-size-adjust:none;text-size-adjust:none;position:absolute;left:-12000px;top:0;width:794px;background:#fff;z-index:-1';
   host.innerHTML=quoteDoc(q);document.body.appendChild(host);
   try{
     const doc=host.firstElementChild;doc.style.minHeight='0';doc.style.boxShadow='none';
@@ -4457,7 +4459,7 @@ async function quotePdfBlob(q){
       while(moved){moved=false;for(const [a,b] of units)if(a<c&&b>c&&a>y+40){c=a;moved=true}for(const [a,b] of heads)if(b<=c&&c-b<40&&a>y+40){c=a;moved=true}}
       cuts.push(c);y=c;first=false}
     cuts.push(total);
-    const sc=Math.max(1.5,Math.min(2.6,Math.sqrt(15e6/(W*total))));
+    const sc=Math.max(1.5,Math.min(3,Math.sqrt(15e6/(W*total))));
     const opt={scale:sc,backgroundColor:'#ffffff',useCORS:true,logging:false,windowWidth:1200,onclone:d=>{const st=d.createElement('style');st.textContent='html,body,*{-webkit-text-size-adjust:none!important;text-size-adjust:none!important}';d.head.appendChild(st);d.documentElement.style.webkitTextSizeAdjust='none'}};
     const big=await html2canvas(doc,opt),fc=await html2canvas(foot,opt);
     const pdf=new window.jspdf.jsPDF({unit:'pt',format:'a4',compress:true}),pw=595.28,k=pw/W;
@@ -4466,8 +4468,8 @@ async function quotePdfBlob(q){
       const y0=cuts[i],h=cuts[i+1]-y0,dy=i?TOP:0,pc=document.createElement('canvas');
       pc.width=Math.round(W*sc);pc.height=Math.round(H*sc);const g=pc.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,pc.width,pc.height);
       g.drawImage(big,0,Math.round(y0*sc),big.width,Math.round(h*sc),0,Math.round(dy*sc),big.width,Math.round(h*sc));
-      g.drawImage(fc,0,Math.round((H-BOT-fH)*sc));
-      pdf.addImage(pc.toDataURL('image/jpeg',.9),'JPEG',0,0,pw,H*k)}
+      g.drawImage(fc,Math.round(67*sc),Math.round((H-BOT-fH)*sc));
+      pdf.addImage(pc.toDataURL('image/jpeg',.95),'JPEG',0,0,pw,H*k)}
     pdf.setProperties({title:quoteFileName(q)});
     return pdf.output('blob');
   }finally{host.remove()}
