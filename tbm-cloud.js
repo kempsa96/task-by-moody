@@ -246,6 +246,22 @@
           .catch(function (e) { return 'Errore: ' + (e && e.message || e); });
       });
     },
+    reset: function () {
+      if (!supported()) return Promise.resolve('unsupported');
+      return Notification.requestPermission().then(function (p) {
+        if (p !== 'granted') return p === 'denied' ? 'denied' : 'Permesso non concesso';
+        return getReg().then(function (r) {
+          return r.pushManager.getSubscription().then(function (old) {
+            var oldEp = old && old.endpoint;
+            return (old ? old.unsubscribe().catch(function () {}) : Promise.resolve()).then(function () {
+              return r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID) });
+            }).then(function (s) {
+              return saveSub(s).then(function () { if (oldEp && oldEp !== s.endpoint) return sb.from('push_subs').delete().eq('endpoint', oldEp); });
+            });
+          });
+        }).then(function () { kickReminders(); return 'on'; }).catch(function (e) { return 'Errore: ' + (e && e.message || e); });
+      });
+    },
     test: function () {
       return sb.from('reminders').upsert({ user_id: uid, id: 'test:' + Date.now(), at: new Date().toISOString(), title: '🔔 Notifiche attive', body: 'Funziona! Ti avviso così prima di eventi e attività.' });
     },
@@ -264,7 +280,8 @@
     flushOutbox(); subscribe();
     sb.from('push_subs').select('endpoint').eq('user_id', uid).limit(1).then(function (r) { hasSubs = !!(r.data && r.data.length); kickReminders(); });
     // tiene aggiornata l'iscrizione di questo dispositivo
-    if (supported() && Notification.permission === 'granted') getReg().then(function (r) { return r.pushManager.getSubscription(); }).then(function (s) { if (s) saveSub(s); }).catch(function () {});
+    // se iOS ha perso l'iscrizione la rifà da sola
+    if (supported() && Notification.permission === 'granted') getReg().then(function (r) { return r.pushManager.getSubscription().then(function (s) { return s || r.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64ToBytes(VAPID) }); }); }).then(function (s) { if (s) return saveSub(s); }).catch(function (e) { console.warn('push resub', e); });
   }
   sb.auth.onAuthStateChange(function (ev, session) { if (session && !uid) start(session); });
   sb.auth.getSession().then(function (r) { if (r.data && r.data.session) start(r.data.session); else showGate(); });

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611020143">
+<meta name="tbm-build" content="202611021055">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611020143"></script>
-<script src="tbm-cloud.js?v=202611020143"></script>
+<script src="supabase.js?v=202611021055"></script>
+<script src="tbm-cloud.js?v=202611021055"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -2992,7 +2992,7 @@ function openSettings(){
     <p class="note">${mode==='cloud'?'I dati sono sincronizzati: li trovi uguali sul computer e sull’iPhone.':'I dati sono salvati solo in questo browser.'}</p>
     ${window.tbmPush?(()=>{const n=s.notif||{};return `<div class="cedit"><span class="lbl">Notifiche</span>
       <p class="note" id="nfState" style="margin:0">Controllo…</p>
-      <div class="padd"><button type="button" class="btn primary" id="nfOn" hidden>Attiva su questo dispositivo</button><button type="button" class="btn" id="nfTest" hidden>Manda una prova</button></div>
+      <div class="padd"><button type="button" class="btn primary" id="nfOn" hidden>Attiva su questo dispositivo</button><button type="button" class="btn" id="nfTest" hidden>Manda una prova</button><button type="button" class="btn ghost" id="nfReset" hidden>Non arrivano? Ricollega</button></div>
       <div class="days"><label><input type="checkbox" id="nfEv" ${n.ev!==false?'checked':''}> Eventi e partenze</label><label><input type="checkbox" id="nfTk" ${n.task!==false?'checked':''}> Inizio e fine task</label><label><input type="checkbox" id="nfDy" ${n.day!==false?'checked':''}> Inizio e fine giornata</label></div>
       <div class="nf-row"><label><input type="checkbox" id="nfBr" ${n.brief!==false?'checked':''}> ☀️ Riepilogo della giornata alle</label><input type="time" id="nfBrT" step="900" value="${hm(n.briefAt??480)}"></div>
       <div class="nf-row"><label><input type="checkbox" id="nfTd" ${n.todo!==false?'checked':''}> 📝 Task di oggi ancora da fare alle</label><input type="time" id="nfTdT" step="900" value="${hm(n.todoAt??900)}"></div>
@@ -3009,10 +3009,11 @@ function openSettings(){
     const P=window.tbmPush,st=$('#nfState'),on=$('#nfOn'),te=$('#nfTest');
     const upd=async()=>{const v=await P.status();
       const M={on:'✅ Attive su questo dispositivo.',off:'Non ancora attive su questo dispositivo.',denied:'Le hai bloccate: riattivale nelle impostazioni del telefono (Impostazioni › Notifiche › Task).',install:'Su iPhone funzionano solo dall’icona sulla schermata Home: in Safari tocca Condividi › Aggiungi alla schermata Home, poi apri l’app da lì.',unsupported:'Questo browser non supporta le notifiche.'};
-      st.textContent=M[v]||v;on.hidden=v!=='off';te.hidden=v!=='on'};
+      st.textContent=M[v]||v;on.hidden=v!=='off';te.hidden=v!=='on';const rs=$('#nfReset');if(rs)rs.hidden=v!=='on'||!P.reset};
     upd();
     on.onclick=async()=>{on.disabled=true;st.textContent='Attivazione…';const r=await P.enable();on.disabled=false;if(r!=='on'&&r!=='denied')toast(r);upd();queueReminders(true)};
     te.onclick=async()=>{te.disabled=true;await P.test();te.disabled=false;toast('Prova inviata: arriva entro un minuto 🔔')};
+    const rs=$('#nfReset');if(rs)rs.onclick=async()=>{rs.disabled=true;st.textContent='Ricollego le notifiche…';const r=await P.reset();rs.disabled=false;if(r==='on'){queueReminders(true);await P.test();toast('Notifiche ricollegate: ti arriva una prova entro un minuto 🔔')}else if(r!=='denied')toast(r);upd()};
     $('#nfOut').onclick=()=>P.signOut();
   }
   $('#dePreview').onclick=()=>{dlg.close();setTimeout(()=>showDayEnd(true),150)};
