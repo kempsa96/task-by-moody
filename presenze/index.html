@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Presenze">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#16161a">
+<title>Presenze Media Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4f2ee; --panel:#ffffff; --ink:#18181b; --muted:#71717a; --line:#e7e4de;
+  --wk:#ffe2bf; --wk-ink:#9a4a00; --absent:#1f1f23; --absent-ink:#d4d4d8;
+  --nick:#b8860b; --tia:#b4520a; --frank:#2f6b1f; --punzi:#8b2be2;
+  --nick-t:#fdf3d7; --tia-t:#fde8d7; --frank-t:#e2f0dc; --punzi-t:#efe3fb;
+  --accent:#18181b; --danger:#c2410c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg)}
+body{font-family:Outfit,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;min-height:100vh;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+.hidden{display:none!important}
+
+/* login */
+#login{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.login-card{background:var(--panel);border-radius:22px;padding:32px 24px;width:100%;max-width:360px;box-shadow:0 10px 40px rgba(0,0,0,.06)}
+.login-card h1{font-size:28px;font-weight:800;letter-spacing:-.02em}
+.login-card p{color:var(--muted);margin:6px 0 22px}
+.dots{display:flex;gap:6px;margin-bottom:18px}
+.dots i{width:10px;height:10px;border-radius:50%}
+.field{width:100%;padding:14px 16px;border:1.5px solid var(--line);border-radius:14px;font-size:17px;background:#fafaf9;outline:none}
+.field:focus{border-color:var(--ink)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:13px 18px;border-radius:14px;font-weight:600;font-size:16px}
+.btn-dark{background:var(--accent);color:#fff;width:100%;margin-top:12px}
+.err{color:var(--danger);font-size:14px;margin-top:10px;min-height:18px}
+
+/* top */
+header{position:sticky;top:0;z-index:20;background:var(--bg);padding:calc(10px + env(safe-area-inset-top)) 16px 8px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px;max-width:980px;margin:0 auto}
+.brand{font-weight:800;font-size:18px;letter-spacing:-.01em}
+.brand small{display:block;font-weight:500;font-size:12px;color:var(--muted)}
+.tabs{display:flex;background:#e9e6e0;border-radius:12px;padding:3px}
+.tabs button{padding:7px 12px;border-radius:9px;font-size:14px;font-weight:600;color:var(--muted)}
+.tabs button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.monthnav{display:flex;align-items:center;justify-content:space-between;max-width:980px;margin:10px auto 0}
+.monthnav h2{font-size:24px;font-weight:800;letter-spacing:-.02em;text-transform:capitalize}
+.navbtn{width:40px;height:40px;border-radius:12px;background:#fff;font-size:20px;display:grid;place-items:center;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.navbtn:disabled{opacity:.3}
+.sync{font-size:12px;color:var(--muted);text-align:right}
+
+main{max-width:980px;margin:0 auto;padding:0 16px 40px}
+
+/* recap */
+.recap{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0 14px}
+.rc{background:var(--panel);border-radius:16px;padding:12px 10px 10px;border-top:5px solid var(--c)}
+.rc .n{font-size:13px;font-weight:700;color:var(--c);text-transform:uppercase;letter-spacing:.04em}
+.rc .h{font-size:28px;font-weight:800;line-height:1.1;letter-spacing:-.02em}
+.rc .h small{font-size:14px;font-weight:600;color:var(--muted)}
+.rc .d{font-size:12px;color:var(--muted)}
+
+/* grid */
+.grid{background:var(--panel);border-radius:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.hrow,.hrow .hc:first-child{border-radius:18px 0 0 0}
+.hrow .hc:last-child{border-radius:0 18px 0 0}
+.tot{border-radius:0 0 18px 18px}
+.tot .day{border-radius:0 0 0 18px}
+.row{display:grid;grid-template-columns:68px repeat(4,1fr);border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.hrow{position:sticky;top:var(--hdr,110px);z-index:10}
+.hrow .hc{padding:9px 4px;text-align:center;font-weight:800;font-size:14px;color:#fff;letter-spacing:.03em;text-transform:uppercase}
+.hrow .hc:first-child{background:#16161a}
+.week{padding:9px 12px;background:#f7f5f1;font-size:12px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid var(--line)}
+.week b{color:var(--ink)}
+.week .wt{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.week .wt span{white-space:nowrap}
+.day{padding:8px 6px 8px 12px;display:flex;flex-direction:column;justify-content:center;line-height:1.15}
+.day .dn{font-size:12px;color:var(--muted);text-transform:capitalize}
+.day .dd{font-size:18px;font-weight:700}
+.day .hol{font-size:10px;color:var(--wk-ink);font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.we .day,.row.we .cell.empty{background:var(--wk)}
+.row.we .day .dn{color:var(--wk-ink)}
+.row.today .day{box-shadow:inset 4px 0 0 var(--ink)}
+.cell{margin:3px;border-radius:10px;min-height:46px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:transform .08s}
+.cell:active{transform:scale(.96)}
+.cell.empty{background:var(--t)}
+.cell.empty::after{content:"+";color:var(--c);opacity:.35;font-size:20px;font-weight:500}
+.cell.shift{background:var(--t);box-shadow:inset 0 0 0 1.5px var(--c)}
+.cell .tm{font-size:13px;font-weight:600;white-space:nowrap}
+.cell .hr{font-size:12px;font-weight:800;color:var(--c)}
+.cell .hr.man::after{content:" ✎";font-weight:500}
+.cell.abs{background:var(--absent);color:var(--absent-ink);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em}
+.tot{background:#16161a;color:#fff}
+.tot .day{font-weight:800;font-size:13px;text-transform:uppercase}
+.tot .tc{text-align:center;padding:12px 4px;font-size:20px;font-weight:800}
+.tot .tc small{font-size:12px;opacity:.6;font-weight:500}
+
+.actions{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.btn-light{background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.06);font-size:14px;padding:10px 14px}
+.note{font-size:13px;color:var(--muted);margin-top:12px;line-height:1.45}
+
+/* riepilogo */
+.sum{background:var(--panel);border-radius:18px;overflow:hidden;margin-top:12px}
+.sum table{width:100%;border-collapse:collapse;font-size:15px}
+.sum th,.sum td{padding:11px 8px;text-align:right;border-bottom:1px solid var(--line)}
+.sum th:first-child,.sum td:first-child{text-align:left;padding-left:14px}
+.sum thead th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#fff}
+.sum thead th:first-child{background:#16161a}
+.sum td.m{text-transform:capitalize;font-weight:600}
+.sum td.m small{display:block;font-size:11px;color:var(--muted);font-weight:500;text-transform:none}
+.sum tr.cur td{background:#faf8f4}
+.sum tfoot td{background:#16161a;color:#fff;font-weight:800;font-size:17px;border:0}
+.sum td.z{color:#c4c4c8}
+
+/* sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;opacity:0;pointer-events:none;transition:opacity .18s}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#fff;border-radius:24px 24px 0 0;padding:10px 18px calc(18px + env(safe-area-inset-bottom));max-width:520px;margin:0 auto;transform:translateY(105%);transition:transform .22s cubic-bezier(.2,.8,.2,1)}
+.sheet.on{transform:none}
+.grab{width:40px;height:5px;border-radius:3px;background:#ddd;margin:0 auto 12px}
+.sh-title{display:flex;align-items:center;gap:10px}
+.sh-title .who{font-weight:800;font-size:13px;color:#fff;background:var(--c);padding:5px 10px;border-radius:8px;text-transform:uppercase;letter-spacing:.04em}
+.sh-title .when{font-weight:700;font-size:18px;text-transform:capitalize}
+.presets{display:flex;gap:8px;margin:16px 0 14px;flex-wrap:wrap}
+.chip{padding:9px 14px;border-radius:12px;background:#f2f0ec;font-weight:600;font-size:15px}
+.chip.on{background:var(--c);color:#fff}
+.times{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.times label{font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.times select,.manual input{width:100%;margin-top:5px;padding:12px;border:1.5px solid var(--line);border-radius:12px;font-size:17px;background:#fafaf9;appearance:none;-webkit-appearance:none}
+.calc{display:flex;align-items:center;justify-content:space-between;margin:14px 0 4px;padding:12px 14px;background:#f7f5f1;border-radius:12px}
+.calc b{font-size:24px}
+.calc span{font-size:13px;color:var(--muted)}
+.manual{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px}
+.manual input{width:90px;margin:0;padding:9px 10px;font-size:16px}
+.manual input:disabled{opacity:.4}
+.sh-btns{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px;margin-top:16px}
+.sh-btns .btn{font-size:15px;padding:13px 8px}
+.b-abs{background:var(--absent);color:#fff}
+.b-clear{background:#f2f0ec}
+.b-save{background:var(--c);color:#fff}
+
+.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));transform:translate(-50%,40px);background:#18181b;color:#fff;padding:11px 16px;border-radius:12px;font-size:14px;opacity:0;transition:.2s;z-index:60;pointer-events:none;white-space:nowrap}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+@media (max-width:420px){
+  .row{grid-template-columns:56px repeat(4,1fr)}
+  .day{padding-left:9px}
+  .day .dd{font-size:16px}
+  .cell .tm{font-size:12px;letter-spacing:-.02em}
+  .rc{padding:10px 8px 8px}
+  .rc .h{font-size:23px}
+  .hrow .hc{font-size:12px}
+  .week{flex-direction:column;gap:3px}
+  .week .wt{justify-content:flex-start;gap:8px}
+  .tabs button{padding:7px 9px;font-size:13px}
+  .sum table{font-size:14px}
+  .sum th,.sum td{padding:10px 5px}
+}
+</style>
+</head>
+<body>
+
+<section id="login">
+  <div class="login-card">
+    <div class="dots"><i style="background:var(--nick)"></i><i style="background:var(--tia)"></i><i style="background:var(--frank)"></i><i style="background:var(--punzi)"></i></div>
+    <h1>Presenze<br>Media Lab</h1>
+    <p>Turni e ore, novembre 2026 – agosto 2027.</p>
+    <form id="loginForm">
+      <input class="field" id="pw" type="password" placeholder="Password" autocomplete="current-password" required>
+      <button class="btn btn-dark" type="submit" id="loginBtn">Entra</button>
+      <div class="err" id="loginErr"></div>
+    </form>
+  </div>
+</section>
+
+<section id="app" class="hidden">
+  <header id="hdr">
+    <div class="top">
+      <div class="brand">Presenze<small>Media Lab · NABA</small></div>
+      <div class="tabs"><button id="tMese" class="on">Mese</button><button id="tRiep">Riepilogo</button></div>
+    </div>
+    <div class="monthnav" id="monthnav">
+      <button class="navbtn" id="prev" aria-label="Mese precedente">‹</button>
+      <div style="text-align:center"><h2 id="mTitle"></h2><div class="sync" id="sync" style="text-align:center"></div></div>
+      <button class="navbtn" id="next" aria-label="Mese successivo">›</button>
+    </div>
+  </header>
+  <main>
+    <div id="vMese">
+      <div class="recap" id="recap"></div>
+      <div class="grid" id="grid"></div>
+      <div class="actions">
+        <button class="btn btn-light" id="csv">⤓ Scarica mese (CSV)</button>
+        <button class="btn btn-light" id="copy">⧉ Copia totali</button>
+        <button class="btn btn-light" id="logout">Esci</button>
+      </div>
+      <p class="note">Tocca una casella per inserire il turno. Le ore si calcolano da sole togliendo la pausa pranzo 13–14; puoi correggerle a mano. Weekend e festivi sono in arancione ma si possono compilare (open day ecc.).</p>
+    </div>
+    <div id="vRiep" class="hidden">
+      <div class="sum" id="sum"></div>
+      <p class="note">Ottobre 2026 riporta i totali del vecchio foglio. I mesi successivi si calcolano dai turni inseriti.</p>
+    </div>
+  </main>
+</section>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true">
+  <div class="grab"></div>
+  <div class="sh-title"><span class="who" id="shWho"></span><span class="when" id="shWhen"></span></div>
+  <div class="presets" id="presets"></div>
+  <div class="times">
+    <div><label for="sDalle">Dalle</label><select id="sDalle"></select></div>
+    <div><label for="sAlle">Alle</label><select id="sAlle"></select></div>
+  </div>
+  <div class="calc"><span id="calcNote">Ore calcolate</span><b id="calcH">–</b></div>
+  <label class="manual"><input type="checkbox" id="manOn" style="width:auto;margin:0"> Correggi a mano <input type="number" id="manH" step="0.5" min="0" max="24" inputmode="decimal" disabled></label>
+  <div class="sh-btns">
+    <button class="btn b-abs" id="bAbs">Assente</button>
+    <button class="btn b-clear" id="bClear">Svuota</button>
+    <button class="btn b-save" id="bSave">Salva</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = "https://ureljyilauscbhhlwcep.supabase.co";
+const SB_KEY = "sb_publishable_VhsnYoMnxW31ZyQsl-QI9g_TRyzAKtS";
+const PEOPLE = [
+  {id:"Nick", c:"var(--nick)", t:"var(--nick-t)"},
+  {id:"Tia", c:"var(--tia)", t:"var(--tia-t)"},
+  {id:"Frank", c:"var(--frank)", t:"var(--frank-t)"},
+  {id:"Punzi", c:"var(--punzi)", t:"var(--punzi-t)"},
+];
+const FIRST = {y:2026, m:10}; // novembre 2026 (mesi 0-based)
+const LAST  = {y:2027, m:7};  // agosto 2027
+const HOLIDAYS = {
+  "2026-11-01":"Ognissanti","2026-12-07":"Sant'Ambrogio","2026-12-08":"Immacolata",
+  "2026-12-25":"Natale","2026-12-26":"S. Stefano","2027-01-01":"Capodanno","2027-01-06":"Epifania",
+  "2027-03-28":"Pasqua","2027-03-29":"Pasquetta","2027-04-25":"Liberazione","2027-05-01":"Festa lavoro",
+  "2027-06-02":"Repubblica","2027-08-15":"Ferragosto"
+};
+const LUNCH = [13*60, 14*60];
+const MESI = ["gennaio","febbraio","marzo","aprile","maggio","giugno","luglio","agosto","settembre","ottobre","novembre","dicembre"];
+const GG = ["dom","lun","mar","mer","gio","ven","sab"];
+
+let PW = null, turni = {}, storico = {}, cur = null, editing = null, lastSync = null;
+const $ = id => document.getElementById(id);
+const lsGet = k => { try { return localStorage.getItem(k) } catch(e){ return null } };
+const lsSet = (k,v) => { try { v==null ? localStorage.removeItem(k) : localStorage.setItem(k,v) } catch(e){} };
+
+async function rpc(fn, body){
+  const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+    method:"POST", headers:{apikey:SB_KEY, Authorization:`Bearer ${SB_KEY}`, "Content-Type":"application/json"},
+    body: JSON.stringify(body)
+  });
+  const txt = await r.text();
+  if(!r.ok){ const e = new Error(txt); e.status = r.status; e.auth = /password errata/.test(txt); throw e; }
+  return txt ? JSON.parse(txt) : null;
+}
+
+/* ---------- utils ---------- */
+const pad = n => String(n).padStart(2,"0");
+const iso = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const key = (p,day) => p+"|"+day;
+const toMin = s => { const [h,m] = s.split(":").map(Number); return h*60+m };
+function calcHours(dalle, alle){
+  if(!dalle || !alle) return null;
+  const a = toMin(dalle), b = toMin(alle);
+  if(b <= a) return 0;
+  const overlap = Math.max(0, Math.min(b, LUNCH[1]) - Math.max(a, LUNCH[0]));
+  return (b - a - overlap) / 60;
+}
+function hoursOf(t){
+  if(!t || t.assente) return 0;
+  if(t.ore_manuali != null) return Number(t.ore_manuali);
+  return calcHours(t.dalle, t.alle) || 0;
+}
+const fmtH = h => (Math.round(h*100)/100).toString().replace(".",",");
+const shortT = s => s ? s.replace(/^0/,"").replace(":00","") : "";
+const monthKey = (y,m) => `${y}-${pad(m+1)}`;
+function inRange(y,m){ const v=y*12+m; return v>=FIRST.y*12+FIRST.m && v<=LAST.y*12+LAST.m }
+
+function monthTotals(y,m){
+  const res = {}; PEOPLE.forEach(p=>res[p.id]={h:0,d:0});
+  const pre = monthKey(y,m)+"-";
+  for(const k in turni){
+    const t = turni[k]; if(!t.giorno.startsWith(pre)) continue;
+    const h = hoursOf(t); if(res[t.persona]){ res[t.persona].h += h; if(h>0) res[t.persona].d++; }
+  }
+  return res;
+}
+
+/* ---------- data ---------- */
+async function load(silent){
+  try{
+    const data = await rpc("presenze_load", {pw:PW});
+    turni = {}; data.turni.forEach(t => turni[key(t.persona, t.giorno)] = t);
+    storico = {}; data.storico.forEach(s => storico[s.persona+"|"+s.mese] = Number(s.ore));
+    lastSync = new Date(); render();
+  }catch(e){
+    if(e.auth){ logout("Password cambiata: rientra."); return; }
+    if(!silent) toast("Connessione non riuscita, riprovo…");
+  }
+}
+
+/* ---------- render ---------- */
+function render(){ renderMonth(); renderSum(); updateSync(); }
+function updateSync(){
+  if(!lastSync) return;
+  $("sync").textContent = "aggiornato alle " + pad(lastSync.getHours())+":"+pad(lastSync.getMinutes());
+}
+function renderMonth(){
+  const {y,m} = cur;
+  $("mTitle").textContent = MESI[m] + " " + y;
+  $("prev").disabled = !(m===0 ? inRange(y-1,11) : inRange(y,m-1));
+  $("next").disabled = !inRange(m===11?y+1:y, (m+1)%12);
+
+  const tot = monthTotals(y,m);
+  $("recap").innerHTML = PEOPLE.map(p => `
+    <div class="rc" style="--c:${p.c}"><div class="n">${p.id}</div>
+    <div class="h">${fmtH(tot[p.id].h)}<small> h</small></div>
+    <div class="d">${tot[p.id].d} ${tot[p.id].d===1?"giorno":"giorni"}</div></div>`).join("");
+
+  const todayIso = iso(new Date());
+  let html = `<div class="row hrow"><div class="hc"></div>${PEOPLE.map(p=>`<div class="hc" style="background:${p.c}">${p.id}</div>`).join("")}</div>`;
+  const days = new Date(y, m+1, 0).getDate();
+  let weekRows = "", weekStart = null, weekH = {};
+  const flushWeek = (endDay) => {
+    if(weekStart==null) return;
+    const lbl = weekStart===endDay ? `${weekStart} ${MESI[m]}` : `${weekStart} – ${endDay} ${MESI[m]}`;
+    const wt = PEOPLE.filter(p=>weekH[p.id]>0).map(p=>`<span><b style="color:${p.c}">${p.id}</b> ${fmtH(weekH[p.id])}h</span>`).join("");
+    html += `<div class="week"><span>Settimana <b>${lbl}</b></span><span class="wt">${wt}</span></div>` + weekRows;
+    weekRows = ""; weekStart = null;
+  };
+  for(let d=1; d<=days; d++){
+    const date = new Date(y,m,d), di = iso(date), wd = date.getDay();
+    if(weekStart==null){ weekStart = d; PEOPLE.forEach(p=>weekH[p.id]=0); }
+    const hol = HOLIDAYS[di];
+    const we = wd===0 || wd===6 || !!hol;
+    let cells = "";
+    PEOPLE.forEach(p => {
+      const t = turni[key(p.id, di)];
+      const st = `style="--c:${p.c};--t:${p.t}"`;
+      const data = `data-p="${p.id}" data-d="${di}"`;
+      if(!t){ cells += `<button class="cell empty" ${st} ${data} aria-label="${p.id} ${di}: vuoto"></button>`; return; }
+      if(t.assente){ cells += `<button class="cell abs" ${st} ${data}>Assente</button>`; return; }
+      const h = hoursOf(t); weekH[p.id] += h;
+      const tm = t.dalle && t.alle ? `${shortT(t.dalle)}–${shortT(t.alle)}` : "";
+      cells += `<button class="cell shift" ${st} ${data}>${tm?`<span class="tm">${tm}</span>`:""}<span class="hr ${t.ore_manuali!=null?"man":""}">${fmtH(h)}h</span></button>`;
+    });
+    weekRows += `<div class="row ${we?"we":""} ${di===todayIso?"today":""}"><div class="day"><span class="dn">${GG[wd]}</span><span class="dd">${d}</span>${hol?`<span class="hol">${hol}</span>`:""}</div>${cells}</div>`;
+    if(wd===0 || d===days) flushWeek(d);
+  }
+  html += `<div class="row tot"><div class="day">Tot. ${MESI[m].slice(0,3)}</div>${PEOPLE.map(p=>`<div class="tc">${fmtH(tot[p.id].h)}<small> h</small></div>`).join("")}</div>`;
+  $("grid").innerHTML = html;
+  setHdrVar();
+}
+function renderSum(){
+  const months = [{y:2026,m:9,old:true}];
+  for(let y=FIRST.y, m=FIRST.m; y*12+m <= LAST.y*12+LAST.m; m++){ if(m>11){m=0;y++} months.push({y,m}); }
+  const grand = {}; PEOPLE.forEach(p=>grand[p.id]=0);
+  const rows = months.map(({y,m,old}) => {
+    let vals;
+    if(old){ vals = {}; PEOPLE.forEach(p=>vals[p.id]=storico[p.id+"|"+monthKey(y,m)]||0); }
+    else { const t = monthTotals(y,m); vals = {}; PEOPLE.forEach(p=>vals[p.id]=t[p.id].h); }
+    PEOPLE.forEach(p=>grand[p.id]+=vals[p.id]);
+    const isCur = cur && y===cur.y && m===cur.m;
+    return `<tr class="${isCur?"cur":""}"><td class="m">${MESI[m]} ${String(y).slice(2)}${old?"<small>dal vecchio foglio</small>":""}</td>${PEOPLE.map(p=>`<td class="${vals[p.id]?"":"z"}">${vals[p.id]?fmtH(vals[p.id]):"–"}</td>`).join("")}</tr>`;
+  }).join("");
+  $("sum").innerHTML = `<table><thead><tr><th>Mese</th>${PEOPLE.map(p=>`<th style="background:${p.c}">${p.id}</th>`).join("")}</tr></thead>
+    <tbody>${rows}</tbody><tfoot><tr><td>Totale</td>${PEOPLE.map(p=>`<td>${fmtH(grand[p.id])}</td>`).join("")}</tr></tfoot></table>`;
+}
+function setHdrVar(){ document.documentElement.style.setProperty("--hdr", $("hdr").offsetHeight+"px"); }
+
+/* ---------- editor ---------- */
+const TIMES = []; for(let h=7; h<=22; h++){ TIMES.push(pad(h)+":00"); if(h<22) TIMES.push(pad(h)+":30"); }
+const PRESETS = [["09:00","18:00"],["09:00","19:00"],["09:00","13:00"],["14:00","19:00"]];
+function fillSelect(sel){ sel.innerHTML = `<option value="">—</option>` + TIMES.map(t=>`<option>${t}</option>`).join(""); }
+fillSelect($("sDalle")); fillSelect($("sAlle"));
+
+function openEditor(p, di){
+  const person = PEOPLE.find(x=>x.id===p);
+  editing = {p, di};
+  const t = turni[key(p,di)] || {};
+  const sh = $("sheet"); sh.style.setProperty("--c", person.c);
+  $("shWho").textContent = p;
+  const d = new Date(di+"T12:00:00");
+  $("shWhen").textContent = `${["domenica","lunedì","martedì","mercoledì","giovedì","venerdì","sabato"][d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]}`;
+  $("sDalle").value = t.assente ? "" : (t.dalle || (t.giorno ? "" : "09:00"));
+  $("sAlle").value  = t.assente ? "" : (t.alle  || (t.giorno ? "" : "19:00"));
+  $("manOn").checked = t.ore_manuali != null;
+  $("manH").value = t.ore_manuali != null ? t.ore_manuali : "";
+  $("manH").disabled = t.ore_manuali == null;
+  $("bAbs").textContent = t.assente ? "Non assente" : "Assente";
+  updateCalc();
+  $("scrim").classList.add("on"); sh.classList.add("on");
+}
+function closeEditor(){ editing=null; $("scrim").classList.remove("on"); $("sheet").classList.remove("on"); }
+function updateCalc(){
+  const a = $("sDalle").value, b = $("sAlle").value;
+  const h = calcHours(a,b);
+  $("calcH").textContent = h==null ? "–" : fmtH(h)+" h";
+  const lunch = a && b && toMin(a) < LUNCH[1] && toMin(b) > LUNCH[0];
+  $("calcNote").textContent = lunch ? "Ore calcolate (pausa 13–14 tolta)" : "Ore calcolate";
+  $("presets").innerHTML = PRESETS.map(([x,y])=>`<button class="chip ${a===x&&b===y?"on":""}" data-a="${x}" data-b="${y}">${shortT(x)}–${shortT(y)}</button>`).join("");
+  if(!$("manOn").checked) $("manH").value = h==null ? "" : h;
+}
+$("presets").addEventListener("click", e => { const c = e.target.closest(".chip"); if(!c) return; $("sDalle").value=c.dataset.a; $("sAlle").value=c.dataset.b; updateCalc(); });
+$("sDalle").addEventListener("change", updateCalc);
+$("sAlle").addEventListener("change", updateCalc);
+$("manOn").addEventListener("change", () => { $("manH").disabled = !$("manOn").checked; if($("manOn").checked) $("manH").focus(); else updateCalc(); });
+$("scrim").addEventListener("click", closeEditor);
+document.addEventListener("keydown", e => { if(e.key==="Escape" && editing) closeEditor(); });
+
+async function save(rec){
+  const {p, di} = editing; const k = key(p,di); const prev = turni[k];
+  const empty = !rec.assente && !rec.dalle && !rec.alle && rec.ore_manuali==null;
+  if(empty) delete turni[k]; else turni[k] = {persona:p, giorno:di, ...rec};
+  closeEditor(); render();
+  try{
+    await rpc("presenze_save", {pw:PW, p_persona:p, p_giorno:di, p_dalle:rec.dalle||null, p_alle:rec.alle||null, p_ore:rec.ore_manuali, p_assente:!!rec.assente});
+    toast("Salvato");
+  }catch(e){
+    if(prev) turni[k]=prev; else delete turni[k]; render();
+    if(e.auth) logout("Password cambiata: rientra."); else toast("Non salvato: controlla la connessione");
+  }
+}
+$("bSave").addEventListener("click", () => {
+  const a = $("sDalle").value, b = $("sAlle").value;
+  if((a && !b) || (!a && b)){ toast("Inserisci sia Dalle che Alle"); return; }
+  if(a && b && toMin(b) <= toMin(a)){ toast("L'orario di fine è prima dell'inizio"); return; }
+  let man = null;
+  if($("manOn").checked){ const v = parseFloat(String($("manH").value).replace(",",".")); if(isNaN(v)||v<0||v>24){ toast("Ore a mano non valide"); return; } man = v; }
+  if(!a && !b && man==null){ save({dalle:null,alle:null,ore_manuali:null,assente:false}); return; }
+  save({dalle:a||null, alle:b||null, ore_manuali:man, assente:false});
+});
+$("bClear").addEventListener("click", () => save({dalle:null,alle:null,ore_manuali:null,assente:false}));
+$("bAbs").addEventListener("click", () => {
+  const t = turni[key(editing.p, editing.di)];
+  if(t && t.assente) save({dalle:null,alle:null,ore_manuali:null,assente:false});
+  else save({dalle:null,alle:null,ore_manuali:null,assente:true});
+});
+$("grid").addEventListener("click", e => { const c = e.target.closest(".cell"); if(c) openEditor(c.dataset.p, c.dataset.d); });
+
+/* ---------- nav / tabs / export ---------- */
+function shift(n){ let {y,m} = cur; m+=n; if(m<0){m=11;y--} if(m>11){m=0;y++} if(inRange(y,m)){ cur={y,m}; render(); window.scrollTo({top:0}); } }
+$("prev").addEventListener("click", ()=>shift(-1));
+$("next").addEventListener("click", ()=>shift(1));
+function tab(which){
+  $("tMese").classList.toggle("on", which==="mese"); $("tRiep").classList.toggle("on", which==="riep");
+  $("vMese").classList.toggle("hidden", which!=="mese"); $("vRiep").classList.toggle("hidden", which!=="riep");
+  $("monthnav").classList.toggle("hidden", which!=="mese"); setHdrVar();
+}
+$("tMese").addEventListener("click", ()=>tab("mese"));
+$("tRiep").addEventListener("click", ()=>tab("riep"));
+
+$("csv").addEventListener("click", () => {
+  const {y,m} = cur; const days = new Date(y,m+1,0).getDate();
+  const head = ["Giorno","Data"]; PEOPLE.forEach(p=>head.push(p.id+" dalle", p.id+" alle", p.id+" ore"));
+  const lines = [head.join(";")];
+  for(let d=1; d<=days; d++){
+    const date = new Date(y,m,d), di = iso(date);
+    const row = [GG[date.getDay()], `${pad(d)}/${pad(m+1)}/${y}`];
+    PEOPLE.forEach(p => { const t = turni[key(p.id,di)];
+      if(!t) row.push("","",""); else if(t.assente) row.push("assente","","0");
+      else row.push(t.dalle||"", t.alle||"", fmtH(hoursOf(t))); });
+    lines.push(row.join(";"));
+  }
+  const tot = monthTotals(y,m); const tr = ["TOTALE",""]; PEOPLE.forEach(p=>tr.push("","",fmtH(tot[p.id].h))); lines.push(tr.join(";"));
+  const blob = new Blob(["﻿"+lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `presenze-${monthKey(y,m)}.csv`; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+});
+$("copy").addEventListener("click", async () => {
+  const {y,m} = cur; const tot = monthTotals(y,m);
+  const txt = `Ore ${MESI[m]} ${y}\n` + PEOPLE.map(p=>`${p.id}: ${fmtH(tot[p.id].h)} h (${tot[p.id].d} giorni)`).join("\n");
+  try{ await navigator.clipboard.writeText(txt); toast("Totali copiati"); }catch(e){ toast("Copia non riuscita"); }
+});
+
+/* ---------- auth ---------- */
+async function tryLogin(pw, silent){
+  try{
+    const ok = await rpc("presenze_login", {pw});
+    if(!ok){ if(!silent) $("loginErr").textContent = "Password sbagliata"; return false; }
+    PW = pw; lsSet("presenze_pw", pw);
+    $("login").classList.add("hidden"); $("app").classList.remove("hidden");
+    const now = new Date(); const y = now.getFullYear(), m = now.getMonth();
+    cur = inRange(y,m) ? {y,m} : (y*12+m < FIRST.y*12+FIRST.m ? {...FIRST} : {...LAST});
+    renderMonth(); await load(); startPolling(); return true;
+  }catch(e){ if(!silent) $("loginErr").textContent = "Connessione non riuscita"; return false; }
+}
+function logout(msg){
+  PW = null; lsSet("presenze_pw", null); stopPolling();
+  $("app").classList.add("hidden"); $("login").classList.remove("hidden");
+  $("pw").value = ""; $("loginErr").textContent = msg || "";
+}
+$("logout").addEventListener("click", ()=>logout());
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault(); $("loginErr").textContent = ""; $("loginBtn").textContent = "…";
+  await tryLogin($("pw").value); $("loginBtn").textContent = "Entra";
+});
+
+let poll = null;
+function startPolling(){ stopPolling(); poll = setInterval(()=>{ if(!document.hidden && !editing) load(true) }, 30000); }
+function stopPolling(){ if(poll) clearInterval(poll); poll=null; }
+document.addEventListener("visibilitychange", ()=>{ if(!document.hidden && PW && !editing) load(true) });
+window.addEventListener("resize", setHdrVar);
+
+let tt; function toast(s){ const t=$("toast"); t.textContent=s; t.classList.add("on"); clearTimeout(tt); tt=setTimeout(()=>t.classList.remove("on"),2000); }
+
+const saved = lsGet("presenze_pw");
+if(saved) tryLogin(saved, true);
+</script>
+</body>
+</html>
