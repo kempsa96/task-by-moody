@@ -372,6 +372,25 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .aic a{color:var(--accent);font-weight:600}
 .aic-f{display:flex;gap:6px}.aic-f input{flex:1;min-width:0;border:1px solid var(--line);border-radius:8px;padding:9px 10px;font:inherit;font-size:16px;background:var(--surface)}
 .aic-e{color:var(--danger);font-weight:600}
+.ai-qprev{flex:none;max-height:34vh;overflow:auto;background:color-mix(in srgb,var(--fg) 6%,var(--bg));border-bottom:1px solid var(--line);padding:0 8px 8px}
+.ai-qprev.big{max-height:68vh}.ai-qprev[hidden]{display:none}
+.aqp-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:8px;padding:8px 2px;background:inherit;font-size:13px}
+.aqp-bar span{margin-right:auto;color:var(--muted);font-weight:700}.aqp-bar .btn{padding:5px 10px;font-size:12px}
+.aqp-paper>.qdoc{transform:scale(var(--qs));transform-origin:top left;box-shadow:0 4px 16px rgb(0 0 0/.15)}
+.qe-ai{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 16%,var(--surface)),var(--surface))}
+@media (min-width:821px){
+  .chat.qmode{left:16px;right:auto;top:16px;bottom:16px;width:min(520px,40vw);height:auto}
+  .chat.qmode .ai-qprev{display:none}
+  .app.qchat .fin{margin-left:calc(min(520px,40vw) + 24px)}
+  .app.qchat .qe-form{display:none}
+  .app.qchat .qe-grid{grid-template-columns:minmax(0,1fr)!important}
+  .app.qchat .qe-prev{display:block!important;position:static}
+}
+@media (max-width:820px){.chat.qmode{left:8px;right:8px;top:8px;bottom:8px;width:auto;height:auto}}
+.ai-att{display:flex;align-items:center;gap:10px;padding:8px 12px 0;font-size:13px;color:var(--muted)}.ai-att[hidden]{display:none}
+.ai-att img{width:46px;height:46px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.ai-att button{margin-left:auto;border:0;background:var(--surface-2);border-radius:50%;width:28px;height:28px;cursor:pointer;color:var(--fg)}
+.msg-img{display:block;max-width:180px;max-height:180px;border-radius:8px;margin-bottom:6px}
 .semo{margin-right:4px}
 .seg .stt{overflow:hidden;text-overflow:ellipsis}
 .seg.over{z-index:4;box-shadow:0 0 0 1.5px var(--surface),0 4px 14px rgb(0 0 0/.22)}
@@ -411,7 +430,7 @@ details.aic-opt ol{margin-top:6px}
 .chat{z-index:55}.ctx{z-index:60}
 .msg .undo{margin-top:6px;display:block;font-size:12px;border:0;background:none;padding:0;text-decoration:underline;cursor:pointer;color:var(--muted)}
 .sugg{display:flex;flex-wrap:wrap;gap:6px}
-.chat-f{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:6px;padding:10px;border-top:1px solid var(--line)}
+.chat-f{display:grid;grid-template-columns:1fr auto auto auto;align-items:center;gap:6px;padding:10px;border-top:1px solid var(--line)}
 .chat-f input{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--surface);min-width:0;font-size:16px}
 .gutter{position:relative;font-family:var(--font-mono);font-size:11px;color:var(--muted)}
 .gutter span{position:absolute;right:8px;transform:translateY(-50%);font-variant-numeric:tabular-nums}
@@ -1025,9 +1044,11 @@ dialog{overflow:auto}
 </button>
 <section class="chat" id="chat" hidden aria-label="Assistente">
   <div class="chat-h"><b>Assistente</b><span>comandi in italiano · offline</span><button class="btn icon ghost" id="aiVoice" hidden aria-pressed="false" aria-label="Leggi le risposte ad alta voce" title="Leggi le risposte ad alta voce"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M19 5a10 10 0 0 1 0 14"/></svg></button><button class="btn icon ghost" id="aiMenu" hidden aria-label="Opzioni assistente" title="Opzioni">⋯</button><button class="btn icon ghost" id="chatClose" aria-label="Chiudi">✕</button></div>
+  <div class="ai-qprev" id="aiQPrev" hidden></div>
   <div class="chat-log" id="chatLog" aria-live="polite"></div>
   <div class="cchips" id="cchips"></div>
-  <form class="chat-f" id="chatForm"><input id="chatIn" placeholder="es. mercoledì 21 sono libero" autocomplete="off" aria-label="Comando"><button class="mic" type="button" id="micBtn" aria-label="Detta con il microfono" title="Detta (serve internet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button><button class="btn primary" type="submit">Invia</button></form>
+  <div class="ai-att" id="aiAtt" hidden></div>
+  <form class="chat-f" id="chatForm"><input id="chatIn" placeholder="es. mercoledì 21 sono libero" autocomplete="off" aria-label="Comando"><button class="mic" type="button" id="aiClip" hidden aria-label="Allega una foto o uno screenshot" title="Allega una foto o uno screenshot"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.4 11.1-8.5 8.5a5.5 5.5 0 0 1-7.8-7.8l8.5-8.5a3.7 3.7 0 0 1 5.2 5.2l-8.5 8.5a1.8 1.8 0 0 1-2.6-2.6l7.8-7.8"/></svg></button><input type="file" id="aiFile" accept="image/*" hidden><button class="mic" type="button" id="micBtn" aria-label="Detta con il microfono" title="Detta (serve internet)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></button><button class="btn primary" type="submit">Invia</button></form>
 </section>
 <div class="ctx" id="ctx" hidden role="menu"></div>
 <div class="wl" id="wl" hidden role="dialog" aria-modal="true" aria-labelledby="wlTitle"><div class="wl-card" id="wlCard"></div></div>
@@ -3816,7 +3837,7 @@ function renderChat(){
   else if(!chatLog.length){
     el.innerHTML=`<div class="msg bot">Ciao Francesco, scrivimi cosa fare e lo metto in calendario.\nPuoi anche dettare: tocca il microfono della tastiera su iPhone, oppure premi Win + H su Windows.</div><div class="sugg">${SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`;
   }else{
-    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${m.typing&&!m.text?'<span class="typing"><i></i><i></i><i></i></span>':m.md?mdLite(m.text)+(m.typing?' <span class="typing"><i></i><i></i><i></i></span>':''):esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.opts&&m.opts.length&&i===chatLog.length-1?`<span class="copts">${m.opts.map(o=>`<button type="button" class="chip" data-opt="${esc(o[1])}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.acts&&m.acts.length&&!(m.confirm&&m.resolved&&m.acts.some(a=>a[1]==='__jobform'))?`<span class="copts">${m.acts.map(o=>`<button type="button" class="chip act" data-act2="${esc(o[1])}" data-mi="${i}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
+    el.innerHTML=chatLog.map((m,i)=>`<div class="msg ${m.who}${m.err?' err':''}">${m.img?`<img class="msg-img" src="${m.img}" alt="foto">`:''}${m.typing&&!m.text?'<span class="typing"><i></i><i></i><i></i></span>':m.md?mdLite(m.text)+(m.typing?' <span class="typing"><i></i><i></i><i></i></span>':''):esc(m.text)}${m.ctrl&&!m.undone?ctrlHtml(m.ctrl):''}${m.confirm&&!m.resolved?`<span class="confirm"><button class="btn primary" data-yes="${i}">${esc(m.confirm.yes)}</button><button class="btn" data-no="${i}">${esc(m.confirm.no)}</button></span>`:''}${m.opts&&m.opts.length&&i===chatLog.length-1?`<span class="copts">${m.opts.map(o=>`<button type="button" class="chip" data-opt="${esc(o[1])}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.acts&&m.acts.length&&!(m.confirm&&m.resolved&&m.acts.some(a=>a[1]==='__jobform'))?`<span class="copts">${m.acts.map(o=>`<button type="button" class="chip act" data-act2="${esc(o[1])}" data-mi="${i}">${esc(o[0])}</button>`).join('')}</span>`:''}${m.undo&&!m.undone&&i===chatLog.length-1?`<button class="undo" data-undo="${i}">Annulla</button>`:''}${m.undone?'<span class="undo">Annullato</span>':''}</div>`).join('');
   }
   el.scrollTop=el.scrollHeight;
 }
@@ -3827,8 +3848,9 @@ function resolveConfirm(i,yes){
   renderChat();
 }
 function send(text){
-  text=text.trim();if(!text)return;
-  if(aiOn()){aiSend(text);return}
+  text=text.trim();if(!text&&!(aiOn()&&AI.img))return;
+  if(aiOn()){aiSend(text||'Guarda questa immagine e usa i dati che trovi.');return}
+  if(!text)return;
   if(WIZ&&!chatLog.some(m=>m.confirm&&!m.resolved)){chatLog.push({who:'me',text});let r;try{r=wizAnswer(text)}catch(e){WIZ=null;r={text:'Mi sono perso: riprova a scrivere il lavoro dall’inizio.',err:1}}
     chatLog.push({who:'bot',text:r.text,err:r.err,confirm:r.confirm,opts:r.opts,acts:r.acts,draft:r.draft});renderChat();return}
   const pi=chatLog.findIndex(m=>m.confirm&&!m.resolved);
@@ -3878,7 +3900,7 @@ $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]'
   // quando invii, la dettatura si ferma
   $('#chatForm').addEventListener('submit',()=>{sent=true;if(want)stop();done=''},true);
 })();
-$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn'),v=i.value;if(!v.trim())return;
+$('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chatIn'),v=i.value;if(!v.trim()&&!(aiOn()&&AI.img))return;
   const clear=()=>{i.value='';delete i.dataset.dict};clear();
   // su iPhone la dettatura della tastiera può rimettere il testo nel campo subito dopo l'invio: lo ripulisco
   const sent=v.trim();[60,250,700,1500].forEach(ms=>setTimeout(()=>{const now=i.value.trim();if(now&&(now===sent||sent.startsWith(now)||now.startsWith(sent)))clear()},ms));
@@ -3887,6 +3909,11 @@ $('#chatForm').addEventListener('submit',e=>{e.preventDefault();const i=$('#chat
 $('#chatLog').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target.id==='aiKey'){e.preventDefault();aiConnect()}});
 $('#aiVoice').onclick=()=>{AI.voice=!AI.voice;try{localStorage.setItem('tbm-ai-voice',AI.voice?'1':'0')}catch(e){}aiHeader();if(!AI.voice)try{speechSynthesis.cancel()}catch(e){};toast(AI.voice?'Leggo le risposte ad alta voce 🔊':'Lettura ad alta voce spenta')};
 $('#aiMenu').onclick=e=>{e.stopPropagation();aiMenu()};
+$('#aiClip').onclick=()=>$('#aiFile').click();
+$('#aiQPrev').addEventListener('click',e=>{const b=e.target.closest('[data-aqp]');if(!b)return;const q=S.quotes[AI.quoteId];if(b.dataset.aqp==='pdf'&&q)printQuote(q);else{$('#aiQPrev').classList.toggle('big');aiQPrev()}});
+$('#aiFile').onchange=e=>{aiPickImage(e.target.files[0]);e.target.value=''};
+$('#aiAtt').addEventListener('click',e=>{if(e.target.closest('#aiAttX')){AI.img=null;aiAttDraw()}});
+$('#chatIn').addEventListener('paste',e=>{if(!aiOn())return;const f=[...(e.clipboardData?.files||[])].find(x=>/^image\//.test(x.type));if(f){e.preventDefault();aiPickImage(f)}});
 $('#chatLog').addEventListener('click',e=>{
   if(e.target.closest('#aiConnect')){aiConnect();return}
   if(e.target.closest('#aiOffline')){AI.offline=true;aiHeader();renderChips();renderChat();return}
@@ -3921,8 +3948,8 @@ function aiHeader(){
   const h=$('#chat .chat-h');if(!h)return;
   const on=aiOn();
   h.querySelector('b').textContent=on?aiName():'Assistente';
-  h.querySelector('span').textContent=on?(AI.fast?'collegato · veloce':'collegato · solo Tasky'):AI.offline||!aiAvail()?'comandi in italiano · offline':AI.st&&!AI.st.connected?'da collegare':'…';
-  $('#aiVoice').hidden=!on;$('#aiVoice').setAttribute('aria-pressed',AI.voice);
+  h.querySelector('span').textContent=on?($('#chat').classList.contains('qmode')?'preventivo':AI.fast?'collegato · veloce':'collegato · solo Tasky'):AI.offline||!aiAvail()?'comandi in italiano · offline':AI.st&&!AI.st.connected?'da collegare':'…';
+  $('#aiVoice').hidden=!on;$('#aiClip').hidden=!on;$('#aiVoice').setAttribute('aria-pressed',AI.voice);
   $('#aiMenu').hidden=!aiAvail();
   $('#cchips').hidden=on||(!AI.offline&&aiAvail());
   $('#chatForm').style.display=aiAvail()&&!AI.offline&&!on?'none':'';
@@ -3943,7 +3970,9 @@ function aiConnectCard(){
   </div>`;
 }
 const AI_SUGG=['Cosa ho domani?','Aggiungi una task: mandare preventivo a Rilastil, scadenza venerdì','Sabato sono libero','Che lavori ho a novembre e quanto ho fatturato?'];
-function aiGreeting(){return `<div class="msg bot">Ciao Francesco! Sono ${aiName()}, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
+function aiGreeting(){const oq=$('#chat').classList.contains('qmode')&&S.quotes[AI.quoteId];
+  if(oq)return `<div class="msg bot">Preventivo **${esc(qCode(oq))}** aperto${S.clients[oq.clientId]?' per '+esc(S.clients[oq.clientId].name):''}. Incollami la mail del cliente, mandami uno screenshot o dimmi a voce cosa deve contenere: lo compilo io e vedi il PDF aggiornarsi. Poi chiedimi tutte le modifiche che vuoi.</div><div class="sugg">${['Crea il cliente da questa P.IVA: ','Aggiungi una voce: ','Metti la lingua in italiano','Togli la marca da bollo'].map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`.replace(/\*\*(.+?)\*\*/,'<b>$1</b>');
+  return `<div class="msg bot">Ciao Francesco! Sono ${aiName()}, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
 
 /* ---------- contesto: cosa vede Claude a ogni messaggio ---------- */
 const aiStatic=()=>`Sei ${aiName()}, l'assistente integrato in Tasky: l'app di task, calendario e conti di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
@@ -3966,14 +3995,31 @@ Regole:
 - Se un progetto o cliente nominato non esiste, chiedi se crearlo (o crea una task singola se è chiaramente una cosa veloce).
 - Dopo aver agito conferma in una o due frasi cosa hai fatto, con giorno e orario in forma leggibile (es. "giovedì 6 novembre alle 15:00"). Niente tabelle; al massimo elenchi brevi con "-" e qualche **grassetto**.
 - Francesco può annullare tutto quello che hai fatto in un messaggio con il pulsante "Annulla" sotto la tua risposta.
-- Colori disponibili (hex): ${PALETTE.join(', ')}.`;
+- Colori disponibili (hex): ${PALETTE.join(', ')}.
+
+Clienti e foto:
+- Se Francesco manda una foto o uno screenshot con dati di fatturazione, leggili e salvali con modifica_cliente (aggiorna il cliente se esiste, altrimenti crealo). Dopo, dì cosa hai salvato e cosa manca.
+- Se ti dà solo una partita IVA, usa verifica_partita_iva per ricavare ragione sociale e indirizzo (dividi l'indirizzo in via, CAP, città e provincia).
+
+Preventivi (Francesco è videomaker, regime forfettario: niente IVA, rivalsa INPS 4% e bollo 2 € di solito attivi):
+- Il preventivo ha già logo, firma, dati di Moody, condizioni e note standard: tu compili cliente, titolo, descrizione del progetto e voci.
+- Titolo, descrizione e voci scrivili in italiano (anche se le etichette sono in inglese), con il tono professionale di Francesco: la descrizione è un paragrafo unico che spiega cosa comprende il servizio, durata/formati, cosa è incluso ed escluso, giri di revisione e tempi di consegna se noti.
+- Ogni voce: titolo breve in grassetto e, se i dettagli sono nella descrizione, descrizione "(vedi descrizione del progetto)".
+- NON inventare prezzi, quantità o date: se mancano chiedili (una domanda sola, chiara). Se Francesco incolla una mail del cliente, ricava da lì le informazioni.
+- Se c'è un PREVENTIVO APERTO, le modifiche vanno su quello (modifica_preventivo). Per un preventivo nuovo usa crea_preventivo.
+- Dopo ogni modifica rispondi in una riga con cosa hai cambiato e il nuovo totale.`;
 function aiSnapshot(){
   const now=new Date(),today=key(now),st=S.settings,L=[];
   const d0=parse(today);
   L.push(`OGGI: ${WDL[d0.getDay()].toLowerCase()} ${today}, ore ${hm(nowMin())}. Orario di lavoro standard ${hm(st.workStart)}–${hm(st.workEnd)}.`);
   const days=[];for(let i=0;i<14;i++){const k=addDays(today,i);days.push(`${k} ${WD[parse(k).getDay()]}${dayIsOn(k)?'':' (libero)'}`)}
   L.push('PROSSIMI GIORNI: '+days.join(' · '));
-  const cl=Object.values(S.clients);if(cl.length)L.push('CLIENTI: '+cl.map(c=>`${c.name} [${c.id}]`).join('; '));
+  const cl=Object.values(S.clients);if(cl.length)L.push('CLIENTI:\n'+cl.map(c=>{const b=c.bill||{};return `- ${c.name} [${c.id}]${b.ragione?' · '+b.ragione:''}${b.piva?' · P.IVA '+b.piva:''}${b.city?' · '+b.city:''}${b.sdi?' · SDI '+b.sdi:''}${billMissing(c).length?' · mancano: '+billMissing(c).join(', '):''}`}).join('\n'));
+  const qs=Object.values(S.quotes||{}).sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,15);
+  if(qs.length)L.push('PREVENTIVI RECENTI:\n'+qs.map(q=>`- ${qCode(q)} [${q.id}] ${S.clients[q.clientId]?.name||'senza cliente'} · ${q.title||'(senza titolo)'} · ${eur(qTotals(q).tot)} · ${q.status}`).join('\n'));
+  if(!AI.quoteId&&finOpen()&&FIN.view==='prev'&&FIN.q)AI.quoteId=FIN.q;
+  const oq=AI.quoteId&&S.quotes[AI.quoteId];
+  if(oq)L.push('PREVENTIVO APERTO ORA (quello di cui parla Francesco, se non dice altro):\n'+JSON.stringify({id:oq.id,numero:qCode(oq),cliente:S.clients[oq.clientId]?.name||null,lingua:oq.lang,data:oq.date,valido_fino:oq.valid,titolo:oq.title,descrizione:oq.desc,voci:(oq.items||[]).map(it=>({titolo:it.title,descrizione:it.desc,prezzo:it.price,quantita:it.qty})),sconto:oq.discount,rivalsa:oq.rivalsa,bollo:oq.bollo,totale:qTotals(oq).tot,stato:oq.status}));
   const ps=activeProjects();
   const pr=ps.filter(p=>!isSolo(p));if(pr.length)L.push('PROGETTI:\n'+pr.map(p=>`- ${p.name} [${p.id}]${p.client||S.clients[p.clientId]?.name?' · cliente '+(S.clients[p.clientId]?.name||p.client):''}${p.deadline?' · scadenza '+p.deadline:''}`).join('\n'));
   const open=allTasks().filter(t=>!t.done&&!S.projects[t.projectId]?.archived);
@@ -4006,7 +4052,11 @@ const AI_TOOLS=[
  {name:'aggiungi_cliente',description:'Crea un cliente (se esiste già con quel nome restituisce quello).',input_schema:{type:'object',properties:{nome:{type:'string'}},required:['nome']}},
  {name:'aggiungi_lavoro',description:'Aggiunge un lavoro nei Conti (fatturato del mese).',input_schema:{type:'object',properties:{titolo:{type:'string'},cliente:{type:'string'},progetto:{type:'string'},mese:{type:'string',description:'YYYY-MM'},giorni:{type:'array',items:S_DATE,description:'giorni di lavoro'},importo:{type:'number',description:'fatturato in euro'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},blocca_calendario:{type:'boolean',description:'crea eventi nei giorni di lavoro'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['titolo','mese']}},
  {name:'modifica_lavoro',description:'Modifica un lavoro nei Conti (stato, importi, fattura, giorni...).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},importo:{type:'number'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},numero_fattura:{type:'string'},data_fattura:S_DATE,fattura_inviata:{type:'boolean'},giorni:{type:'array',items:S_DATE},blocca_calendario:{type:'boolean'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['id']}},
- {name:'elimina_lavoro',description:'Elimina un lavoro dai Conti (e i suoi eventi).',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}}
+ {name:'elimina_lavoro',description:'Elimina un lavoro dai Conti (e i suoi eventi).',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
+ {name:'modifica_cliente',description:'Crea o aggiorna un cliente con i dati di fatturazione (anche letti da una foto/screenshot). Se il cliente esiste (id o nome) lo aggiorna, altrimenti lo crea.',input_schema:{type:'object',properties:{id:{type:'string'},...{nome:{type:'string',description:'nome breve del cliente (come lo chiami tu)'},ragione_sociale:{type:'string'},partita_iva:{type:'string'},codice_fiscale:{type:'string'},indirizzo:{type:'string',description:'via e numero civico'},cap:{type:'string'},citta:{type:'string'},provincia:{type:'string',description:'sigla, es. MI'},sdi:{type:'string',description:'codice destinatario SDI'},pec:{type:'string'},email:{type:'string'}}}}},
+ {name:'verifica_partita_iva',description:'Cerca una partita IVA europea nel registro ufficiale VIES: dice se è valida e restituisce ragione sociale e indirizzo (solo questo, nient altro su internet).',input_schema:{type:'object',properties:{partita_iva:{type:'string'}},required:['partita_iva']}},
+ {name:'crea_preventivo',description:'Crea un nuovo preventivo (con i dati di Francesco, logo e firma già impostati) e lo apre.',input_schema:{type:'object',properties:{cliente:{type:'string',description:'nome o id del cliente'},titolo:{type:'string',description:'titolo del progetto'},descrizione:{type:'string',description:'descrizione del progetto (paragrafo)'},lingua:{type:'string',enum:['it','en'],description:'lingua delle etichette e dei testi standard'},data:S_DATE,valido_fino:S_DATE,voci:{type:'array',description:'voci del preventivo',items:{type:'object',properties:{titolo:{type:'string'},descrizione:{type:'string',description:'riga sotto il titolo, es. (vedi descrizione del progetto)'},prezzo:{type:'number',description:'euro, 0 = incluso'},quantita:{type:'number'}},required:['titolo']}},sconto:{type:'number'},rivalsa:{type:'boolean',description:'rivalsa INPS 4%'},bollo:{type:'boolean',description:'marca da bollo 2€'},condizioni:{type:'string'},note:{type:'string'},stato:{type:'string',enum:['bozza','inviato','accettato','rifiutato']}}}},
+ {name:'modifica_preventivo',description:'Modifica un preventivo esistente. voci sostituisce tutte le voci; aggiungi_voci le aggiunge in fondo.',input_schema:{type:'object',properties:{id:{type:'string'},numero:{type:'integer'},aggiungi_voci:{type:'array',description:'voci del preventivo',items:{type:'object',properties:{titolo:{type:'string'},descrizione:{type:'string',description:'riga sotto il titolo, es. (vedi descrizione del progetto)'},prezzo:{type:'number',description:'euro, 0 = incluso'},quantita:{type:'number'}},required:['titolo']}},cliente:{type:'string',description:'nome o id del cliente'},titolo:{type:'string',description:'titolo del progetto'},descrizione:{type:'string',description:'descrizione del progetto (paragrafo)'},lingua:{type:'string',enum:['it','en'],description:'lingua delle etichette e dei testi standard'},data:S_DATE,valido_fino:S_DATE,voci:{type:'array',description:'voci del preventivo',items:{type:'object',properties:{titolo:{type:'string'},descrizione:{type:'string',description:'riga sotto il titolo, es. (vedi descrizione del progetto)'},prezzo:{type:'number',description:'euro, 0 = incluso'},quantita:{type:'number'}},required:['titolo']}},sconto:{type:'number'},rivalsa:{type:'boolean',description:'rivalsa INPS 4%'},bollo:{type:'boolean',description:'marca da bollo 2€'},condizioni:{type:'string'},note:{type:'string'},stato:{type:'string',enum:['bozza','inviato','accettato','rifiutato']}},required:['id']}}
 ];
 const aiNorm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
 const aiDate=v=>{if(v==null||v==='')return undefined;if(/^(nessuna|null|none)$/i.test(v))return null;if(!/^\d{4}-\d{2}-\d{2}$/.test(v))throw new Error('data non valida: '+v+' (serve YYYY-MM-DD)');return v};
@@ -4043,6 +4093,28 @@ function aiSearch(a){
   out.clienti=Object.values(S.clients).filter(c=>hit(c.name)).map(c=>`${c.name} [${c.id}]`);
   out.lavori=Object.values(S.jobs||{}).filter(j=>hit((j.title||'')+' '+(S.clients[j.clientId]?.name||''))&&(!a.dal||j.month>=from.slice(0,7))&&(!a.al||j.month<=to.slice(0,7))).slice(0,60).map(j=>`${j.month} ${j.title} [${j.id}] ${eur(j.amount)} stato ${j.status}`);
   return out;
+}
+const aiVoce=v=>({id:uid(),title:String(v.titolo||'').trim(),desc:String(v.descrizione||'').trim(),price:v.prezzo==null||v.prezzo===''?'':+v.prezzo,qty:v.quantita==null?1:+v.quantita});
+function aiQuoteApply(q,a){
+  if(a.cliente){const c=aiClient(a.cliente,true);q.clientId=c.id}
+  if(a.titolo!=null)q.title=a.titolo;if(a.descrizione!=null)q.desc=a.descrizione;
+  if(a.lingua&&a.lingua!==q.lang){const b=biz();if(!q.terms||q.terms===(q.lang==='en'?b.termsEn:b.termsIt))q.terms=a.lingua==='en'?b.termsEn:b.termsIt;if(!q.notes||q.notes===(q.lang==='en'?b.notesEn:b.notesIt))q.notes=a.lingua==='en'?b.notesEn:b.notesIt;q.lang=a.lingua}
+  if(a.data){q.date=aiDate(a.data);q.year=+q.date.slice(0,4)}if(a.valido_fino)q.valid=aiDate(a.valido_fino);if(a.numero)q.num=+a.numero;
+  if(Array.isArray(a.voci))q.items=a.voci.map(aiVoce);if(Array.isArray(a.aggiungi_voci))q.items=[...(q.items||[]).filter(it=>it.title||it.desc||num(it.price)),...a.aggiungi_voci.map(aiVoce)];
+  if(a.sconto!=null)q.discount=+a.sconto||0;if(a.rivalsa!=null)q.rivalsa=!!a.rivalsa;if(a.bollo!=null)q.bollo=!!a.bollo;
+  if(a.condizioni!=null)q.terms=a.condizioni;if(a.note!=null)q.notes=a.note;if(a.stato)q.status=a.stato;
+}
+function aiOpenQuote(id){if(typeof openFin!=='function')return;if(!finOpen())openFin('prev');FIN.view='prev';FIN.q=id;renderFin(true);aiQPrev()}
+function aiRefreshQuote(){if(AI.quoteId&&finOpen()&&FIN.q===AI.quoteId)renderFin(true);aiQPrev()}
+function aiQPrev(){
+  const el=$('#aiQPrev');if(!el)return;const on=$('#chat').classList.contains('qmode'),q=on&&S.quotes[AI.quoteId];el.hidden=!q;if(!q)return;
+  el.innerHTML=`<div class="aqp-bar"><b>${esc(qCode(q))}</b><span>${eur(qTotals(q).tot)}</span><button type="button" class="btn" data-aqp="big">${el.classList.contains('big')?'Riduci':'Ingrandisci'}</button><button type="button" class="btn primary" data-aqp="pdf">PDF</button></div><div class="aqp-paper">${quoteDoc(q)}</div>`;
+  const pp=el.querySelector('.aqp-paper'),sc=Math.min(1,(el.clientWidth-16)/794);pp.style.setProperty('--qs',sc);pp.style.height=(pp.firstElementChild.offsetHeight*sc)+'px';
+}
+function aiQuoteMode(id){
+  const on=!!id,ch=$('#chat');AI.quoteId=id||null;ch.classList.toggle('qmode',on);appEl().classList.toggle('qchat',on);
+  if(on){chatLog.length=0;AI.msgs=[];toggleChat(true)}
+  setTimeout(()=>{dispatchEvent(new Event('resize'));aiQPrev()},60);
 }
 async function aiRun(name,a){
   a=a||{};
@@ -4109,6 +4181,21 @@ async function aiRun(name,a){
     if(a.giorni){j.days=a.giorni.map(aiDate).filter(k=>k&&k.startsWith(j.month)).sort();j.day=j.days.map(k=>+k.slice(8)).join(', ')}
     if(a.blocca_calendario!=null)j.cal.on=!!a.blocca_calendario;if(a.dalle)j.cal.start=aiTime(a.dalle);if(a.alle)j.cal.end=aiTime(a.alle);if(aiColor(a.colore))j.cal.color=a.colore;
     put('jobs',j);syncJobBlocks(j);if(typeof renderFin==='function')renderFin();return {ok:true}}
+  case 'modifica_cliente':{
+    let c=a.id&&S.clients[a.id]?S.clients[a.id]:null;
+    if(!c&&(a.nome||a.ragione_sociale)){const n=aiNorm(a.nome||a.ragione_sociale);c=Object.values(S.clients).find(x=>aiNorm(x.name)===n||aiNorm(x.bill?.ragione)===n)||Object.values(S.clients).find(x=>a.partita_iva&&x.bill?.piva===String(a.partita_iva).replace(/\s/g,''))||null}
+    const isNew=!c;if(isNew)c={id:uid(),name:(a.nome||a.ragione_sociale||'Cliente').trim(),color:freeColor(),created:Date.now()};
+    const bl={...(c.bill||{})},map={ragione_sociale:'ragione',partita_iva:'piva',codice_fiscale:'cf',indirizzo:'addr',cap:'cap',citta:'city',provincia:'prov',sdi:'sdi',pec:'pec',email:'mail'};
+    Object.entries(map).forEach(([k,f])=>{if(a[k]!=null&&String(a[k]).trim()!=='')bl[f]=String(a[k]).trim()});if(bl.piva)bl.piva=bl.piva.replace(/^IT/i,'').replace(/\s/g,'');if(bl.prov)bl.prov=bl.prov.toUpperCase().slice(0,2);if(bl.sdi)bl.sdi=bl.sdi.toUpperCase();
+    put('clients',{...c,...(a.nome&&!isNew?{name:a.nome.trim()}:{}),bill:bl});aiRefreshQuote();return {ok:true,id:c.id,creato:isNew,mancano:billMissing({...c,bill:bl})}}
+  case 'verifica_partita_iva':{const r=await window.tbmAI({action:'vies',vat:a.partita_iva});return r||{ok:false}}
+  case 'crea_preventivo':{
+    const b=biz(),today=key(new Date()),lang=a.lingua||b.qLang||'en';
+    const q={id:uid(),num:nextQuoteNum(),year:+today.slice(0,4),date:today,valid:addDays(today,+b.qValid||90),lang,clientId:null,title:'',desc:'',items:[],discount:0,rivalsa:b.rivalsa!==false,bollo:b.bollo!==false,terms:lang==='en'?b.termsEn:b.termsIt,notes:lang==='en'?b.notesEn:b.notesIt,status:'bozza',created:Date.now()};
+    aiQuoteApply(q,a);put('quotes',q);AI.quoteId=q.id;aiOpenQuote(q.id);return {ok:true,id:q.id,numero:qCode(q),totale:qTotals(q).tot}}
+  case 'modifica_preventivo':{
+    const q0=S.quotes[a.id];if(!q0)throw new Error('preventivo non trovato');const q=JSON.parse(JSON.stringify(q0));
+    aiQuoteApply(q,a);put('quotes',q);AI.quoteId=q.id;aiRefreshQuote();return {ok:true,numero:qCode(q),totale:qTotals(q).tot}}
   case 'elimina_lavoro':{const j=S.jobs[a.id];if(!j)throw new Error('lavoro non trovato');Object.values(S.blocks).filter(b=>b.jobId===j.id).forEach(b=>del('blocks',b.id));del('jobs',j.id);if(typeof renderFin==='function')renderFin();return {ok:true}}
   }
   return {ok:false,errore:'strumento sconosciuto'};
@@ -4117,7 +4204,10 @@ const AI_RO=new Set(['cerca']);
 function aiTrim(){while(AI.msgs.length>40){AI.msgs.shift();while(AI.msgs.length&&!(AI.msgs[0].role==='user'&&typeof AI.msgs[0].content==='string'))AI.msgs.shift()}}
 async function aiSend(text){
   if(AI.busy)return;AI.busy=true;
-  aiTrim();const base0=AI.msgs.length;chatLog.push({who:'me',text});AI.msgs.push({role:'user',content:text});
+  // le foto dei messaggi precedenti non servono più: le tolgo per non appesantire
+  AI.msgs.forEach(m=>{if(Array.isArray(m.content))m.content=m.content.map(c=>c.type==='image'?{type:'text',text:'[foto inviata prima]'}:c)});
+  aiTrim();const base0=AI.msgs.length,img=AI.img;AI.img=null;aiAttDraw();
+  chatLog.push({who:'me',text,img:img?img.thumb:null});AI.msgs.push({role:'user',content:img?[{type:'image',media_type:img.type,data:img.data},{type:'text',text}]:text});
   const before=takeSnap();let changed=false;const bot={who:'bot',text:'',typing:true,md:true};chatLog.push(bot);renderChat();
   try{
     for(let step=0;step<10;step++){
@@ -4138,7 +4228,7 @@ async function aiSend(text){
   }
   bot.typing=false;if(!bot.text)bot.text='Fatto.';
   if(changed){bot.undo=1;bot.snap=before}
-  AI.busy=false;renderChat();
+  AI.busy=false;renderChat();aiQPrev();
   if(AI.voice&&!bot.err)aiSpeak(bot.text);
 }
 function aiSpeak(t){
@@ -4154,6 +4244,16 @@ function aiConnect(){
   window.tbmAI({action:'connect',key:k}).then(d=>{if(d&&d.connected){AI.st={connected:true,provider:d.provider};AI.model=d.model;AI.fast=false;AI.offline=false;AI.msgs=[];chatLog.length=0;toast(`${aiName()} è collegato ✓`)}else{AI.st={connected:false,err:d&&d.error||'Non sono riuscito a collegarmi'}}})
     .catch(e=>{AI.st={connected:false,err:String(e.message||e)}}).finally(()=>{aiHeader();renderChat()});
 }
+/* foto e screenshot da mandare all'assistente */
+function aiAttDraw(){const a=$('#aiAtt');if(!a)return;a.hidden=!AI.img;a.innerHTML=AI.img?`<img src="${AI.img.thumb}" alt=""><span>Foto pronta da inviare</span><button type="button" id="aiAttX" aria-label="Togli la foto">✕</button>`:''}
+function aiPickImage(file){
+  if(!file||!/^image\//.test(file.type)){toast('Scegli un\'immagine');return}
+  const r=new FileReader();r.onload=()=>{const im=new Image();im.onload=()=>{
+    const big=(w,h,m)=>{const s=Math.min(1,m/Math.max(w,h));return [Math.round(w*s),Math.round(h*s)]};
+    const [w,h]=big(im.width,im.height,1600),c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.fillStyle='#fff';x.fillRect(0,0,w,h);x.drawImage(im,0,0,w,h);
+    const data=c.toDataURL('image/jpeg',.85).split(',')[1];
+    const [tw,th]=big(im.width,im.height,240),t=document.createElement('canvas');t.width=tw;t.height=th;t.getContext('2d').drawImage(im,0,0,tw,th);
+    AI.img={type:'image/jpeg',data,thumb:t.toDataURL('image/jpeg',.7)};aiAttDraw();$('#chatIn').focus()};im.onerror=()=>toast('Non riesco a leggere questa immagine');im.src=r.result};r.readAsDataURL(file)}
 function aiMenu(){
   const r=$('#aiMenu').getBoundingClientRect();const items=[];
   if(aiOn()){items.push({label:'Nuova conversazione',run:()=>{AI.msgs=[];chatLog.length=0;renderChat()}});
@@ -4164,7 +4264,7 @@ function aiMenu(){
   showCtx(Math.max(8,r.right-240),r.bottom+4,items);
 }
 
-function toggleChat(open){setTimeout(placeMini,0);if(open){chipLevel='root';renderChips();aiStatus();aiHeader()}$('#chat').hidden=!open;$('#fab').hidden=open;$('#fab').setAttribute('aria-expanded',open);if(open){renderChat();$('#chatIn').focus()}}
+function toggleChat(open){setTimeout(placeMini,0);if(!open&&$('#chat').classList.contains('qmode'))aiQuoteMode(null);if(open){chipLevel='root';renderChips();aiStatus();aiHeader()}$('#chat').hidden=!open;$('#fab').hidden=open;$('#fab').setAttribute('aria-expanded',open);if(open){renderChat();$('#chatIn').focus()}}
 $('#fab').onclick=()=>toggleChat(true);
 $('#chatClose').onclick=()=>toggleChat(false);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#chat').hidden&&!dlg.open)toggleChat(false)});
@@ -4214,7 +4314,7 @@ function qTotals(q){
 function nextQuoteNum(){const b=biz(),used=Object.values(S.quotes).map(q=>+q.num||0);return Math.max(+b.qNext||1,used.length?Math.max(...used)+1:1)}
 const QL={
   en:{title:'Service Quote',no:'Quotation No: #',date:'Date',valid:'Valid Until',cust:'Customer:',custB:'Customer',prov:'Service Provider',proj:'Quote/Project Description',desc:'Description',price:'Item Price',qty:'Quantity',line:'Line Total',sub:'Subtotal',disc:'Discount',riv:'INPS 4%',bol:'Tax stamp',tot:'Total',terms:'General Terms',notes:'Special Notes and Instructions',sig:'Signature',confirm:'Please confirm your acceptance of this quote by signing this document',ask:'If you have any questions concerning this quote, contact',incl:'Included',vat:'VAT ID',cf:'CF',sdi:'SDI',pec:'PEC'},
-  it:{title:'Preventivo',no:'Preventivo n. #',date:'Data',valid:'Valido fino al',cust:'Cliente:',custB:'Cliente',prov:'Fornitore',proj:'Descrizione del progetto',desc:'Descrizione',price:'Prezzo',qty:'Quantità',line:'Totale',sub:'Subtotale',disc:'Sconto',riv:'Rivalsa INPS 4%',bol:'Marca da bollo',tot:'Totale',terms:'Condizioni generali',notes:'Note e istruzioni',sig:'Firma',confirm:'Per accettazione, firma il presente documento',ask:'Per qualsiasi domanda su questo preventivo contatta',incl:'Incluso',vat:'P.IVA',cf:'C.F.',sdi:'SDI',pec:'PEC'}};
+  it:{title:'Preventivo',no:'Preventivo n.',date:'Data',valid:'Valido fino al',cust:'Cliente:',custB:'Cliente',prov:'Fornitore',proj:'Descrizione del progetto',desc:'Descrizione',price:'Prezzo',qty:'Quantità',line:'Totale',sub:'Subtotale',disc:'Sconto',riv:'Rivalsa INPS 4%',bol:'Marca da bollo',tot:'Totale',terms:'Condizioni generali',notes:'Note e istruzioni',sig:'Firma',confirm:'Per accettazione, firma il presente documento',ask:'Per qualsiasi domanda su questo preventivo contatta',incl:'Incluso',vat:'P.IVA',cf:'C.F.',sdi:'SDI',pec:'PEC'}};
 const fmtD=(k,lang)=>{if(!k)return '';const d=parse(k);return lang==='en'?d.toLocaleDateString('en-GB'):d.toLocaleDateString('it-IT')};
 const nl2br=s=>esc(s||'').replace(/\n/g,'<br>');
 function quoteDoc(q){
@@ -4534,7 +4634,7 @@ function renderQuoteEditor(el,q){
     </div>`;
   el.innerHTML=`<div class="qe">
     <div class="qe-bar"><button type="button" class="btn ghost" data-qa="back">‹ Preventivi</button><b class="qe-code">${esc(qCode(q))}</b><span class="qe-saved" id="qeSaved">Salvato</span>
-      <div class="qe-act"><button type="button" class="btn ghost qe-prevbtn" data-qa="preview">Anteprima</button><button type="button" class="btn" data-qa="job">${Object.values(S.jobs).some(j=>j.quoteId===q.id)?'Lavoro collegato ✓':'Aggiungi ai lavori'}</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div></div>
+      <div class="qe-act"><button type="button" class="btn qe-ai" data-qa="ai">✨ Compila con l'assistente</button><button type="button" class="btn ghost qe-prevbtn" data-qa="preview">Anteprima</button><button type="button" class="btn" data-qa="job">${Object.values(S.jobs).some(j=>j.quoteId===q.id)?'Lavoro collegato ✓':'Aggiungi ai lavori'}</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></div></div>
     <div class="qe-grid">
       <div class="qe-form">
         <div class="row3"><div class="field"><label>Numero</label><input id="qN" inputmode="numeric" value="${q.num}"></div><div class="field"><label>Data</label><input id="qD" type="date" value="${q.date}"></div><div class="field"><label>Valido fino al</label><input id="qV" type="date" value="${q.valid}"></div></div>
@@ -4586,6 +4686,7 @@ function renderQuoteEditor(el,q){
     else if(a==='pdf'){read();clearTimeout(saveT);put('quotes',cur);printQuote(cur)}
     else if(a==='preview'){prev.classList.toggle('show');fit()}
     else if(a==='biz')openBiz();
+    else if(a==='ai'){read();clearTimeout(saveT);put('quotes',cur);aiQuoteMode(cur.id)}
     else if(a==='dup'){read();put('quotes',cur);const n={...JSON.parse(JSON.stringify(cur)),id:uid(),num:nextQuoteNum(),date:key(new Date()),status:'bozza',created:Date.now()};n.year=+n.date.slice(0,4);n.valid=addDays(n.date,+biz().qValid||90);put('quotes',n);FIN.q=n.id;renderFin(true);toast('Preventivo duplicato')}
     else if(a==='job'){read();put('quotes',cur);const ex=Object.values(S.jobs).find(j=>j.quoteId===cur.id);if(ex){FIN.q=null;FIN.view='mesi';const [yy,mm]=ex.month.split('-').map(Number);FIN.year=yy;FIN.month=mm-1;renderFin(true);openJob(ex);return}
       const t=qTotals(cur),mo=cur.date.slice(0,7);put('jobs',{id:uid(),month:mo,day:'',clientId:cur.clientId,projectId:null,title:cur.title,quoteId:cur.id,amount:t.imp,cash:0,status:cur.status==='accettato'?'corso':'prev',created:Date.now()});
