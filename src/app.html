@@ -194,6 +194,7 @@ button,input,select{font:inherit;color:inherit}
 .wl-opt.primary{background:var(--fg);color:var(--bg);border-color:var(--fg)}.wl-opt.primary small{color:color-mix(in srgb,var(--bg) 70%,transparent)}
 .wl-opt input{border:1px solid var(--line);border-radius:6px;padding:2px 6px;background:var(--surface);font:inherit;font-size:13px}
 .wl-ic{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:color-mix(in srgb,currentColor 12%,transparent);font-size:13px}
+.wl-skips{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:14px;color:var(--muted)}.wl-skips .wl-skip{margin:0}
 .wl-skip{display:block;margin:14px auto 0;border:0;background:none;color:var(--muted);cursor:pointer;font-size:13px;text-decoration:underline}
 .wl-tl{margin:6px 0 14px}
 .wl-track{position:relative;height:34px;border-radius:9px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
@@ -413,6 +414,7 @@ dialog.wide{width:min(640px,calc(100vw - 32px))}
 .tv-rows li:first-child{border-top:0}
 .tv-rows li>span{width:22px;text-align:center;font-size:17px}
 .tv-rows b{display:block;font-size:15px;font-weight:600}.tv-rows small{display:block;font-size:12px;color:var(--muted);margin-top:1px}
+.tv-ic{font-size:20px}.tv-n{font-size:14px;line-height:1.45;overflow-wrap:anywhere}.tv-rows a{color:var(--accent);font-weight:600}
 .tv-acts{display:flex;flex-direction:column;gap:6px}
 .tv-big{width:100%;padding:12px;font-size:16px;font-weight:700;border-radius:12px}
 .nf-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:14px}.nf-row label{display:flex;align-items:center;gap:6px}.nf-row input[type=time]{border:1px solid var(--line);border-radius:8px;padding:5px 8px;font:inherit;background:var(--surface)}
@@ -1237,7 +1239,7 @@ async function init(){
     mode='local';loadLocal();setStatus('','Salvato solo su questo dispositivo');render();
   }
   scrollToWork();scrollToToday();
-  setTimeout(()=>{refreshStable();if(needsWelcome())showWelcome();else{track(true);render();checkDayEnd()}},mode==='cloud'?2500:200);
+  setTimeout(()=>{refreshStable();if(needsWelcome()&&!welcomeSnoozed())showWelcome();else{track(true);render();checkDayEnd()}},mode==='cloud'?2500:200);
 }
 
 /* ---------- scheduler ---------- */
@@ -2076,7 +2078,7 @@ document.addEventListener('click',e=>{
   else if(act==='editTask'){if(justMoved){justMoved=false;return}openTaskView(id,el.dataset.start!=null?+el.dataset.start:null,el.dataset.end!=null?+el.dataset.end:null,el.closest('.daycol')?.dataset.date||null)}
   else if(act==='editSolo'){if(projDragged){projDragged=false;return}openSolo(S.projects[id])}
   else if(act==='soloToggle'){const sp=S.projects[id];put('projects',{...sp,done:!sp.done,doneAt:!sp.done?Date.now():null})}
-  else if(act==='editBlock'){if(justMoved){justMoved=false;return}openBlock(S.blocks[id],el.dataset.occ)}
+  else if(act==='editBlock'){if(justMoved){justMoved=false;return}const bb=S.blocks[id];if(!bb)return;if(isPause(bb))openBlock(bb,el.dataset.occ);else openBlockView(bb,el.dataset.occ)}
   else if(act==='settings')openSettings();
   else if(act==='newBlock')newBlockNow();
   else if(act==='segDone'){e.stopPropagation();if(justMoved){justMoved=false;return}const tk=S.tasks[id],sp=S.projects[id],x=tk||sp;if(!x)return;const nd=!x.done;put(tk?'tasks':'projects',{...x,done:nd,doneAt:nd?Date.now():null});if(nd)toast(`«${x.title||x.name}» fatta ✓`,{label:'Annulla',run:doUndo})}
@@ -2310,6 +2312,32 @@ function wireSwatches(root=form){let c=root.querySelector('.sw[aria-pressed="tru
   const pick=v=>{c=v;root.querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x.dataset.c===v))};
   root.querySelectorAll('.sw').forEach(b=>b.onclick=()=>pick(b.dataset.c));const get=()=>c;get.set=pick;return get}
 function armDelete(btn,label,fn){btn.onclick=()=>{if(btn.classList.contains('armed')){fn();dlg.close()}else{btn.classList.add('armed');btn.textContent=label}}}
+/* scheda di sola lettura dell'evento (dal calendario): riepilogo pulito, matita per modificare */
+function openBlockView(b,occ){
+  occ=occ||b.date;const cur=blocksOn(occ,true).find(x=>x.id===b.id)||b,rec=isRec(b),pr=b.projectId&&S.projects[b.projectId],job=b.jobId&&S.jobs&&S.jobs[b.jobId];
+  const pen='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>';
+  const link=t=>esc(t).replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>').replace(/\n/g,'<br>');
+  const em=/^\s*\p{Extended_Pictographic}/u.test(b.title||'')?'':(blockIcon(b)||'');
+  const [bx,by]=bufOf(cur),tr=b.travel,tm=tr&&(TMODES.find(x=>x[0]===tr.mode)||TMODES[0]);
+  const maps=b.place&&b.place.lat!=null?gmapsUrl(b.from||homePlace(),b.place,tr?.mode||S.settings.travelMode||'transit'):b.place&&b.place.label?'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(b.place.label):'';
+  const rows=[
+    `<li><span>🕒</span><div><b>${esc(longDate(occ))}${b.allDay?' · tutto il giorno':` · ${hm(cur.start)}–${hm(cur.end)}`}</b><small>${rec?'si ripete '+esc(repLabel(b)):b.allDay?'giornata intera':esc(dur(cur.end-cur.start))}</small></div></li>`,
+    b.place&&b.place.label?`<li><span>📍</span><div><b>${esc(b.place.label)}</b><small>${maps?`<a href="${maps}" target="_blank" rel="noopener">Apri in Maps</a>`:'luogo'}</small></div></li>`:'',
+    !b.allDay&&(bx||by||tr)?`<li><span>${tm?tm[1]:'🚗'}</span><div><b>${bx?`Parti alle ${hm(cur.start-bx)}`:'Nessun viaggio prima'}${by?` · rientro ${dur(by)}`:''}</b><small>${tr&&tr.minutes?`${esc(tm[2])} · ${dur(tr.minutes)}${tr.lines&&tr.lines.length?' · linee '+esc(tr.lines.join(' → ')):''}`:'viaggio e preparazione'}</small></div></li>`:'',
+    pr?`<li><span>📁</span><div><b>${esc(pr.name)}</b><small>progetto</small></div></li>`:'',
+    job?`<li><span>💼</span><div><b>${esc(job.title||'Lavoro')}</b><small>lavoro nei Conti</small></div></li>`:'',
+    b.notes?`<li class="tv-notes"><span>📝</span><div><div class="tv-n">${link(b.notes)}</div><small>descrizione</small></div></li>`:''
+  ].filter(Boolean).join('');
+  form.innerHTML=`<div class="tv">
+    <div class="tv-h"><span class="tv-ic" style="--c:${b.color||'var(--accent)'}">${em||'📅'}</span><div class="tv-hd"><div class="tv-k">${b.life==='pers'?'🏠 Personale':'💼 Lavoro'}${rec?' · ricorrente':''}</div><h3 class="tv-t">${esc(b.title||'Evento')}</h3></div><button type="button" class="tv-edit" id="tvEdit" aria-label="Modifica l'evento" title="Modifica">${pen}</button></div>
+    <ul class="tv-rows">${rows}</ul>
+    <div class="tv-acts"><button type="button" class="btn ghost" id="tvDup">Duplica evento</button></div>
+  </div>`;
+  form.onsubmit=e=>e.preventDefault();
+  $('#tvEdit').onclick=()=>{dlg.close();setTimeout(()=>openBlock(b,occ),30)};
+  $('#tvDup').onclick=()=>{dlg.close();setTimeout(()=>duplicateBlock(b,occ),30)};
+  show();
+}
 /* scheda di sola lettura della task (dal calendario): pulita, con matita per modificare */
 function openTaskView(id,s0,e0,day){
   const t=taskById(id);if(!t)return;const p=S.projects[t.projectId],solo=!!t.solo,c=p&&(S.clients[p.clientId]?.name||p.client);
@@ -2706,6 +2734,7 @@ let welcomeOpen=false;
 const dayRec=k=>(S.settings.days||{})[k];
 function setDayRec(k,patch){const st=S.settings;st.days={...(st.days||{})};st.days[k]={...(st.days[k]||{}),...patch};
   const lim=addDays(key(new Date()),-180);Object.keys(st.days).forEach(x=>{if(x<lim)delete st.days[x]});}
+const welcomeSnoozed=()=>{try{return Date.now()<+(localStorage.getItem('tbm-wl-later')||0)}catch(e){return false}};
 function needsWelcome(){if(readOnly)return false;const k=key(new Date());return !dayRec(k)&&isWorkWeekday(k)||(!dayRec(k)&&isExtra(k))}
 function workedOn(k){const by={};let tot=0,first=null,last=null;
   allTasks().forEach(t=>(t.log||[]).forEach(L=>{if(L.d!==k)return;const m=L.e-L.s;tot+=m;by[t.projectId]=(by[t.projectId]||0)+m;first=first==null?L.s:Math.min(first,L.s);last=last==null?L.e:Math.max(last,L.e)}));
@@ -2731,13 +2760,14 @@ function showWelcome(){
       <div class="wl-opt" id="wlEarlier"><span class="wl-ic">↺</span><span><b>Ho già iniziato</b><small>alle <input type="time" id="wlTime" step="300" value="${hm(startGuess)}" aria-label="Ora di inizio"></small></span><button class="btn" id="wlEarlierGo">Conferma</button></div>
       <button class="wl-opt" id="wlOff"><span class="wl-ic">◯</span><span><b>Oggi non lavoro</b><small>sposta tutto ai prossimi giorni</small></span></button>
     </div>
-    <button class="wl-skip" id="wlSkip">Ignora per oggi</button>`;
+    <div class="wl-skips"><button class="wl-skip" id="wlLater">Ignora per ora</button><span>·</span><button class="wl-skip" id="wlSkip">Ignora per oggi</button></div>`;
   const ov=$('#wl');ov.hidden=false;ov.classList.remove('out');requestAnimationFrame(()=>ov.classList.add('in'));
   const len=he-hs;
   $('#wlNow').onclick=()=>startDay(Math.round(nowMin()/5)*5,len);
   $('#wlEarlierGo').onclick=()=>{const v=toMin($('#wlTime').value||hm(hs));startDay(Math.min(v,nowMin()),len)};
   $('#wlTime').addEventListener('keydown',e=>{if(e.key==='Enter')$('#wlEarlierGo').click()});
   $('#wlOff').onclick=()=>{setPresence(k,false);setDayRec(k,{off:true});saveSettings();closeWelcome()};
+  $('#wlLater').onclick=()=>{try{localStorage.setItem('tbm-wl-later',String(Date.now()+3*3600000))}catch(e){}closeWelcome();track(true);render()};
   $('#wlSkip').onclick=()=>{setDayRec(k,{skipped:true});saveSettings();closeWelcome();track(true);render()};
 }
 function closeWelcome(){const ov=$('#wl');ov.classList.add('out');setTimeout(()=>{ov.hidden=true;ov.classList.remove('in','out');welcomeOpen=false;render()},380)}
