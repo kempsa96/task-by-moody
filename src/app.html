@@ -1694,7 +1694,7 @@ function setCalView(v){calMode=v==='free'?'free':'week';try{localStorage.setItem
   render();if(!isFree())scrollToToday()}
 /* vista libera: scorrendo si caricano altri giorni prima e dopo */
 function onFreeScroll(){
-  if(!isFree()||!freeFrom)return;const sc=$('#calScroll'),dw=dayW(),i=Math.max(0,Math.round(sc.scrollLeft/dw));
+  if(pinching||!isFree()||!freeFrom)return;const sc=$('#calScroll'),dw=dayW(),i=Math.max(0,Math.round(sc.scrollLeft/dw));
   const first=addDays(freeFrom,i);if(first!==viewStart){viewStart=first;revealed=first;miniMonth=null;renderRange();if(typeof renderMini==='function')renderMini()}
   if(i<7){const sl=sc.scrollLeft;freeFrom=addDays(freeFrom,-14);freeN=Math.min(freeN+14,98);render();sc.scrollLeft=sl+14*dw}
   else if(i>freeN-freeVis()-7){if(freeN>=98){const sl=sc.scrollLeft;freeFrom=addDays(freeFrom,14);render();sc.scrollLeft=sl-14*dw}else{freeN+=14;render()}}
@@ -2330,11 +2330,22 @@ $('#openSettings').onclick=()=>openSettings();
 $('#range').style.cursor='pointer';$('#range').title='Apri la vista mensile';$('#range').setAttribute('role','button');$('#range').tabIndex=0;
 $('#range').onclick=()=>openMonthView();$('#range').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMonthView()}};
 function setZoom(n){n=Math.max(3,Math.min(7,n));if(n===zoomN)return;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(e){}render();toast(`${n} giorni`)}
-(()=>{const sc=$('#calScroll');if(!sc)return;sc.style.touchAction='pan-x pan-y';let pz=null;const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);
-  sc.addEventListener('touchstart',e=>{pz=e.touches.length===2&&isPhone()?{d:dist(e),t:0}:null},{passive:true});
-  sc.addEventListener('touchmove',e=>{if(!pz||e.touches.length!==2)return;e.preventDefault();if(Date.now()-pz.t<280)return;const d=dist(e),r=d/pz.d;
-    if(r>1.28)setZoom(zoomN-1);else if(r<0.78){if(zoomN>=7){pz=null;openMonthView();return}setZoom(zoomN+1)}else return;pz.d=d;pz.t=Date.now()},{passive:false});
-  sc.addEventListener('touchend',e=>{if(e.touches.length<2)pz=null},{passive:true});
+let pinching=false;
+(()=>{const sc=$('#calScroll');if(!sc)return;sc.style.touchAction='pan-x pan-y';let pz=null;
+  const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY),midX=e=>(e.touches[0].clientX+e.touches[1].clientX)/2;
+  const grids=()=>document.querySelectorAll('#calInner .cal-grid');
+  const apply=(w,tr)=>{const c=`${gutW()}px repeat(${freeN}, ${w}px)`;grids().forEach(g=>{g.style.transition=tr||'none';g.style.gridTemplateColumns=c})};
+  sc.addEventListener('touchstart',e=>{if(e.touches.length===2&&isPhone()&&isFree()){const w0=dayW(),r=sc.getBoundingClientRect(),mx=midX(e)-r.left-gutW();pz={d0:dist(e),w0,w:w0,mx,idx:(sc.scrollLeft+mx)/w0,raf:0};pinching=true}else if(e.touches.length<2&&!pz)pz=null},{passive:true});
+  sc.addEventListener('touchmove',e=>{if(!pz||e.touches.length!==2)return;e.preventDefault();
+    const avail=sc.clientWidth-gutW(),w=Math.max(avail/7*.55,Math.min(avail/3*1.12,pz.w0*dist(e)/pz.d0));pz.w=w;
+    if(!pz.raf)pz.raf=requestAnimationFrame(()=>{if(!pz)return;pz.raf=0;apply(pz.w);sc.scrollLeft=Math.max(0,pz.idx*pz.w-pz.mx)})},{passive:false});
+  const tween=(z,from,to,done)=>{const t0=performance.now(),D=170;const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3),w=from+(to-from)*e;apply(w);sc.scrollLeft=Math.max(0,z.idx*w-z.mx);if(k<1)requestAnimationFrame(step);else done()};requestAnimationFrame(step)};
+  const end=e=>{if(!pz||e.touches.length>=2)return;const z=pz;pz=null;cancelAnimationFrame(z.raf);
+    const avail=sc.clientWidth-gutW(),w=z.w;
+    if(w<avail/7*.8){apply(z.w0);sc.scrollLeft=Math.max(0,z.idx*z.w0-z.mx);setTimeout(()=>{pinching=false},60);openMonthView();return}
+    const n=Math.max(3,Math.min(7,Math.round(avail/w))),tw=Math.max(38,Math.floor(avail/n));
+    tween(z,w,tw,()=>{const i=Math.max(0,Math.round(Math.max(0,z.idx*tw-z.mx)/tw));if(freeFrom)viewStart=addDays(freeFrom,i);revealed=null;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(x){}pinching=false;render()})};
+  sc.addEventListener('touchend',end,{passive:true});sc.addEventListener('touchcancel',end,{passive:true});
   sc.addEventListener('gesturestart',e=>e.preventDefault())})();
 function openMonthView(ym){
   const vs=visibleDays();ym=ym||(isFree()?viewStart:vs[0]).slice(0,7);
