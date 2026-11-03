@@ -4462,6 +4462,7 @@ function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.
 /* ---------- preventivi ---------- */
 const qValidFrom=d=>{const n=parseInt(biz().qValid);return n>0&&n!==90?addDays(d,n):addMonth1(d)};
 const qCode=q=>(biz().qFmt||'P-{n}_{yyyy}').replace('{n}',q.num).replace('{yyyy}',q.year).replace('{yy}',String(q.year).slice(2));
+const qStat=q=>{const st=q.status||'bozza';return st!=='accettato'&&st!=='rifiutato'&&Object.values(S.jobs).some(j=>j.quoteId===q.id)?'accettato':st};
 function qTotals(q){
   const sub=(q.items||[]).reduce((a,it)=>a+num(it.price)*(num(it.qty)||0),0),disc=Math.min(sub,num(q.discount)),imp=sub-disc;
   const r2=x=>Math.round((x+Number.EPSILON)*100)/100,bol=q.bollo?2:0,riv=q.rivalsa?r2((imp+bol)*0.04):0; // come Fiscozen: la rivalsa 4% si calcola anche sul bollo (600+2=602 → 24,08)
@@ -4681,10 +4682,10 @@ function finReport(y){
   `;
 }
 function finQuotes(y){
-  const qs=Object.values(S.quotes).filter(q=>+q.year===y).sort((a,b)=>(b.num||0)-(a.num||0));
+  const RK={accettato:0,inviato:1,bozza:2,rifiutato:3},qs=Object.values(S.quotes).filter(q=>+q.year===y).sort((a,b)=>(RK[qStat(a)]??2)-(RK[qStat(b)]??2)||(b.num||0)-(a.num||0));
   const QS={bozza:['Bozza',''],inviato:['Inviato','#2F7DE1'],accettato:['Accettato','#22A55B'],rifiutato:['Rifiutato','#9AA0A6']};
   return `<div class="fcard"><div class="fm-h"><h2>Preventivi ${y}</h2><button type="button" class="btn primary" data-fa="newquote">+ Preventivo</button></div>
-    ${qs.length?`<div class="qlist">${qs.map(q=>{const c=S.clients[q.clientId],st=QS[q.status]||QS.bozza;return `<button type="button" class="qrow" data-fq="${q.id}" style="${st[1]?`--rc:${st[1]}`:''}"><span class="qnum">${esc(qCode(q))}</span><span class="qmain"><b>${esc(q.title||'Senza titolo')}</b><small>${esc(c?.name||'Nessun cliente')} · ${fmtD(q.date,'it')}</small></span><span class="qtot">${eur(qTotals(q).tot)}</span><span class="qst">${st[0]}</span></button>`}).join('')}</div>`
+    ${qs.length?`<div class="qlist">${qs.map(q=>{const c=S.clients[q.clientId],st=QS[qStat(q)]||QS.bozza;return `<button type="button" class="qrow" data-fq="${q.id}" style="${st[1]?`--rc:${st[1]}`:''}"><span class="qnum">${esc(qCode(q))}</span><span class="qmain"><b>${esc(q.title||'Senza titolo')}</b><small>${esc(c?.name||'Nessun cliente')} · ${fmtD(q.date,'it')}</small></span><span class="qtot">${eur(qTotals(q).tot)}</span><span class="qst">${st[0]}</span></button>`}).join('')}</div>`
       :`<div class="empty"><strong>Nessun preventivo nel ${y}</strong><span>Crea un preventivo: logo, dati, voci e firma sono già pronti. Poi lo esporti in PDF.</span><button type="button" class="btn primary" data-fa="newquote">+ Preventivo</button></div>`}
   </div>`;
 }
@@ -4879,7 +4880,7 @@ function openJob(j,preset){
     const mo=M.value||j.month,qv=Q.value,cs=toMin($('#jCs').value||'09:00'),ce=Math.max(toMin($('#jCe').value||'18:00'),cs+15);
     const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce,color:jcol},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
       amount:num($('#jA').value),rate:num($('#jR').value)||null,qty:num($('#jQt').value)||null,cash:num($('#jK').value),status:$('#jS').value,invCode:$('#jCod').value.trim(),invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
-    put('jobs',nj);syncJobBlocks(nj);
+    put('jobs',nj);syncJobBlocks(nj);{const lq=nj.quoteId&&S.quotes[nj.quoteId];if(lq&&lq.status!=='accettato'&&lq.status!=='rifiutato')put('quotes',{...lq,status:'accettato'})}
     const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
     dlg.close();renderFin();
     if(nj.cal.on&&nj.days.length)toast(`${nj.days.length} ${nj.days.length===1?'giorno bloccato':'giorni bloccati'} nel calendario`);
@@ -4918,7 +4919,7 @@ function renderQuoteEditor(el,q){
         <div id="qItems">${(q.items||[]).map(itemRow).join('')}</div>
         <button type="button" class="btn" data-qa="additem">+ Voce</button>
         <datalist id="qiList">${Object.keys(past).map(t=>`<option value="${esc(t)}"></option>`).join('')}</datalist>
-        <div class="row"><div class="field"><label>Sconto €</label><input id="qS" inputmode="decimal" value="${q.discount?String(q.discount).replace('.',','):''}" placeholder="0"></div><div class="field"><label>Stato</label><select id="qSt">${QS.map(([v,l])=>`<option value="${v}" ${v===q.status?'selected':''}>${l}</option>`).join('')}</select></div></div>
+        <div class="row"><div class="field"><label>Sconto €</label><input id="qS" inputmode="decimal" value="${q.discount?String(q.discount).replace('.',','):''}" placeholder="0"></div><div class="field"><label>Stato</label><select id="qSt">${QS.map(([v,l])=>`<option value="${v}" ${v===qStat(q)?'selected':''}>${l}</option>`).join('')}</select></div></div>
         <label class="chk"><input type="checkbox" id="qR" ${q.rivalsa?'checked':''}> Aggiungi rivalsa INPS 4%</label>
         <label class="chk"><input type="checkbox" id="qB" ${q.bollo?'checked':''}> Aggiungi marca da bollo (2 €)</label>
         <div class="qe-tot" id="qTot"></div>
@@ -5046,7 +5047,7 @@ $('#fin').addEventListener('click',e=>{
   const fi=t.closest('[data-fi]');if(fi&&S.jobs[fi.dataset.fi]){openInvoice(S.jobs[fi.dataset.fi]);return}
   const cl=t.closest('[data-cl]');if(cl){openClient(cl.dataset.cl==='new'?null:S.clients[cl.dataset.cl],false);return}
   const sb=t.closest('[data-sb]');if(sb){openSub(sb.dataset.sb==='new'?null:S.biz[sb.dataset.sb]);return}
-  const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;const qq=S.quotes[FIN.q];FIN.qv=!!qq&&(qq.status||'bozza')!=='bozza';renderFin(true);return}
+  const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;const qq=S.quotes[FIN.q];FIN.qv=!!qq&&qStat(qq)!=='bozza';renderFin(true);return}
   const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
   if(t.closest('select,a,input'))return;
   const fr=t.closest('[data-fj]');if(fr&&S.jobs[fr.dataset.fj])openJob(S.jobs[fr.dataset.fj]);
