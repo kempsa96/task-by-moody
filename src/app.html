@@ -842,6 +842,8 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .qe-prev{position:sticky;top:48px;background:color-mix(in srgb,var(--fg) 6%,var(--bg));border-radius:16px;padding:12px;overflow:hidden}
 .qe-paper{--qs:.6;position:relative;overflow:hidden}
 .qe-paper>.qdoc{transform:scale(var(--qs));transform-origin:top left;box-shadow:0 8px 30px rgb(0 0 0/.15)}
+.qe-prev.show{display:block;position:fixed;inset:0;z-index:80;border-radius:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 12px calc(24px + env(safe-area-inset-bottom));background:var(--bg)}
+.qe-prevbar.qview{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding-top:calc(10px + env(safe-area-inset-top))}.qe-prevbar.qview>b{display:inline}.qe-prevbar.qview>[data-qa=preview]{display:inline-flex}.qv-acts{display:flex;gap:6px;flex-wrap:wrap}
 .qe-prevbtn{display:none}.qe-prevbar{display:flex;justify-content:flex-end;margin-bottom:10px}.qe-prevbar>[data-qa=preview],.qe-prevbar>b{display:none}
 .bimg{min-height:60px;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border-radius:10px;padding:10px}.bimg img{max-height:90px;max-width:100%}
 .bsign{width:100%;aspect-ratio:3/1;background:#fff;border:1px dashed var(--line);border-radius:12px;touch-action:none;cursor:crosshair}
@@ -1374,9 +1376,10 @@ function freeIntervals(k,fromMin,extra){
 let PLAN={segs:[],info:{},pending:[]};
 const msOf=(k,m)=>parse(k).getTime()+m*60000;
 const manual=()=>S.settings.planMode!=='auto';
-function pinLen(t){return Math.max(15,(t.pin&&t.pin.len)||60)}
+function pinLen(t){return Math.max(15,(t.pin&&t.pin.len)||t.minutes||60)}
+const withMin=(b,m)=>(b.pin&&m!==b.minutes)?{...b,minutes:m,pin:{...b.pin,len:m}}:{...b,minutes:m};
 function placeTask(id,date,start,len){
-  const t=taskById(id);if(!t)return;len=Math.max(15,len||60);
+  const t=taskById(id);if(!t)return;len=Math.max(15,len||t.minutes||60);
   if(msOf(date,start+len)<=Date.now()+60000){logPast(id,date,start,start+len);return}
   const base=t.solo?S.projects[id]:S.tasks[id],coll=t.solo?'projects':'tasks';
   put(coll,{...base,pin:{d:date,s:start,len}});
@@ -2592,7 +2595,7 @@ function openSolo(p){
   $('#cancel').onclick=()=>dlg.close();
   if(!isNew)armDelete($('#sDel'),'Conferma eliminazione',()=>del('projects',p.id));
   form.onsubmit=e=>{e.preventDefault();const name=$('#sTitle').value.trim();if(!name){$('#sTitle').focus();return}
-    put('projects',{...p,name:isNew?withEmoji(name):name,minutes:+$('#sDur').value,deadline:$('#sDl').value||null,priority:prio,rank:prio===p.priority?(p.rank??null):null,done:isNew?false:$('#sDone').checked});dlg.close()};
+    put('projects',{...withMin(p,+$('#sDur').value),name:isNew?withEmoji(name):name,deadline:$('#sDl').value||null,priority:prio,rank:prio===p.priority?(p.rank??null):null,done:isNew?false:$('#sDone').checked});dlg.close()};
   show();
 }
 function openTask(t){
@@ -2623,7 +2626,7 @@ function openTask(t){
     const pid=$('#tProj').value;
     if(isNew)t.order=Math.max(0,...Object.values(S.tasks).filter(x=>x.projectId===pid).map(x=>x.order||0))+1;
     const oldPr=t.priority||S.projects[t.projectId]?.priority||2;
-    put('tasks',{...t,title:isNew?withEmoji(title):title,minutes:+$('#tDur').value,deadline:$('#tDl').value||null,projectId:pid,priority:tprio,rank:tprio===oldPr&&!isNew?(t.rank??null):null,done:isNew?false:$('#tDone').checked});dlg.close()};
+    put('tasks',{...withMin(t,+$('#tDur').value),title:isNew?withEmoji(title):title,deadline:$('#tDl').value||null,projectId:pid,priority:tprio,rank:tprio===oldPr&&!isNew?(t.rank??null):null,done:isNew?false:$('#tDone').checked});dlg.close()};
   show();
 }
 function applyOnly(b,occ,nb){
@@ -3233,7 +3236,7 @@ document.addEventListener('touchmove',e=>{if((xd&&xd.on)||(mv&&mv.touch)||(pd&&p
 function openPlace(id,date,start){
   const t=taskById(id);if(!t)return;const now=new Date(),today=key(now),st=start??Math.min(1380,Math.ceil(nowMin()/15)*15);
   form.innerHTML=`<h3>Metti in calendario</h3><p class="note" style="margin:0"><b>${esc(t.title)}</b>${t.solo?'':' · '+esc(S.projects[t.projectId]?.name||'')}</p>
-    <div class="row3"><div class="field"><label for="plD">Giorno</label><input id="plD" type="date" value="${date||t.pin?.d||today}"></div><div class="field"><label for="plS">Dalle</label><input id="plS" type="time" step="900" value="${hm(t.pin&&!date?t.pin.s:st)}"></div><div class="field"><label for="plL">Durata</label><select id="plL">${durOptions(t.pin?pinLen(t):60)}</select></div></div>
+    <div class="row3"><div class="field"><label for="plD">Giorno</label><input id="plD" type="date" value="${date||t.pin?.d||today}"></div><div class="field"><label for="plS">Dalle</label><input id="plS" type="time" step="900" value="${hm(t.pin&&!date?t.pin.s:st)}"></div><div class="field"><label for="plL">Durata</label><select id="plL">${durOptions(t.pin?pinLen(t):(t.minutes||60))}</select></div></div>
     <div class="acts">${t.pin?`<button type="button" class="btn ghost left" id="plRm">Togli dal calendario</button>`:''}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">Metti</button></div>`;
   $('#cancel').onclick=()=>dlg.close();
   const rm=$('#plRm');if(rm)rm.onclick=()=>{resolveTask(id,'later');dlg.close()};
@@ -3956,7 +3959,7 @@ function send(text){
   if(r)chatLog.push({who:'bot',text:r.text,err:r.err,undo:r.undo,snap:r.undo?before:null,confirm:r.confirm,ctrl:r.ctrl,opts:r.opts,acts:r.acts,draft:r.draft});
   renderChat();
 }
-$('#chatLog').addEventListener('change',e=>{const sel=e.target.closest('[data-cdur]');if(!sel)return;const t=S.tasks[sel.dataset.cdur];if(t)put('tasks',{...t,minutes:+sel.value})});
+$('#chatLog').addEventListener('change',e=>{const sel=e.target.closest('[data-cdur]');if(!sel)return;const t=S.tasks[sel.dataset.cdur];if(t)put('tasks',withMin(t,+sel.value))});
 $('#cchips').addEventListener('click',e=>{const b=e.target.closest('[data-chip]');if(!b)return;const v=b.dataset.chip;
   if(v.startsWith('sub:')){chipLevel=v.slice(4);renderChips();return}
   if(v==='aiuto'){send('aiuto');return}
@@ -4880,7 +4883,8 @@ function renderQuoteEditor(el,q){
     else if(e.target.matches('[data-qm]')){read();const i=+r.dataset.i,j=i+ +e.target.dataset.qm;if(j<0||j>=cur.items.length)return;[cur.items[i],cur.items[j]]=[cur.items[j],cur.items[i]];redrawItems()}});
   document.querySelectorAll('body>.qe-prev').forEach(x=>x.remove());
   const ph=document.createComment('qprev');prev.before(ph);
-  const showPrev=on=>{if(on){document.body.appendChild(prev);prev.classList.add('show');prev.scrollTop=0;requestAnimationFrame(fit)}else{prev.classList.remove('show');if(ph.parentNode)ph.after(prev);else prev.remove();requestAnimationFrame(fit)}};
+  let pbOrig=null;
+  const showPrev=on=>{if(on){document.body.appendChild(prev);prev.classList.add('show');prev.scrollTop=0;requestAnimationFrame(fit)}else{if(pbOrig!=null){const b2=prev.querySelector('.qe-prevbar');b2.classList.remove('qview');b2.innerHTML=pbOrig;pbOrig=null}prev.classList.remove('show');if(ph.parentNode)ph.after(prev);else prev.remove();requestAnimationFrame(fit)}};
   prev.onclick=e=>{if(prev.parentNode===document.body)el.onclick(e)};
   el.onclick=e=>{const a=e.target.closest('[data-qa]')?.dataset.qa;if(!a)return;
     if(a!=='preview'&&a!=='pdf'&&prev.classList.contains('show'))showPrev(false);
@@ -4896,6 +4900,7 @@ function renderQuoteEditor(el,q){
       e.target.textContent='Lavoro collegato ✓';toast(`Aggiunto ai lavori di ${MESI[+mo.slice(5)-1].toLowerCase()}`)}};
   const del0=$('#qDel');del0.onclick=()=>{if(!del0.classList.contains('armed')){del0.classList.add('armed');del0.textContent='Conferma eliminazione';return}clearTimeout(saveT);del('quotes',cur.id);FIN.q=null;renderFin(true)};
   requestAnimationFrame(()=>{fit();refresh()});
+  if(FIN.qv){FIN.qv=false;const pb=prev.querySelector('.qe-prevbar');pbOrig=pb.innerHTML;pb.classList.add('qview');pb.innerHTML=`<button type="button" class="btn ghost" data-qa="back">‹ Preventivi</button><b>${esc(qCode(cur))}</b><span class="qv-acts"><button type="button" class="btn" data-qa="preview">Modifica</button><button type="button" class="btn" data-qa="dup">Duplica</button><button type="button" class="btn primary" data-qa="pdf">Esporta PDF</button></span>`;showPrev(true)}
   if(!window.__qfit){window.__qfit=1;addEventListener('resize',()=>{const p=$('#qPaper'),pv=$('#qPrev');if(p&&pv&&p.firstElementChild){const s=Math.min(1,(pv.clientWidth-24)/794);p.style.setProperty('--qs',s);p.style.height=(p.firstElementChild.offsetHeight*s)+'px'}})}
 }
 
@@ -4971,7 +4976,7 @@ $('#fin').addEventListener('click',e=>{
   const fi=t.closest('[data-fi]');if(fi&&S.jobs[fi.dataset.fi]){openInvoice(S.jobs[fi.dataset.fi]);return}
   const cl=t.closest('[data-cl]');if(cl){openClient(cl.dataset.cl==='new'?null:S.clients[cl.dataset.cl],false);return}
   const sb=t.closest('[data-sb]');if(sb){openSub(sb.dataset.sb==='new'?null:S.biz[sb.dataset.sb]);return}
-  const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;renderFin(true);return}
+  const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;const qq=S.quotes[FIN.q];FIN.qv=!!qq&&(qq.status||'bozza')!=='bozza';renderFin(true);return}
   const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
   if(t.closest('select,a,input'))return;
   const fr=t.closest('[data-fj]');if(fr&&S.jobs[fr.dataset.fj])openJob(S.jobs[fr.dataset.fj]);
