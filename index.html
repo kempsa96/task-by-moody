@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="tbm-build" content="202611032030">
+<meta name="tbm-build" content="202611032036">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611032030"></script>
-<script src="tbm-cloud.js?v=202611032030"></script>
+<script src="supabase.js?v=202611032036"></script>
+<script src="tbm-cloud.js?v=202611032036"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -4724,12 +4724,12 @@ const blockOfMonth=(c,m)=>(c.blocks||[]).find(b=>b.m1&&b.m2&&m>=b.m1&&m<=b.m2)||
 const ctxLabel=j=>{const c=jobContract(j),b=jobBlock(j);return c?(c.code?'contratto '+c.code:'contratto')+(b&&b.label?' · '+b.label:''):''};
 function invGroups(y){
   const all=Object.values(S.jobs).filter(j=>(+j.amount||0)>0);
-  const open=all.filter(j=>!j.invoiceNo&&j.status!=='pagato'&&j.status!=='prev');
+  const noInv=all.filter(j=>!j.invoiceNo&&j.status!=='pagato'),planned=noInv.filter(j=>j.status==='prev'||j.status==='corso'),open=noInv.filter(j=>j.status!=='prev'&&j.status!=='corso');
   const waitCode=open.filter(jobWaitCode),rest=open.filter(j=>!jobWaitCode(j)),waitDate=rest.filter(jobWaitDate),toIssue=rest.filter(j=>!jobWaitDate(j));
   const toCollect=all.filter(j=>j.invoiceNo&&j.status!=='pagato');
   const paid=all.filter(j=>j.status==='pagato'&&+String(j.paidAt||j.invoiceDate||j.month).slice(0,4)===y);
   const by=(a,b)=>String(a.invoiceDate||a.month).localeCompare(String(b.invoiceDate||b.month));
-  return {waitCode:waitCode.sort(by),waitDate:waitDate.sort((a,b)=>String(jobWaitDate(a)).localeCompare(String(jobWaitDate(b)))),toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
+  return {planned:planned.sort((a,b)=>String(a.month).localeCompare(String(b.month))),waitCode:waitCode.sort(by),waitDate:waitDate.sort((a,b)=>String(jobWaitDate(a)).localeCompare(String(jobWaitDate(b)))),toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
 }
 function finContracts(){
   const cs=contractsOf(),today=key(new Date()),ym=k=>k?MESI3[+k.slice(5,7)-1]+' '+k.slice(0,4):'';
@@ -4826,16 +4826,17 @@ const quoteLink=j=>{const q=j.quoteId&&S.quotes[j.quoteId];if(q)return ` · <spa
 function finInvoices(y){
   const g=invGroups(y),today=key(new Date()),sum=l=>l.reduce((a,j)=>a+invTot(j),0);
   const row=(j,kind)=>{const c=S.clients[j.clientId],late=kind==='collect'&&j.invoiceDue&&j.invoiceDue<today,miss=kind==='issue'&&c?billWarn(c):[];
-    const sub=kind==='issue'||kind==='code'||kind==='date'?`${jobWhen(j)}${quoteLink(j)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}${kind==='code'?' · <b>serve il codice</b>':''}${kind==='date'?` · fatturabile dal <b>${fmtD(jobWaitDate(j),'it')}</b>`:''}${kind==='issue'&&miss.length?' · <span class="fwarn">dati fattura</span>':''}`
+    const sub=kind==='issue'||kind==='code'||kind==='date'||kind==='plan'?`${jobWhen(j)}${quoteLink(j)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}${kind==='code'?' · <b>serve il codice</b>':''}${kind==='date'?` · fatturabile dal <b>${fmtD(jobWaitDate(j),'it')}</b>`:''}${kind==='issue'&&miss.length?' · <span class="fwarn">dati fattura</span>':''}`
       :kind==='collect'?`${jobWhen(j)}${quoteLink(j)} · emessa ${j.invoiceDate?fmtD(j.invoiceDate,'it'):'—'}${j.invoiceDue?` · scade ${fmtD(j.invoiceDue,'it')}`:''}${j.invoiceSent?'':' · <b>non ancora inviata</b>'}`
       :`${jobWhen(j)}${quoteLink(j)} · incassata ${j.paidAt?fmtD(j.paidAt,'it'):''}`;
-    return `<button type="button" class="qrow inv${late?' late':''}" data-fi="${j.id}" style="--rc:${kind==='paid'?'#22A55B':late?'#E5484D':kind==='collect'?'#EF7D1A':kind==='code'||kind==='date'?'#9AA0A6':'#2F7DE1'}"><span class="qmain"><b>${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'Lavoro')}</b><small>${sub}${late?' · <b style="color:#E5484D">scaduta</b>':''}</small></span>${j.invoiceNo?`<span class="fchip" title="Numero fattura">${esc(j.invoiceNo)}</span>`:''}<span class="qtot">${eur(invTot(j))}</span><span class="qst">${kind==='issue'?'Emetti':kind==='code'?'Codice?':kind==='date'?'In attesa':kind==='collect'?'Incassata?':'✓'}</span></button>`};
+    return `<button type="button" class="qrow inv${late?' late':''}" ${kind==='plan'?'data-fj':'data-fi'}="${j.id}" style="--rc:${kind==='plan'?(j.status==='corso'?'#E8A400':'#9AA0A6'):kind==='paid'?'#22A55B':late?'#E5484D':kind==='collect'?'#EF7D1A':kind==='code'||kind==='date'?'#9AA0A6':'#2F7DE1'}"><span class="qmain"><b>${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'Lavoro')}</b><small>${sub}${late?' · <b style="color:#E5484D">scaduta</b>':''}</small></span>${j.invoiceNo?`<span class="fchip" title="Numero fattura">${esc(j.invoiceNo)}</span>`:''}<span class="qtot">${eur(invTot(j))}</span><span class="qst">${kind==='plan'?(j.status==='corso'?'In corso':'Previsto'):kind==='issue'?'Emetti':kind==='code'?'Codice?':kind==='date'?'In attesa':kind==='collect'?'Incassata?':'✓'}</span></button>`};
   const sec=(t,l,kind,empty)=>`<div class="fcard"><div class="fm-h"><h3>${t}</h3><b>${eur(sum(l))}</b></div>${l.length?`<div class="qlist">${l.map(j=>row(j,kind)).join('')}</div>`:`<p class="note">${empty}</p>`}</div>`;
   return `<div class="kpis big6 k3">${kpi('Da fatturare',sum(g.toIssue))}${kpi('Ti devono',sum(g.toCollect),'neg')}${kpi('Incassato nel '+y,sum(g.paid),'big')}</div>
-    ${sec('Da fatturare',g.toIssue,'issue','Nessun lavoro in attesa di fattura. Un lavoro compare qui quando è «In corso» o «Da fatturare» e ha un importo.')}
+    ${sec('Da fatturare',g.toIssue,'issue','Nessun lavoro completato in attesa di fattura. Un lavoro compare qui quando lo segni «Da fatturare».')}
     ${g.waitCode.length?sec('In attesa del codice per fatturare',g.waitCode,'code',''):''}
     ${g.waitDate.length?sec('In attesa della data di fatturazione (contratti)',g.waitDate,'date',''):''}
     ${sec('Da incassare',g.toCollect,'collect','Nessuna fattura in attesa di pagamento.')}
+    ${g.planned.length?sec('Previsti e in corso (non ancora da fatturare)',g.planned,'plan',''):''}
     ${sec('Incassate nel '+y,g.paid,'paid','Ancora nessuna fattura incassata nel '+y+'.')}`;
 }
 function openInvoice(j){
