@@ -2535,7 +2535,7 @@ function openClient(ed,fromList){
     <p class="note warn" id="cWarn" hidden></p>
     <div class="field"><span class="lbl">Colore</span>${swatches(ed?.color||freeColor())}<span class="note">I progetti di questo cliente prendono questo colore.</span></div>
     ${(()=>{const b=ed?.bill||{},f=(id,l,v,ph)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" value="${esc(v||'')}" placeholder="${ph||''}"></div>`,miss=ed?billMissing(ed):['tutto'];
-      return `<details class="cedit cbill" ${ed&&miss.length&&miss.length<4?'open':''}><summary><span class="lbl">Dati per la fattura</span> ${miss.length?`<span class="fwarn">${miss.length===4||!ed?'da inserire':'incompleti'}</span>`:'<span class="finv sent">completi ✓</span>'}</summary>
+      return `<details class="cedit cbill" open><summary><span class="lbl">Dati per la fattura</span> ${miss.length?`<span class="fwarn">${miss.length>=5||!ed?'da inserire':'mancano: '+miss.join(', ')}</span>`:'<span class="finv sent">completi ✓</span>'}</summary>
         ${f('bRag','Ragione sociale',b.ragione,ed?.name||'es. Istituto Ganassini S.p.A.')}
         <div class="row">${f('bPiva','Partita IVA',b.piva)}${f('bCf','Codice fiscale',b.cf)}</div>
         ${f('bAddr','Indirizzo',b.addr,'es. Via Pietro Gaggia, 16')}
@@ -4456,7 +4456,7 @@ function jobCalc(j){const base=(+j.amount||0)+(j.invRivalsa?(+j.amount||0)*0.04:
 const jobsOf=(y,m)=>Object.values(S.jobs).filter(j=>j.month===`${y}-${String(m+1).padStart(2,'0')}`).sort((a,b)=>(parseInt(a.day)||99)-(parseInt(b.day)||99)||(a.created||0)-(b.created||0));
 const jobsYear=y=>Object.values(S.jobs).filter(j=>jobYear(j)===y);
 function sumJobs(list){return list.reduce((a,j)=>{const c=jobCalc(j);a.amount+=c.amount;a.cash+=c.cash;a.tax+=c.tax;a.net+=c.net;return a},{amount:0,cash:0,tax:0,net:0})}
-function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.piva||b.cf))m.push('P.IVA o codice fiscale');if(!b.addr)m.push('indirizzo');if(!b.city)m.push('città');if(!(b.sdi||b.pec))m.push('codice SDI o PEC');return m}
+function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.piva||b.cf))m.push('P.IVA o codice fiscale');if(!b.addr)m.push('indirizzo');if(!b.cap)m.push('CAP');if(!b.city)m.push('città');if(!(b.sdi||b.pec))m.push('codice SDI o PEC');return m}
 
 /* ---------- preventivi ---------- */
 const qValidFrom=d=>{const n=parseInt(biz().qValid);return n>0&&n!==90?addDays(d,n):addMonth1(d)};
@@ -4704,16 +4704,16 @@ function finClients(){
   let cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name,'it'));
   if(q)cs=cs.filter(c=>[c.name,c.bill?.ragione,c.bill?.piva,c.bill?.cf,c.bill?.city,c.bill?.mail,c.bill?.pec].join(' ').toLowerCase().includes(q));
   const rows=cs.map(c=>{const b=c.bill||{},mine=js.filter(j=>j.clientId===c.id),tot=mine.reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billMissing(c),
-      last=mine.map(j=>j.month).sort().pop(),loc=[b.city,b.prov&&'('+b.prov+')'].filter(Boolean).join(' ');
+      last=mine.map(j=>j.month).sort().pop(),loc=[b.addr,[b.cap,b.city,b.prov&&'('+b.prov+')'].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     return `<tr class="fr" data-cl="${c.id}" style="--rc:${c.color||'transparent'}"><td data-l="Cliente"><b>${esc(c.name)}</b>${b.ragione&&b.ragione!==c.name?`<small>${esc(b.ragione)}</small>`:''}</td>
-      <td data-l="P.IVA / CF">${esc(b.piva||b.cf||'')||'<span class="fmut">—</span>'}</td><td data-l="Città">${esc(loc)||'<span class="fmut">—</span>'}</td>
+      <td data-l="P.IVA / CF">${esc(b.piva||b.cf||'')||'<span class="fmut">—</span>'}</td><td data-l="Indirizzo">${esc(loc)||'<span class="fmut">—</span>'}</td>
       <td data-l="SDI / PEC">${esc(b.sdi||b.pec||'')||'<span class="fmut">—</span>'}</td><td data-l="Email">${esc(b.mail||'')||'<span class="fmut">—</span>'}</td>
       <td data-l="Lavori" class="r">${mine.length||'<span class="fmut">—</span>'}</td><td data-l="Totale" class="r">${tot?eur0(tot):'<span class="fmut">—</span>'}</td>
       <td data-l="Ultimo lavoro">${last?MESI3[+last.slice(5)-1]+' '+last.slice(0,4):'<span class="fmut">—</span>'}</td>
       <td data-l="Fattura">${miss.length?'<span class="fwarn" title="Mancano: '+esc(miss.join(', '))+'">dati mancanti</span>':'<span class="fmut">ok</span>'}</td></tr>`}).join('');
   return `<div class="fcard"><div class="fm-h"><h2>Clienti <small class="fmut">${cs.length}</small></h2><button type="button" class="btn primary" data-cl="new">+ Cliente</button></div>
     <div class="field"><input id="clQ" type="search" placeholder="Cerca cliente, P.IVA, città…" value="${esc(FIN.cq||'')}" autocomplete="off"></div>
-    ${cs.length?`<div class="ft-wrap"><table class="ft"><thead><tr><th>Cliente</th><th>P.IVA / CF</th><th>Città</th><th>SDI / PEC</th><th>Email</th><th class="r">Lavori</th><th class="r">Totale</th><th>Ultimo lavoro</th><th>Fattura</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    ${cs.length?`<div class="ft-wrap"><table class="ft"><thead><tr><th>Cliente</th><th>P.IVA / CF</th><th>Indirizzo</th><th>SDI / PEC</th><th>Email</th><th class="r">Lavori</th><th class="r">Totale</th><th>Ultimo lavoro</th><th>Fattura</th></tr></thead><tbody>${rows}</tbody></table></div>`
       :`<div class="empty"><strong>${q?'Nessun risultato':'Nessun cliente'}</strong><span>${q?'Prova un’altra ricerca.':'Aggiungi il primo cliente: nome, colore e dati di fatturazione.'}</span></div>`}
     <p class="note">Il colore a sinistra è quello degli eventi del cliente nel calendario. Tocca un cliente per modificarne i dati.</p></div>`;
 }
