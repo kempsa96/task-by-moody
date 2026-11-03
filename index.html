@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031133">
+<meta name="tbm-build" content="202611031134">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031133"></script>
-<script src="tbm-cloud.js?v=202611031133"></script>
+<script src="supabase.js?v=202611031134"></script>
+<script src="tbm-cloud.js?v=202611031134"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -3195,7 +3195,7 @@ addEventListener('pointermove',e=>{
   if(t.idx<t.cards.length)t.g.insertBefore(pd.line,t.cards[t.idx]);else t.g.appendChild(pd.line);
   const br=projBox.getBoundingClientRect();
   if(e.clientY<br.top+40)projBox.scrollTop-=12;else if(e.clientY>br.bottom-40)projBox.scrollTop+=12;
-  if(manual()){const h=calHit(e.clientX,e.clientY,60);pd.cal=h;if(h){pd.line.remove();showDbox(h,60,taskById(pd.id)?.title||'',pd.id);calAutoScroll(e.clientY);pd.ghost.classList.add('tocal')}else{showDbox(null);pd.ghost.classList.remove('tocal')}}
+  if(manual()){const L=(()=>{const t=taskById(pd.id);return t?pinLen(t):60})(),h=calHit(e.clientX,e.clientY,L);pd.cal=h;if(h){pd.line.remove();showDbox(h,L,taskById(pd.id)?.title||'',pd.id);calAutoScroll(e.clientY);pd.ghost.classList.add('tocal')}else{showDbox(null);pd.ghost.classList.remove('tocal')}}
 },{passive:false});
 function pdEnd(drop){
   if(!pd)return;const d=pd;pd=null;
@@ -3203,7 +3203,7 @@ function pdEnd(drop){
   projDragged=true;setTimeout(()=>{projDragged=false},300);
   d.ghost.remove();d.line.remove();d.card.classList.remove('pdrag');projBox.classList.remove('dragging');
   showDbox(null);
-  if(drop&&d.cal){placeWithReflow(d.id,d.cal.date,d.cal.ns,60);const t=taskById(d.id);toast(`«${t?t.title:''}» alle ${hm(d.cal.ns)}`,{label:'Annulla',run:doUndo});return}
+  if(drop&&d.cal){placeWithReflow(d.id,d.cal.date,d.cal.ns,(()=>{const t=taskById(d.id);return t?pinLen(t):60})());const t=taskById(d.id);toast(`«${t?t.title:''}» alle ${hm(d.cal.ns)}`,{label:'Annulla',run:doUndo});return}
   if(!drop||!d.t)return;
   if(!taskById(d.id))return;
   const ids=d.t.cards.map(c=>c.dataset.iid);ids.splice(d.t.idx,0,d.id);
@@ -3247,7 +3247,8 @@ function xdStart(){
   xd.ghost=document.createElement('div');xd.ghost.className='xghost';xd.ghost.textContent=xd.title;xd.ghost.style.setProperty('--c',t?colorOf(t):'var(--accent)');document.body.appendChild(xd.ghost);
   xd.src.classList.add('lifting');moveXd(xd.x0,xd.y0);
 }
-function moveXd(x,y){xd.ghost.style.transform=`translate(${x-40}px,${y-28}px)`;const h=calHit(x,y,60);xd.hit=h;showDbox(h,60,xd.title,xd.id);if(h)calAutoScroll(y)}
+const xdLen=()=>{const t=xd&&taskById(xd.id);return t?pinLen(t):60};
+function moveXd(x,y){xd.ghost.style.transform=`translate(${x-40}px,${y-28}px)`;const L=xdLen(),h=calHit(x,y,L);xd.hit=h;showDbox(h,L,xd.title,xd.id);if(h)calAutoScroll(y)}
 $('#tray').addEventListener('pointerdown',e=>{const c=e.target.closest('.tchip');if(!c||readOnly)return;
   xd={id:c.dataset.iid,src:c,x0:e.clientX,y0:e.clientY,on:false,touch:e.pointerType!=='mouse'};
   if(xd.touch)xd.timer=setTimeout(()=>{if(xd&&!xd.on)xdStart()},280)});
@@ -3256,7 +3257,7 @@ addEventListener('pointermove',e=>{if(!xd)return;
   moveXd(e.clientX,e.clientY)},{passive:true});
 const xdEnd=drop=>{if(!xd)return;clearTimeout(xd.timer);const d=xd;xd=null;if(!d.on)return;
   d.ghost.remove();d.src.classList.remove('lifting');showDbox(null);trayDragged=true;setTimeout(()=>trayDragged=false,300);
-  if(drop&&d.hit){placeWithReflow(d.id,d.hit.date,d.hit.ns,60);toast(`«${d.title}» alle ${hm(d.hit.ns)}`,{label:'Annulla',run:doUndo})}};
+  if(drop&&d.hit){placeWithReflow(d.id,d.hit.date,d.hit.ns,(()=>{const t=taskById(d.id);return t?pinLen(t):60})());toast(`«${d.title}» alle ${hm(d.hit.ns)}`,{label:'Annulla',run:doUndo})}};
 addEventListener('pointerup',()=>xdEnd(true));addEventListener('pointercancel',()=>xdEnd(false));
 $('#tray').addEventListener('click',e=>{const c=e.target.closest('.tchip');if(!c||trayDragged)return;openPlace(c.dataset.iid)});
 document.addEventListener('touchmove',e=>{if((xd&&xd.on)||(mv&&mv.touch)||(pd&&pd.on))e.preventDefault()},{passive:false});
