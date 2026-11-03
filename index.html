@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031145">
+<meta name="tbm-build" content="202611031300">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031145"></script>
-<script src="tbm-cloud.js?v=202611031145"></script>
+<script src="supabase.js?v=202611031300"></script>
+<script src="tbm-cloud.js?v=202611031300"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -1786,7 +1786,9 @@ function buildReminders(){
   const k0=key(new Date());
   for(let d=0;d<2;d++){const k=addDays(k0,d),bl=blocksOn(k),[ws,we]=hoursFor(k);
     const departs=bl.filter(b=>!isPause(b)&&eventDone(b,k)!=='no').map(b=>{const br=bufRanges(b,k,bl);return br.before?br.before[0]:b.start});
-    if(ev)allDayOn(k).forEach(b=>{const t=b.title||'Evento',bd=/compleann/i.test(t);add(`a:${b.id}:${k}`,msOf(k,540),/^\p{Extended_Pictographic}/u.test(t)?`Oggi · ${cut(t,44)}`:`📅 Oggi · ${cut(t,44)}`,bd?'Ricordati di fare gli auguri 🎉':'Tutto il giorno')});
+    if(ev)allDayOn(k).forEach(b=>{const t=b.title||'Evento';
+      if(/compleann/i.test(t)){const nm=cut(birthName(t),30);add(`bd0:${b.id}:${k}`,msOf(k,0),`🎂 Fai gli auguri a ${nm}`,'Oggi è il suo compleanno 🎉');add(`bd1:${b.id}:${k}`,msOf(k,720),`🎂 Hai fatto gli auguri a ${nm}?`,'Se non l’hai ancora fatto, è il momento 🎈');return}
+      add(`a:${b.id}:${k}`,msOf(k,540),/^\p{Extended_Pictographic}/u.test(t)?`Oggi · ${cut(t,44)}`:`📅 Oggi · ${cut(t,44)}`,'Tutto il giorno')});
     if(ev)bl.forEach(b=>{if(eventDone(b,k)==='no')return;const t=b.title||'Evento';
       if(isPause(b)){
         if(b.id==='prep'){ // se a quell'ora parti per un evento, basta l'avviso di partenza
@@ -2164,7 +2166,7 @@ function move(id,dir){
   const o=list[j];const a=t.order||0,b=o.order||0;
   put('tasks',{...t,order:b===a?b+dir:b});put('tasks',{...o,order:a});
 }
-function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Evento',run:newBlockNow},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
+function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Evento',run:newBlockNow},{label:'🎂 Compleanno',run:()=>openBirthday()},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
 function newBlockNow(){
   const today=key(new Date()),vis=visibleDays();const k=vis.includes(today)?today:vis.find(dayIsOn)||vis[0];
   let st=k===today?Math.ceil((nowMin()+1)/60)*60:hoursFor(k)[0];if(st>=1380)st=hoursFor(k)[0];
@@ -3405,6 +3407,24 @@ document.addEventListener('contextmenu',e=>{
 });
 
 /* ---------- lista eventi ---------- */
+const birthName=t=>(t||'').replace(/^\p{Extended_Pictographic}\uFE0F?\s*/u,'').replace(/^compleanno\s+(di\s+)?/i,'').trim()||t||'';
+function openBirthday(){
+  const td=new Date();
+  form.innerHTML=`<h3>🎂 Nuovo compleanno</h3>
+    <div class="field"><label for="bdN">Compleanno di…</label><input id="bdN" placeholder="es. Marco" autocomplete="off"></div>
+    <div class="row"><div class="field"><label for="bdD">Giorno</label><input id="bdD" inputmode="numeric" maxlength="2" placeholder="14"></div>
+    <div class="field"><label for="bdM">Mese</label><select id="bdM">${MESI.map((m,i)=>`<option value="${i}">${m}</option>`).join('')}</select></div></div>
+    <p class="note">Si ripete ogni anno, nella sezione compleanni. Ti avviso a mezzanotte («Fai gli auguri a…») e a mezzogiorno («Hai fatto gli auguri a…?»).</p>
+    <div class="acts"><button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">Aggiungi</button></div>`;
+  $('#cancel').onclick=()=>dlg.close();
+  form.onsubmit=e=>{e.preventDefault();const nm=$('#bdN').value.trim(),m=+$('#bdM').value,dd=parseInt($('#bdD').value,10),mx=[31,29,31,30,31,30,31,31,30,31,30,31][m];
+    if(!nm){$('#bdN').focus();return}if(!(dd>=1&&dd<=mx)){$('#bdD').focus();return}
+    let y=td.getFullYear();if(new Date(y,m,dd,23,59)<td)y++;
+    const ds=`${y}-${String(m+1).padStart(2,'0')}-${String(dd).padStart(2,'0')}`;
+    put('blocks',{id:uid(),title:'🎂 Compleanno '+nm,color:'#F6BF26',date:ds,start:0,end:1440,allDay:true,before:0,after:0,repeat:{freq:'yearly',interval:1,endType:'never'},exceptions:{},created:Date.now()});
+    dlg.close();toast(`🎂 Compleanno di ${nm} aggiunto: ogni ${dd} ${MESI[m].toLowerCase()}`)};
+  show();
+}
 const evOpen=()=>appEl()&&appEl().dataset.view==='ev';
 const EVQ={q:''};
 function openEventsPage(){appEl().dataset.view='ev';['tabCal','tabProj','tabFin'].forEach(id=>$('#'+id).setAttribute('aria-selected','false'));$('#listFin').classList.remove('on');$('#listImp').classList.add('on');renderEvents()}
@@ -3419,7 +3439,7 @@ function renderEvents(){
   for(let i=0;i<90;i++){const k=addDays(today,i);blocksOn(k,true).filter(b=>!b.jobId&&!isPause(b)&&hit(b)&&(!isRec(S.blocks[b.id])||(S.blocks[b.id].exceptions||{})[k])).forEach(b=>upcoming.push(b))}
   const row=(b,k,sub)=>`<button type="button" class="sb-row" data-bid="${b.id}" data-occ="${k}"><span class="dot" style="--c:${b.color||'var(--accent)'}"></span><span class="qmain"><b>${esc(b.title||'Evento')}</b><small>${sub}</small></span><small class="tm">${b.allDay?'Tutto il giorno':hm(b.start)+'–'+hm(b.end)}</small></button>`;
   let lastDay='';
-  el.innerHTML=`<div class="fcard"><div class="fm-h"><h2>Eventi</h2><button type="button" class="btn primary" id="evNew">+ Evento</button></div>
+  el.innerHTML=`<div class="fcard"><div class="fm-h"><h2>Eventi</h2><span style="display:flex;gap:6px;flex-wrap:wrap"><button type="button" class="btn" id="evBd">🎂 Compleanno</button><button type="button" class="btn primary" id="evNew">+ Evento</button></span></div>
     <div class="field"><input id="evQ" type="search" placeholder="Cerca evento…" value="${esc(EVQ.q)}" autocomplete="off"></div>
     <h3>Prossimi 90 giorni</h3>
     ${upcoming.length?upcoming.map(b=>{const d=b.occ!==lastDay?`<div class="dayl" style="margin:10px 0 4px">${esc(longDate(b.occ))}${b.occ===today?' · oggi':''}</div>`:'';lastDay=b.occ;return d+row(b,b.occ,isRec(S.blocks[b.id])?`orario cambiato solo questo giorno (di solito ${hm(S.blocks[b.id].start)}–${hm(S.blocks[b.id].end)})`:'')}).join(''):'<p class="note">Nessun evento singolo nei prossimi 90 giorni.</p>'}</div>
@@ -3428,6 +3448,7 @@ function renderEvents(){
 }
 $('#evp').addEventListener('click',e=>{
   if(e.target.closest('#evNew')){newBlockNow();return}
+  if(e.target.closest('#evBd')){openBirthday();return}
   const r=e.target.closest('[data-bid]');if(r&&S.blocks[r.dataset.bid])openBlock(S.blocks[r.dataset.bid],r.dataset.occ);
 });
 $('#evp').addEventListener('input',e=>{if(e.target.id!=='evQ')return;EVQ.q=e.target.value;const p=e.target.selectionStart;renderEvents();const i=$('#evQ');if(i){i.focus();try{i.setSelectionRange(p,p)}catch(x){}}});
