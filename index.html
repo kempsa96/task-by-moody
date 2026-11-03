@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="tbm-build" content="202611031956">
+<meta name="tbm-build" content="202611031957">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031956"></script>
-<script src="tbm-cloud.js?v=202611031956"></script>
+<script src="supabase.js?v=202611031957"></script>
+<script src="tbm-cloud.js?v=202611031957"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -2553,8 +2553,8 @@ function openClient(ed,fromList){
     <div class="field"><label for="cName">Nome</label><input id="cName" value="${esc(ed?.name||'')}" placeholder="Nome cliente"></div>
     <p class="note warn" id="cWarn" hidden></p>
     <div class="field"><span class="lbl">Colore</span>${swatches(ed?.color||freeColor())}<span class="note">I progetti di questo cliente prendono questo colore.</span></div>
-    ${(()=>{const b=ed?.bill||{},f=(id,l,v,ph)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" value="${esc(v||'')}" placeholder="${ph||''}"></div>`,miss=ed?billMissing(ed):['tutto'];
-      return `<details class="cedit cbill" open><summary><span class="lbl">Dati per la fattura</span> ${miss.length?`<span class="fwarn">${miss.length>=5||!ed?'da inserire':'mancano: '+miss.join(', ')}</span>`:'<span class="finv sent">completi ✓</span>'}</summary>
+    ${(()=>{const b=ed?.bill||{},f=(id,l,v,ph)=>`<div class="field"><label for="${id}">${l}</label><input id="${id}" value="${esc(v||'')}" placeholder="${ph||''}"></div>`,miss=ed?billWarn(ed):[];
+      return `<details class="cedit cbill" open><summary><span class="lbl">Dati per la fattura</span> ${miss.length?'<span class="fwarn">da inserire</span>':(ed&&!billMissing(ed).length?'<span class="finv sent">completi ✓</span>':'')}</summary>
         ${f('bRag','Ragione sociale',b.ragione,ed?.name||'es. Istituto Ganassini S.p.A.')}
         <div class="row">${f('bPiva','Partita IVA',b.piva)}${f('bCf','Codice fiscale',b.cf)}</div>
         ${f('bAddr','Indirizzo',b.addr,'es. Via Pietro Gaggia, 16')}
@@ -4189,7 +4189,7 @@ function aiSnapshot(){
   L.push(`OGGI: ${WDL[d0.getDay()].toLowerCase()} ${today}, ore ${hm(nowMin())}. Orario di lavoro standard ${hm(st.workStart)}–${hm(st.workEnd)}.`);
   const days=[];for(let i=0;i<14;i++){const k=addDays(today,i);days.push(`${k} ${WD[parse(k).getDay()]}${dayIsOn(k)?'':' (libero)'}`)}
   L.push('PROSSIMI GIORNI: '+days.join(' · '));
-  const cl=Object.values(S.clients);if(cl.length)L.push('CLIENTI:\n'+cl.map(c=>{const b=c.bill||{};return `- ${c.name} [${c.id}]${b.ragione?' · '+b.ragione:''}${b.piva?' · P.IVA '+b.piva:''}${b.city?' · '+b.city:''}${b.sdi?' · SDI '+b.sdi:''}${billMissing(c).length?' · mancano: '+billMissing(c).join(', '):''}`}).join('\n'));
+  const cl=Object.values(S.clients);if(cl.length)L.push('CLIENTI:\n'+cl.map(c=>{const b=c.bill||{};return `- ${c.name} [${c.id}]${b.ragione?' · '+b.ragione:''}${b.piva?' · P.IVA '+b.piva:''}${b.city?' · '+b.city:''}${b.sdi?' · SDI '+b.sdi:''}${billWarn(c).length?' · mancano: '+billWarn(c).join(', '):''}`}).join('\n'));
   const qs=Object.values(S.quotes||{}).sort((a,b)=>(b.created||0)-(a.created||0)).slice(0,15);
   if(qs.length)L.push('PREVENTIVI RECENTI:\n'+qs.map(q=>`- ${qCode(q)} [${q.id}] ${S.clients[q.clientId]?.name||'senza cliente'} · ${q.title||'(senza titolo)'} · ${eur(qTotals(q).tot)} · ${q.status}`).join('\n'));
   if(!AI.quoteId&&finOpen()&&FIN.view==='prev'&&FIN.q)AI.quoteId=FIN.q;
@@ -4475,6 +4475,7 @@ function jobCalc(j){const base=(+j.amount||0)+(j.invRivalsa?(+j.amount||0)*0.04:
 const jobsOf=(y,m)=>Object.values(S.jobs).filter(j=>j.month===`${y}-${String(m+1).padStart(2,'0')}`).sort((a,b)=>(parseInt(a.day)||99)-(parseInt(b.day)||99)||(a.created||0)-(b.created||0));
 const jobsYear=y=>Object.values(S.jobs).filter(j=>jobYear(j)===y);
 function sumJobs(list){return list.reduce((a,j)=>{const c=jobCalc(j);a.amount+=c.amount;a.cash+=c.cash;a.tax+=c.tax;a.net+=c.net;return a},{amount:0,cash:0,tax:0,net:0})}
+const billWarn=c=>{const m=billMissing(c);return m.length>=5?m:[]};
 function billMissing(c){if(!c)return ['cliente'];const b=c.bill||{},m=[];if(!(b.piva||b.cf))m.push('P.IVA o codice fiscale');if(!b.addr)m.push('indirizzo');if(!b.cap)m.push('CAP');if(!b.city)m.push('città');if(!(b.sdi||b.pec))m.push('codice SDI o PEC');return m}
 
 /* ---------- preventivi ---------- */
@@ -4635,7 +4636,7 @@ function finMonths(y){
   const strip=MESI3.map((m,i)=>{const s=sumJobs(jobsOf(y,i)),cur=y===new Date().getFullYear()&&i===new Date().getMonth();
     return `<button type="button" class="fm-m${i===FIN.month?' on':''}${cur?' cur':''}" data-fm="${i}"><b>${m}</b><small>${s.amount||s.cash?eur0(s.amount+s.cash):'—'}</small></button>`}).join('');
   const list=jobsOf(y,FIN.month),t=sumJobs(list);
-  const rows=list.map(j=>{const c=S.clients[j.clientId],p=S.projects[j.projectId],k=jobCalc(j),st=jst(j.status),miss=c&&k.amount>0&&j.status!=='pagato'?billMissing(c):[];
+  const rows=list.map(j=>{const c=S.clients[j.clientId],p=S.projects[j.projectId],k=jobCalc(j),st=jst(j.status),miss=c&&k.amount>0&&j.status!=='pagato'?billWarn(c):[];
     const q=j.quoteId&&S.quotes[j.quoteId];
     const qcell=q?`<button type="button" class="fchip" data-fq="${q.id}">${esc(qCode(q))}</button>`:j.quoteUrl?`<a class="fchip" href="${esc(j.quoteUrl)}" target="_blank" rel="noopener">Apri ↗</a>`:'<span class="fmut">—</span>';
     return `<tr class="fr" data-fj="${j.id}" style="${st[2]?`--rc:${st[2]}`:''}">
@@ -4723,7 +4724,7 @@ function finClients(){
   const q=(FIN.cq||'').trim().toLowerCase(),js=Object.values(S.jobs);
   let cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name,'it'));
   if(q)cs=cs.filter(c=>[c.name,c.bill?.ragione,c.bill?.piva,c.bill?.cf,c.bill?.city,c.bill?.mail,c.bill?.pec].join(' ').toLowerCase().includes(q));
-  const rows=cs.map(c=>{const b=c.bill||{},mine=js.filter(j=>j.clientId===c.id),tot=mine.reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billMissing(c),
+  const rows=cs.map(c=>{const b=c.bill||{},mine=js.filter(j=>j.clientId===c.id),tot=mine.reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billWarn(c),
       last=mine.map(j=>j.month).sort().pop(),loc=[b.addr,[b.cap,b.city,b.prov&&'('+b.prov+')'].filter(Boolean).join(' ')].filter(Boolean).join(', ');
     return `<tr class="fr" data-cl="${c.id}" style="--rc:${c.color||'transparent'}"><td data-l="Cliente"><b>${esc(c.name)}</b>${b.ragione&&b.ragione!==c.name?`<small>${esc(b.ragione)}</small>`:''}</td>
       <td data-l="P.IVA / CF">${esc(b.piva||b.cf||'')||'<span class="fmut">—</span>'}</td><td data-l="Indirizzo">${esc(loc)||'<span class="fmut">—</span>'}</td>
@@ -4765,7 +4766,7 @@ function openSub(x){
 }
 function finInvoices(y){
   const g=invGroups(y),today=key(new Date()),sum=l=>l.reduce((a,j)=>a+invTot(j),0);
-  const row=(j,kind)=>{const c=S.clients[j.clientId],late=kind==='collect'&&j.invoiceDue&&j.invoiceDue<today,miss=kind==='issue'&&c?billMissing(c):[];
+  const row=(j,kind)=>{const c=S.clients[j.clientId],late=kind==='collect'&&j.invoiceDue&&j.invoiceDue<today,miss=kind==='issue'&&c?billWarn(c):[];
     const sub=kind==='issue'?`${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}${miss.length?' · <span class="fwarn">dati fattura</span>':''}`
       :kind==='collect'?`N° ${esc(j.invoiceNo)} · emessa ${j.invoiceDate?fmtD(j.invoiceDate,'it'):'—'}${j.invoiceDue?` · scade ${fmtD(j.invoiceDue,'it')}`:''}${j.invoiceSent?'':' · <b>non ancora inviata</b>'}`
       :`N° ${esc(j.invoiceNo||'—')} · incassata ${j.paidAt?fmtD(j.paidAt,'it'):''}`;
@@ -4790,7 +4791,7 @@ function openInvoice(j){
     <label class="chk"><input type="checkbox" id="iSent" ${j.invoiceSent?'checked':''}> Inviata al cliente</label>
     <label class="chk"><input type="checkbox" id="iPaid" ${j.status==='pagato'?'checked':''}> Incassata</label>
     <div class="field" id="iPdW"><label for="iPd">Data incasso</label><input id="iPd" type="date" value="${j.paidAt||today}"></div>
-    ${c&&billMissing(c).length?`<p class="note warn">Mancano i dati di fatturazione di ${esc(c.name)}: ${esc(billMissing(c).join(', '))}. <button type="button" class="linkbtn" id="iFix">Completa</button></p>`:''}
+    ${c&&billWarn(c).length?`<p class="note warn">Mancano i dati di fatturazione di ${esc(c.name)}: ${esc(billWarn(c).join(', '))}. <button type="button" class="linkbtn" id="iFix">Completa</button></p>`:''}
     <div class="acts">${j.invoiceNo?`<button type="button" class="btn danger left" id="iDel">Annulla fattura</button>`:''}<button type="button" class="btn ghost" id="cancel">Chiudi</button><button type="submit" class="btn primary">${j.invoiceNo?'Salva':'Emetti'}</button></div>`;
   const upd=()=>{const a=num($('#iA').value),r=$('#iR').checked?a*0.04:0,b=$('#iB').checked?2:0,t=taxCalc(a+r,+($('#iD').value||today).slice(0,4));
     $('#iCalc').innerHTML=`<span>Totale fattura <b>${eur(a+r+b)}</b>${r?` <small>(rivalsa ${eur(r)})</small>`:''}</span><span>Netto stimato <b>${eur(t.net)}</b></span>`;$('#iPdW').hidden=!$('#iPaid').checked};
@@ -4874,7 +4875,7 @@ function openJob(j,preset){
   const autoCol=()=>{if(colTouched)return;const c=S.clients[C.value];if(!c||!c.color)return;jcol=c.color;$('#jColF').innerHTML='<span class="lbl">Colore degli eventi</span>'+swatches(jcol);bindSw()};
   const upd=()=>{const a0=num($('#jA').value),a=a0+($('#jIR').checked?a0*0.04:0),k=num($('#jK').value),yy=+(M.value||'').slice(0,4)||y,t=taxCalc(a,yy);
     $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
-    const c=S.clients[C.value],miss=c&&a>0?billMissing(c):[],w=$('#jWarn');
+    const c=S.clients[C.value],miss=c&&a>0?billWarn(c):[],w=$('#jWarn');
     w.hidden=!miss.length;if(miss.length){w.innerHTML=`Per fatturare a ${esc(c.name)} mancano: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="jFix">Completa i dati del cliente</button>`;$('#jFix').onclick=()=>openClient(c)}};
   C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');autoCol();upd()};
   Cn.oninput=()=>fillProjects();
@@ -4951,7 +4952,7 @@ function renderQuoteEditor(el,q){
   const paper=$('#qPaper'),prev=$('#qPrev'),saved=$('#qeSaved');
   const fit=()=>{const w=prev.clientWidth-24;const s=Math.min(1,w/794);paper.style.setProperty('--qs',s);paper.style.height=(paper.firstElementChild.offsetHeight*s)+'px'};
   const refresh=()=>{paper.innerHTML=quoteDoc(cur);fit();const t=qTotals(cur);$('#qTot').innerHTML=`<span>Subtotale <b>${eur(t.sub)}</b></span>${t.disc?`<span>Sconto <b>−${eur(t.disc)}</b></span>`:''}<span>Totale <b>${eur(t.tot)}</b></span>`;
-    const c=S.clients[cur.clientId],miss=c?billMissing(c):[],w=$('#qWarn');w.hidden=!miss.length;if(miss.length){w.innerHTML=`Nel preventivo mancano i dati di ${esc(c.name)}: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="qFix">Completa</button>`;$('#qFix').onclick=()=>openClient(c)}
+    const c=S.clients[cur.clientId],miss=c?billWarn(c):[],w=$('#qWarn');w.hidden=!miss.length;if(miss.length){w.innerHTML=`Nel preventivo mancano i dati di ${esc(c.name)}: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="qFix">Completa</button>`;$('#qFix').onclick=()=>openClient(c)}
     el.querySelector('.qe-code').textContent=qCode(cur)};
   const save=()=>{saved.textContent='Salvo…';clearTimeout(saveT);saveT=setTimeout(()=>{put('quotes',cur);saved.textContent='Salvato'},500)};
   const read=()=>{cur.num=parseInt($('#qN').value)||cur.num;cur.date=$('#qD').value||cur.date;cur.year=+cur.date.slice(0,4);cur.valid=$('#qV').value;cur.title=$('#qT').value;cur.desc=$('#qDe').value;
