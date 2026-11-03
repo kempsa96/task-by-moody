@@ -4550,7 +4550,7 @@ function finMonths(y){
     return `<tr class="fr" data-fj="${j.id}" style="${st[2]?`--rc:${st[2]}`:''}">
       <td data-l="Giorno" class="fday">${esc(j.day||'')}</td>
       <td data-l="Cliente"><span class="fcl"><span class="dot" title="Colore degli eventi" style="--c:${(j.cal&&j.cal.color)||(c||p?jobDefColor(j):'var(--muted)')}"></span> ${esc(c?.name||'—')}</span>${miss.length?` <span class="fwarn" title="Mancano: ${esc(miss.join(', '))}">dati fattura</span>`:''}</td>
-      <td data-l="Lavoro">${esc(j.title||p?.name||'')}${p&&j.title&&j.title!==p.name?`<small>${esc(p.name)}</small>`:''}</td>
+      <td data-l="Lavoro">${esc(j.title||p?.name||'')}${j.invCode?`<small>Cod. ${esc(j.invCode)}</small>`:''}</td>
       <td data-l="Preventivo">${qcell}</td>
       <td data-l="Fatturato" class="r">${k.amount?eur(k.amount):'<span class="fmut">—</span>'}</td>
       <td data-l="Contanti" class="r">${k.cash?eur(k.cash):'<span class="fmut">—</span>'}</td>
@@ -4691,6 +4691,7 @@ function openInvoice(j){
   form.innerHTML=`<h3>Fattura</h3>
     <p class="note" style="margin:0">${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'')} · ${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}</p>
     <div class="row3"><div class="field"><label for="iN">Numero</label><input id="iN" value="${esc(no)}"></div><div class="field"><label for="iD">Data</label><input id="iD" type="date" value="${d}"></div><div class="field"><label for="iS">Scadenza</label><input id="iS" type="date" value="${j.invoiceDue||addDays(d,30)}"></div></div>
+    <div class="field"><label for="iCod">Codice per la fattura <small>(da riportare in fattura)</small></label><div style="display:flex;gap:6px"><input id="iCod" value="${esc(j.invCode||'')}" placeholder="es. PO 4500123 / CIG ABC123" autocomplete="off" style="flex:1"><button type="button" class="btn ghost" id="iCodCp">Copia</button></div></div>
     <div class="field"><label for="iA">Importo (compenso) €</label><input id="iA" inputmode="decimal" value="${String(+j.amount||0).replace('.',',')}"></div>
     <label class="chk"><input type="checkbox" id="iR" ${(j.invRivalsa??true)?'checked':''}> Rivalsa INPS 4%</label>
     <label class="chk"><input type="checkbox" id="iB" ${j.invBollo??((+j.amount||0)>77.47)?'checked':''}> Marca da bollo 2 € (obbligatoria sopra 77,47 €)</label>
@@ -4705,11 +4706,12 @@ function openInvoice(j){
   ['#iA','#iR','#iB','#iPaid','#iD'].forEach(s=>$(s).addEventListener('input',upd));upd();
   $('#iD').addEventListener('change',()=>{$('#iS').value=addDays($('#iD').value||today,30)});
   $('#iN').addEventListener('blur',()=>{$('#iN').value=fixInvNo($('#iN').value,j.month)});
+  $('#iCodCp').onclick=()=>{const v=$('#iCod').value;if(!v)return;try{navigator.clipboard.writeText(v).then(()=>toast('Codice copiato'),()=>toast('Copia non riuscita'))}catch(e){toast('Copia non riuscita')}};
   $('#cancel').onclick=()=>dlg.close();
   const fx=$('#iFix');if(fx)fx.onclick=()=>openClient(c);
   const dl=$('#iDel');if(dl)dl.onclick=()=>{if(!dl.classList.contains('armed')){dl.classList.add('armed');dl.textContent='Conferma';return}put('jobs',{...j,invoiceNo:'',invoiceDate:null,invoiceDue:null,invoiceSent:false,status:j.status==='pagato'||j.status==='attesa'?'fatt':j.status});dlg.close()};
   form.onsubmit=e=>{e.preventDefault();const paid=$('#iPaid').checked;
-    put('jobs',{...j,invoiceNo:fixInvNo($('#iN').value,j.month),invoiceDate:$('#iD').value||today,invoiceDue:$('#iS').value||null,amount:num($('#iA').value),invRivalsa:$('#iR').checked,invBollo:$('#iB').checked,invoiceSent:$('#iSent').checked,
+    put('jobs',{...j,invCode:$('#iCod').value.trim(),invoiceNo:fixInvNo($('#iN').value,j.month),invoiceDate:$('#iD').value||today,invoiceDue:$('#iS').value||null,amount:num($('#iA').value),invRivalsa:$('#iR').checked,invBollo:$('#iB').checked,invoiceSent:$('#iSent').checked,
       status:paid?'pagato':'attesa',paidAt:paid?($('#iPd').value||today):null});
     dlg.close();toast(paid?'Fattura incassata 💶':'Fattura salvata')};
   show();
@@ -4751,6 +4753,7 @@ function openJob(j,preset){
     <div class="row"><div class="field"><label for="jA">Fatturato €</label><input id="jA" inputmode="decimal" value="${j.amount?String(j.amount).replace('.',','):''}" placeholder="0,00"></div><div class="field"><label for="jK">Contanti / non fatturato €</label><input id="jK" inputmode="decimal" value="${j.cash?String(j.cash).replace('.',','):''}" placeholder="0,00"></div></div>
     <div class="jcalc" id="jCalc"></div>
     <div class="field"><label for="jS">Stato</label><select id="jS">${JST.map(([v,l])=>`<option value="${v}" ${v===(j.status||'prev')?'selected':''}>${l}</option>`).join('')}</select></div>
+    <div class="field"><label for="jCod">Codice per la fattura <small>(ordine, CIG, commessa, tipo progetto…)</small></label><input id="jCod" value="${esc(j.invCode||'')}" placeholder="es. PO 4500123 / CIG ABC123" autocomplete="off"></div>
     <div class="row"><div class="field"><label for="jN">Fattura n°</label><input id="jN" value="${esc(j.invoiceNo||'')}" placeholder="es. 31"></div><div class="field"><label for="jID">Data fattura</label><input id="jID" type="date" value="${j.invoiceDate||''}"></div></div>
     <label class="chk"><input type="checkbox" id="jIR" ${j.invRivalsa?'checked':''}> Rivalsa INPS 4% in fattura</label>
     <label class="chk"><input type="checkbox" id="jIS" ${j.invoiceSent?'checked':''}> Fattura inviata</label>
@@ -4802,7 +4805,7 @@ function openJob(j,preset){
     let pid=P.value||null;if(pid==='__new'){const n=Pn.value.trim();if(!n){Pn.focus();return}const c=S.clients[cid];const np={id:uid(),name:n,client:c?.name||'',clientId:cid,color:c?.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pid=np.id}
     const mo=M.value||j.month,qv=Q.value,cs=toMin($('#jCs').value||'09:00'),ce=Math.max(toMin($('#jCe').value||'18:00'),cs+15);
     const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce,color:jcol},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
-      amount:num($('#jA').value),rate:num($('#jR').value)||null,qty:num($('#jQt').value)||null,cash:num($('#jK').value),status:$('#jS').value,invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
+      amount:num($('#jA').value),rate:num($('#jR').value)||null,qty:num($('#jQt').value)||null,cash:num($('#jK').value),status:$('#jS').value,invCode:$('#jCod').value.trim(),invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
     put('jobs',nj);syncJobBlocks(nj);
     const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
     dlg.close();renderFin();
