@@ -2147,7 +2147,7 @@ function move(id,dir){
   const o=list[j];const a=t.order||0,b=o.order||0;
   put('tasks',{...t,order:b===a?b+dir:b});put('tasks',{...o,order:a});
 }
-function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Evento',run:newBlockNow},{label:'🎂 Compleanno',run:()=>openBirthday()},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
+function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'✅ Task',run:()=>openSolo()},{label:'📅 Evento',run:newBlockNow},{label:'🎂 Compleanno',run:()=>openBirthday()},...(withClient?[{label:'👤 Cliente',run:()=>openClient()}]:[])]}
 function newBlockNow(){
   const today=key(new Date()),vis=visibleDays();const k=vis.includes(today)?today:vis.find(dayIsOn)||vis[0];
   let st=k===today?Math.ceil((nowMin()+1)/60)*60:hoursFor(k)[0];if(st>=1380)st=hoursFor(k)[0];

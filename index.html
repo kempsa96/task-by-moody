@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031300">
+<meta name="tbm-build" content="202611031304">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031300"></script>
-<script src="tbm-cloud.js?v=202611031300"></script>
+<script src="supabase.js?v=202611031304"></script>
+<script src="tbm-cloud.js?v=202611031304"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -2166,7 +2166,7 @@ function move(id,dir){
   const o=list[j];const a=t.order||0,b=o.order||0;
   put('tasks',{...t,order:b===a?b+dir:b});put('tasks',{...o,order:a});
 }
-function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Evento',run:newBlockNow},{label:'🎂 Compleanno',run:()=>openBirthday()},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
+function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'✅ Task',run:()=>openSolo()},{label:'📅 Evento',run:newBlockNow},{label:'🎂 Compleanno',run:()=>openBirthday()},...(withClient?[{label:'👤 Cliente',run:()=>openClient()}]:[])]}
 function newBlockNow(){
   const today=key(new Date()),vis=visibleDays();const k=vis.includes(today)?today:vis.find(dayIsOn)||vis[0];
   let st=k===today?Math.ceil((nowMin()+1)/60)*60:hoursFor(k)[0];if(st>=1380)st=hoursFor(k)[0];
