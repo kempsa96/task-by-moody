@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031051">
+<meta name="tbm-build" content="202611031052">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031051"></script>
-<script src="tbm-cloud.js?v=202611031051"></script>
+<script src="supabase.js?v=202611031052"></script>
+<script src="tbm-cloud.js?v=202611031052"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -773,10 +773,11 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
 .sb-row b.in{color:#22A55B}
 /* ---------- Conti ---------- */
 .fin{display:none;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 24px}
-.app>.top{grid-row:1}.app>.tabs{grid-row:2}.app>.main,.app>.fin{grid-row:3}.app>.player{grid-row:4}
-.app[data-view="fin"] #main{display:none}
-.app[data-view="fin"] .fin{display:block}
-.app[data-view="fin"] .t-c{visibility:hidden}
+.app>.top{grid-row:1}.app>.tabs{grid-row:2}.app>.main,.app>.fin{grid-row:3}
+.evp{display:none}.app>.player{grid-row:4}
+.app[data-view="fin"] #main,.app[data-view="ev"] #main{display:none}
+.app[data-view="fin"] #fin,.app[data-view="ev"] #evp{display:block}
+.app[data-view="fin"] .t-c,.app[data-view="ev"] .t-c{visibility:hidden}
 .lists .btn.on{color:var(--fg);background:var(--surface)}
 .chk{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
 .fin-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}
@@ -933,7 +934,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 }
 @media (max-width:1100px){.kpis.big6{grid-template-columns:repeat(3,minmax(0,1fr))}.fgrid{grid-template-columns:minmax(0,1fr)}.qe-grid{grid-template-columns:minmax(0,1fr)}.qe-prev{display:none;position:static}.qe-prev.show{display:block;position:fixed;inset:0;z-index:80;border-radius:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:0 12px calc(24px + env(safe-area-inset-bottom));background:var(--bg)}.qe-prev.show .qe-prevbar{display:flex;align-items:center;gap:8px;position:sticky;top:0;z-index:2;background:var(--bg);margin:0 -12px 12px;padding:calc(8px + env(safe-area-inset-top)) 12px 8px;border-bottom:1px solid var(--line)}.qe-prev.show .qe-prevbar>[data-qa=preview]{display:inline-flex}.qe-prev.show .qe-prevbar>b{display:block;flex:1;text-align:center}.qe-prevbtn{display:inline-block}}
 @media (max-width:820px){
-  .app[data-view="fin"] .t-c{display:none}
+  .app[data-view="fin"] .t-c,.app[data-view="ev"] .t-c{display:none}
   .fin-head{gap:8px}.fin-biz{padding:6px 8px;font-size:13px}
   .fm-strip{grid-template-columns:repeat(12,64px)}
   .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpis.big6{grid-template-columns:repeat(2,minmax(0,1fr))}
@@ -1083,6 +1084,7 @@ dialog{overflow:auto}
     </section>
   </main>
   <section class="fin" id="fin" aria-label="Attività"></section>
+  <section class="fin evp" id="evp" aria-label="Eventi"></section>
   <footer class="player" id="player" aria-live="polite"></footer>
 </div>
 <button class="fab" id="fab" aria-expanded="false" aria-controls="chat">
@@ -1749,7 +1751,7 @@ function renderMini(){
   el.innerHTML=`<div class="mini-h"><b data-mini="today" title="Vai a oggi">${esc(label)}</b><button data-mini="prev" aria-label="Mese precedente">‹</button><button data-mini="next" aria-label="Mese successivo">›</button><button data-mini="min" class="mini-x" aria-label="Riduci a icona" title="Riduci a icona"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 3v3.5H13M3 9.5h3.5V13M9.5 6.5 14 2M6.5 9.5 2 14"/></svg></button></div>
     <div class="mini-g">${['L','M','M','G','V','S','D'].map(x=>`<span class="wd">${x}</span>`).join('')}${cells}</div>`;
 }
-function render(){migrate();schedule();renderRange();renderProjects();const qaS=QA?qaState():null;renderCal();if(QA)drawQA(false,qaS);renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();renderTray();queueReminders();if(finOpen())renderFin()}
+function render(){migrate();schedule();renderRange();if(evOpen())renderEvents();renderProjects();const qaS=QA?qaState():null;renderCal();if(QA)drawQA(false,qaS);renderImp();renderConfirm();renderDayBtn();renderPlayer();renderMini();placeMini();renderUndo();renderTray();queueReminders();if(finOpen())renderFin()}
 /* ---------- promemoria per le notifiche (solo nella versione app, quando window.tbmReminders esiste) ---------- */
 let remT=null,remSig='';
 function queueReminders(force){if(!window.tbmReminders||mode!=='cloud')return;if(force){remSig='';clearTimeout(remT);remT=null}if(remT)return;remT=setTimeout(()=>{remT=null;try{const L=buildReminders(),sig=JSON.stringify(L);if(sig!==remSig){remSig=sig;window.tbmReminders(L)}}catch(e){console.error(e)}},force?300:4000)}
@@ -2166,7 +2168,6 @@ $('#addBtn').onclick=e=>{
   e.stopPropagation();const r=e.currentTarget.getBoundingClientRect();
   showCtx(r.right-200,r.bottom+6,newMenuItems());
 };
-$('#listImp').onclick=()=>openBlockList();
 $('#listCal').onclick=()=>setTab('cal');
 $('#brandHome').onclick=()=>{closeQA&&closeQA();if(dlg.open)dlg.close();closeFin();setTab('cal');$('#today').click()};
 $('#undoBtn').onclick=doUndo;$('#redoBtn').onclick=doRedo;
@@ -3085,7 +3086,7 @@ function autoArchive(list){
   const go=list.filter(p=>!p.noAuto&&!autoArchDone.has(p.id));if(!go.length||readOnly)return;
   go.forEach(p=>autoArchDone.add(p.id));
   setTimeout(()=>{go.forEach(p=>{const x=S.projects[p.id];if(x&&!x.archived)archiveProject(x);Object.values(S.jobs).filter(j=>j.projectId===p.id&&(j.status==='prev'||j.status==='corso')).forEach(j=>put('jobs',{...j,status:'fatt'}))});
-    toast(go.length===1?`«${go[0].name}» completato: l’ho archiviato`:`${go.length} progetti completati archiviati`,{label:'Annulla',run:doUndo})},0);
+    toast(go.length===1?`«${go[0].name}» completato: l’ho archiviato`:`${go.length} elementi completati archiviati`,{label:'Annulla',run:doUndo})},0);
 }
 function deleteProject(p){Object.values(S.tasks).filter(t=>t.projectId===p.id).forEach(t=>del('tasks',t.id));del('projects',p.id)}
 function taskMenuItems(t){
@@ -3370,27 +3371,34 @@ document.addEventListener('contextmenu',e=>{
 });
 
 /* ---------- lista eventi ---------- */
-function openBlockList(){
-  const today=key(new Date()),all=Object.values(S.blocks);
-  const rec=all.filter(isRec).filter(b=>!(b.repeat.endType==='until'&&b.repeat.until&&b.repeat.until<today)).sort((a,b)=>a.start-b.start);
+const evOpen=()=>appEl()&&appEl().dataset.view==='ev';
+const EVQ={q:''};
+function openEventsPage(){appEl().dataset.view='ev';['tabCal','tabProj','tabFin'].forEach(id=>$('#'+id).setAttribute('aria-selected','false'));$('#listFin').classList.remove('on');$('#listImp').classList.add('on');renderEvents()}
+function renderEvents(){
+  const el=$('#evp');if(!el||!evOpen())return;
+  if(mode==='loading'){el.innerHTML='<div class="empty">Carico…</div>';return}
+  const today=key(new Date()),q=EVQ.q.trim().toLowerCase(),hit=b=>!q||(b.title||'').toLowerCase().includes(q),all=Object.values(S.blocks).filter(b=>!b.jobId&&!isPause(b));
+  const rec=all.filter(isRec).filter(b=>!(b.repeat.endType==='until'&&b.repeat.until&&b.repeat.until<today)&&hit(b)).sort((a,b)=>a.start-b.start);
   const md=b=>{const x=b.date.slice(5);return (x>=today.slice(5)?'0':'1')+x};
   const ann=rec.filter(b=>b.allDay).sort((a,b)=>md(a)<md(b)?-1:1),recT=rec.filter(b=>!b.allDay);
   const upcoming=[];
-  for(let i=0;i<60;i++){const k=addDays(today,i);blocksOn(k,true).filter(b=>!isRec(S.blocks[b.id])||(S.blocks[b.id].exceptions||{})[k]).forEach(b=>upcoming.push(b))}
-  const row=(b,k,sub)=>`<li><button type="button" class="crow brow" data-bid="${b.id}" data-occ="${k}"><span class="dot" style="--c:${b.color}"></span><span>${esc(b.title||'Evento')}<small>${sub}</small></span><small class="tm">${b.allDay?'Tutto il giorno':hm(b.start)+'–'+hm(b.end)}</small></button></li>`;
+  for(let i=0;i<90;i++){const k=addDays(today,i);blocksOn(k,true).filter(b=>!b.jobId&&!isPause(b)&&hit(b)&&(!isRec(S.blocks[b.id])||(S.blocks[b.id].exceptions||{})[k])).forEach(b=>upcoming.push(b))}
+  const row=(b,k,sub)=>`<button type="button" class="sb-row" data-bid="${b.id}" data-occ="${k}"><span class="dot" style="--c:${b.color||'var(--accent)'}"></span><span class="qmain"><b>${esc(b.title||'Evento')}</b><small>${sub}</small></span><small class="tm">${b.allDay?'Tutto il giorno':hm(b.start)+'–'+hm(b.end)}</small></button>`;
   let lastDay='';
-  form.innerHTML=`<h3>Eventi</h3>
-    ${recT.length?`<span class="lbl">Ricorrenti</span><ul class="clist">${recT.map(b=>row(b,b.date,repLabel(b))).join('')}</ul>`:''}
-    ${ann.length?`<details><summary class="lbl" style="cursor:pointer">Compleanni e ricorrenze di tutto il giorno (${ann.length})</summary><ul class="clist">${ann.map(b=>row(b,b.date,new Date(b.date+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'long'})+' · '+repLabel(b))).join('')}</ul></details>`:''}
-    <span class="lbl">Prossimi 60 giorni</span>
-    ${upcoming.length?`<ul class="clist blist">${upcoming.map(b=>{const d=b.occ!==lastDay?`<li class="dayl">${esc(longDate(b.occ))}${b.occ===today?' · oggi':''}</li>`:'';lastDay=b.occ;return d+row(b,b.occ,isRec(S.blocks[b.id])?`orario cambiato solo questo giorno (di solito ${hm(S.blocks[b.id].start)}–${hm(S.blocks[b.id].end)})`:'')}).join('')}</ul>`:'<p class="note">Nessun evento singolo nei prossimi 60 giorni.</p>'}
-    <div class="acts"><button type="button" class="btn ghost" id="cancel">Chiudi</button><button type="button" class="btn primary" id="blNew">+ Evento</button></div>`;
-  $('#cancel').onclick=()=>dlg.close();
-  $('#blNew').onclick=newBlockNow;
-  form.querySelectorAll('.brow').forEach(b=>b.onclick=()=>openBlock(S.blocks[b.dataset.bid],b.dataset.occ));
-  form.onsubmit=e=>e.preventDefault();
-  show(true);
+  el.innerHTML=`<div class="fcard"><div class="fm-h"><h2>Eventi</h2><button type="button" class="btn primary" id="evNew">+ Evento</button></div>
+    <div class="field"><input id="evQ" type="search" placeholder="Cerca evento…" value="${esc(EVQ.q)}" autocomplete="off"></div>
+    <h3>Prossimi 90 giorni</h3>
+    ${upcoming.length?upcoming.map(b=>{const d=b.occ!==lastDay?`<div class="dayl" style="margin:10px 0 4px">${esc(longDate(b.occ))}${b.occ===today?' · oggi':''}</div>`:'';lastDay=b.occ;return d+row(b,b.occ,isRec(S.blocks[b.id])?`orario cambiato solo questo giorno (di solito ${hm(S.blocks[b.id].start)}–${hm(S.blocks[b.id].end)})`:'')}).join(''):'<p class="note">Nessun evento singolo nei prossimi 90 giorni.</p>'}</div>
+    ${recT.length?`<div class="fcard"><h3>Ricorrenti</h3>${recT.map(b=>row(b,b.date,repLabel(b))).join('')}</div>`:''}
+    ${ann.length?`<div class="fcard"><h3>Compleanni e ricorrenze (${ann.length})</h3>${ann.map(b=>row(b,b.date,new Date(b.date+'T12:00').toLocaleDateString('it-IT',{day:'numeric',month:'long'})+' · '+repLabel(b))).join('')}</div>`:''}`;
 }
+$('#evp').addEventListener('click',e=>{
+  if(e.target.closest('#evNew')){newBlockNow();return}
+  const r=e.target.closest('[data-bid]');if(r&&S.blocks[r.dataset.bid])openBlock(S.blocks[r.dataset.bid],r.dataset.occ);
+});
+$('#evp').addEventListener('input',e=>{if(e.target.id!=='evQ')return;EVQ.q=e.target.value;const p=e.target.selectionStart;renderEvents();const i=$('#evQ');if(i){i.focus();try{i.setSelectionRange(p,p)}catch(x){}}});
+$('#listImp').onclick=()=>evOpen()?closeFin():openEventsPage();
+function openBlockList(){openEventsPage()}
 $('#openBlocks').onclick=openBlockList;
 
 /* ---------- assistente offline ---------- */
@@ -4535,8 +4543,8 @@ function timeByProject(year){
 const FIN={view:'mesi',year:new Date().getFullYear(),month:new Date().getMonth(),q:null};
 const appEl=()=>document.querySelector('.app');
 const finOpen=()=>appEl()&&appEl().dataset.view==='fin';
-function openFin(view){if(view)FIN.view=view;appEl().dataset.view='fin';['tabCal','tabProj'].forEach(id=>$('#'+id).setAttribute('aria-selected','false'));$('#tabFin').setAttribute('aria-selected','true');$('#listFin').classList.add('on');renderFin()}
-function closeFin(){if(!appEl())return;appEl().dataset.view='';$('#tabFin').setAttribute('aria-selected','false');$('#listFin').classList.remove('on');FIN.q=null}
+function openFin(view){if(view)FIN.view=view;appEl().dataset.view='fin';$('#listImp').classList.remove('on');['tabCal','tabProj'].forEach(id=>$('#'+id).setAttribute('aria-selected','false'));$('#tabFin').setAttribute('aria-selected','true');$('#listFin').classList.add('on');renderFin()}
+function closeFin(){if(!appEl())return;appEl().dataset.view='';$('#listImp').classList.remove('on');$('#tabFin').setAttribute('aria-selected','false');$('#listFin').classList.remove('on');FIN.q=null}
 function renderFin(force){
   const el=$('#fin');if(!el||!finOpen())return;
   if(FIN.q&&!force)return; // l'editor del preventivo si aggiorna da solo
