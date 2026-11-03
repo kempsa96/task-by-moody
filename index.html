@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031040">
+<meta name="tbm-build" content="202611031045">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031040"></script>
-<script src="tbm-cloud.js?v=202611031040"></script>
+<script src="supabase.js?v=202611031045"></script>
+<script src="tbm-cloud.js?v=202611031045"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -1719,8 +1719,9 @@ function scrollToToday(){if(isFree())return;
 function bounds(){return [0,1440]}
 
 /* ---------- render ---------- */
-const loadedSet=new Set();let migrated=false;
+const loadedSet=new Set();let migrated=false,jobsSynced=false;
 function migrate(){
+  if(!jobsSynced&&mode!=='loading'&&(mode!=='cloud'||['jobs','blocks','clients','projects'].every(c=>loadedSet.has(c)))){jobsSynced=true;if(!readOnly)silently(()=>Object.values(S.jobs).filter(j=>j.cal&&j.cal.on&&(j.days||[]).length).forEach(syncJobBlocks))}
   if(migrated||mode==='loading')return;
   if(mode==='cloud'&&!(loadedSet.has('blocks')&&loadedSet.has('settings')))return;
   migrated=true;
@@ -4571,7 +4572,7 @@ function finMonths(y){
     const qcell=q?`<button type="button" class="fchip" data-fq="${q.id}">${esc(qCode(q))}</button>`:j.quoteUrl?`<a class="fchip" href="${esc(j.quoteUrl)}" target="_blank" rel="noopener">Apri ↗</a>`:'<span class="fmut">—</span>';
     return `<tr class="fr" data-fj="${j.id}" style="${st[2]?`--rc:${st[2]}`:''}">
       <td data-l="Giorno" class="fday">${esc(j.day||'')}</td>
-      <td data-l="Cliente"><span class="fcl"><span class="dot" style="--c:${c?.color||'var(--muted)'}"></span> ${esc(c?.name||'—')}</span>${miss.length?` <span class="fwarn" title="Mancano: ${esc(miss.join(', '))}">dati fattura</span>`:''}</td>
+      <td data-l="Cliente"><span class="fcl"><span class="dot" title="Colore degli eventi" style="--c:${(j.cal&&j.cal.color)||(c||p?jobDefColor(j):'var(--muted)')}"></span> ${esc(c?.name||'—')}</span>${miss.length?` <span class="fwarn" title="Mancano: ${esc(miss.join(', '))}">dati fattura</span>`:''}</td>
       <td data-l="Lavoro">${esc(j.title||p?.name||'')}${p&&j.title&&j.title!==p.name?`<small>${esc(p.name)}</small>`:''}</td>
       <td data-l="Preventivo">${qcell}</td>
       <td data-l="Fatturato" class="r">${k.amount?eur(k.amount):'<span class="fmut">—</span>'}</td>
@@ -4727,10 +4728,11 @@ function daysLabel(days){
   return out.join(', ');
 }
 const fixInvNo=(v,ym)=>{v=String(v||'').trim();return /^\d+$/.test(v)?`${v}/${String(ym||key(new Date())).slice(0,4)}`:v};
-function jobDefColor(j){const c=S.clients[j.clientId];return (S.projects[j.projectId]||{}).color||c?.color||'#3B6FE0'}
+function jobDefColor(j){const c=S.clients[j.clientId];return c?.color||(S.projects[j.projectId]||{}).color||'#3B6FE0'}
+function jobEvTitle(j){const c=S.clients[j.clientId],d=(j.title||S.projects[j.projectId]?.name||'').trim();if(!c)return d||'Lavoro';return !d||d.toLowerCase().startsWith(c.name.toLowerCase())?c.name:`${c.name} · ${d}`}
 function syncJobBlocks(j){
   const mine=Object.values(S.blocks).filter(b=>b.jobId===j.id),want=j.cal&&j.cal.on?(j.days||[]):[];
-  const c=S.clients[j.clientId],title=j.title||c?.name||'Lavoro',color=(j.cal&&j.cal.color)||jobDefColor(j);
+  const title=jobEvTitle(j),color=(j.cal&&j.cal.color)||jobDefColor(j);
   mine.forEach(b=>{if(!want.includes(b.date))del('blocks',b.id)});
   want.forEach(k=>{const b=mine.find(x=>x.date===k),nb={...(b||{id:uid(),repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()}),date:k,start:j.cal.start,end:j.cal.end,title,color,projectId:j.projectId||null,jobId:j.id};
     if(!b||JSON.stringify(b)!==JSON.stringify(nb))put('blocks',nb)});
@@ -4779,12 +4781,14 @@ function openJob(j,preset){
     grid();if(q==='none')$('#jD').value='';else syncDay()};
   M.addEventListener('change',()=>{grid();syncDay()});
   $('#jCal').onchange=()=>{$('#jCalT').hidden=$('#jColF').hidden=!$('#jCal').checked};
-  let jcol=cal.color||jobDefColor(j);$('#jColF').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{jcol=b.dataset.c;$('#jColF').querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b))});
+  let jcol=cal.color||jobDefColor(j),colTouched=!!cal.color;
+  const bindSw=()=>$('#jColF').querySelectorAll('.sw').forEach(b=>b.onclick=()=>{colTouched=true;jcol=b.dataset.c;$('#jColF').querySelectorAll('.sw').forEach(x=>x.setAttribute('aria-pressed',x===b))});bindSw();
+  const autoCol=()=>{if(colTouched)return;const c=S.clients[C.value];if(!c||!c.color)return;jcol=c.color;$('#jColF').innerHTML='<span class="lbl">Colore degli eventi</span>'+swatches(jcol);bindSw()};
   const upd=()=>{const a0=num($('#jA').value),a=a0+($('#jIR').checked?a0*0.04:0),k=num($('#jK').value),yy=+(M.value||'').slice(0,4)||y,t=taxCalc(a,yy);
     $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
     const c=S.clients[C.value],miss=c&&a>0?billMissing(c):[],w=$('#jWarn');
     w.hidden=!miss.length;if(miss.length){w.innerHTML=`Per fatturare a ${esc(c.name)} mancano: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="jFix">Completa i dati del cliente</button>`;$('#jFix').onclick=()=>openClient(c)}};
-  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');upd()};
+  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');autoCol();upd()};
   Cn.oninput=()=>fillProjects();
   P.onchange=()=>{Pn.hidden=P.value!=='__new';if(!Pn.hidden){Pn.focus();return}const p=S.projects[P.value];if(p&&!$('#jT').value.trim())$('#jT').value=p.name;upd()};
   Q.onchange=()=>{Qu.hidden=Q.value!=='__url';const q=S.quotes[Q.value];if(q){$('#jA').value=String(qTotals(q).imp).replace('.',',');$('#jR').value='';$('#jQt').value='';if(q.clientId&&S.clients[q.clientId]){C.value=q.clientId;Cn.hidden=true;fillProjects('')}if(!$('#jT').value.trim())$('#jT').value=q.title||'';const qn=$('#jQn');if(qn)qn.value=String(q.num)}upd()};
