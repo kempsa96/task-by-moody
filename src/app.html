@@ -4633,12 +4633,22 @@ function invGroups(y){
   return {toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
 }
 function finClients(){
-  const cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name,'it')),js=Object.values(S.jobs);
-  const row=c=>{const n=js.filter(j=>j.clientId===c.id).length,tot=js.filter(j=>j.clientId===c.id).reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billMissing(c);
-    return `<button type="button" class="sb-row" data-cl="${c.id}"><span class="dot" style="--c:${c.color||'var(--muted)'}"></span><span class="qmain"><b>${esc(c.name)}</b><small>${n?n+(n===1?' lavoro':' lavori'):'nessun lavoro'}${miss.length?' · <span class="fwarn">dati fattura</span>':''}</small></span>${tot?`<b>${eur0(tot)}</b>`:''}</button>`};
-  return `<div class="fcard"><div class="fm-h"><h2>Clienti</h2><button type="button" class="btn primary" data-cl="new">+ Cliente</button></div>
-    ${cs.length?cs.map(row).join(''):'<div class="empty"><strong>Nessun cliente</strong><span>Aggiungi il primo cliente: nome, colore e dati di fatturazione.</span></div>'}
-    <p class="note">Il colore del cliente è quello dei suoi eventi nel calendario. «dati fattura» = mancano dati per emettere la fattura.</p></div>`;
+  const q=(FIN.cq||'').trim().toLowerCase(),js=Object.values(S.jobs);
+  let cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name,'it'));
+  if(q)cs=cs.filter(c=>[c.name,c.bill?.ragione,c.bill?.piva,c.bill?.cf,c.bill?.city,c.bill?.mail,c.bill?.pec].join(' ').toLowerCase().includes(q));
+  const rows=cs.map(c=>{const b=c.bill||{},mine=js.filter(j=>j.clientId===c.id),tot=mine.reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billMissing(c),
+      last=mine.map(j=>j.month).sort().pop(),loc=[b.city,b.prov&&'('+b.prov+')'].filter(Boolean).join(' ');
+    return `<tr class="fr" data-cl="${c.id}" style="--rc:${c.color||'transparent'}"><td data-l="Cliente"><b>${esc(c.name)}</b>${b.ragione&&b.ragione!==c.name?`<small>${esc(b.ragione)}</small>`:''}</td>
+      <td data-l="P.IVA / CF">${esc(b.piva||b.cf||'')||'<span class="fmut">—</span>'}</td><td data-l="Città">${esc(loc)||'<span class="fmut">—</span>'}</td>
+      <td data-l="SDI / PEC">${esc(b.sdi||b.pec||'')||'<span class="fmut">—</span>'}</td><td data-l="Email">${esc(b.mail||'')||'<span class="fmut">—</span>'}</td>
+      <td data-l="Lavori" class="r">${mine.length||'<span class="fmut">—</span>'}</td><td data-l="Totale" class="r">${tot?eur0(tot):'<span class="fmut">—</span>'}</td>
+      <td data-l="Ultimo lavoro">${last?MESI3[+last.slice(5)-1]+' '+last.slice(0,4):'<span class="fmut">—</span>'}</td>
+      <td data-l="Fattura">${miss.length?'<span class="fwarn" title="Mancano: '+esc(miss.join(', '))+'">dati mancanti</span>':'<span class="fmut">ok</span>'}</td></tr>`}).join('');
+  return `<div class="fcard"><div class="fm-h"><h2>Clienti <small class="fmut">${cs.length}</small></h2><button type="button" class="btn primary" data-cl="new">+ Cliente</button></div>
+    <div class="field"><input id="clQ" type="search" placeholder="Cerca cliente, P.IVA, città…" value="${esc(FIN.cq||'')}" autocomplete="off"></div>
+    ${cs.length?`<div class="ft-wrap"><table class="ft"><thead><tr><th>Cliente</th><th>P.IVA / CF</th><th>Città</th><th>SDI / PEC</th><th>Email</th><th class="r">Lavori</th><th class="r">Totale</th><th>Ultimo lavoro</th><th>Fattura</th></tr></thead><tbody>${rows}</tbody></table></div>`
+      :`<div class="empty"><strong>${q?'Nessun risultato':'Nessun cliente'}</strong><span>${q?'Prova un’altra ricerca.':'Aggiungi il primo cliente: nome, colore e dati di fatturazione.'}</span></div>`}
+    <p class="note">Il colore a sinistra è quello degli eventi del cliente nel calendario. Tocca un cliente per modificarne i dati.</p></div>`;
 }
 const subsList=()=>Object.values(S.biz).filter(x=>x&&x.kind==='sub').sort((a,b)=>(a.sign==='in')-(b.sign==='in')||(a.name||'').localeCompare(b.name||'','it'));
 const subMonthly=x=>(+x.amount||0)/(x.cycle==='y'?12:1);
@@ -4967,6 +4977,7 @@ $('#fin').addEventListener('click',e=>{
   if(t.closest('select,a,input'))return;
   const fr=t.closest('[data-fj]');if(fr&&S.jobs[fr.dataset.fj])openJob(S.jobs[fr.dataset.fj]);
 });
+$('#fin').addEventListener('input',e=>{if(e.target.id!=='clQ')return;FIN.cq=e.target.value;const p=e.target.selectionStart;renderFin(true);const i=$('#clQ');if(i){i.focus();try{i.setSelectionRange(p,p)}catch(x){}}});
 $('#fin').addEventListener('change',e=>{const s=e.target.closest('[data-fs]');if(!s)return;const j=S.jobs[s.dataset.fs];if(j)put('jobs',{...j,status:s.value,...(s.value==='pagato'&&!j.paidAt?{paidAt:key(new Date())}:{})})});
 $('#listFin').onclick=()=>finOpen()?closeFin():openFin();
 $('#tabFin').onclick=()=>openFin();
