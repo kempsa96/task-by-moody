@@ -1018,7 +1018,7 @@ dialog{overflow:auto}
   <header class="top">
     <div class="t-l">
     <button type="button" class="brand" id="brandHome" title="Torna al calendario di oggi"><b>Tasky</b><span>by Moody</span></button>
-    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listCal">Calendario</button><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listFin">Attività</button></nav>
+    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listCal">Calendario</button><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listFin">Attività</button></nav>
     <div class="status" id="status"><i></i><span>Caricamento…</span></div>
     </div>
     <div class="t-c">
@@ -1840,7 +1840,7 @@ function renderProjects(){
         <span class="grip" data-act="grip" title="Trascina per cambiare ordine o priorità" aria-label="Trascina ${esc(t.title)}">${GRIP}</span>
         <input type="checkbox" class="tcheck" data-act="itemToggle" data-id="${t.id}" ${t.done?'checked':''} aria-label="Segna ${esc(t.title)} come fatta">
         <div class="it-body"><div class="it-title">${esc(t.title)}</div>
-          <div class="it-meta${inf&&inf.late?' late':''}">${solo?'':`<button class="tag" data-act="tagFilter" data-id="${p.id}" title="Mostra solo ${esc(p.name)}">${esc(p.name)}</button>`}<span>${manual()?[dlOf(t)?`<b class="dlb ${dlGroup(dlOf(t))}">${dlLabel(dlOf(t))}</b>`:'',t.pin&&inf?`📅 ${shortDate(inf.start.date)} ${hm(inf.start.start)}`:''].filter(Boolean).join(' · '):`${t.done?dur(t.minutes||0):dur(left)}${when?' · '+when:''}${t.pin?' · fisso':''}`}</span></div></div>
+          <div class="it-meta${inf&&inf.late?' late':''}"><span>${manual()?[dlOf(t)?`<b class="dlb ${dlGroup(dlOf(t))}">${dlLabel(dlOf(t))}</b>`:'',t.pin&&inf?`📅 ${shortDate(inf.start.date)} ${hm(inf.start.start)}`:''].filter(Boolean).join(' · '):`${t.done?dur(t.minutes||0):dur(left)}${when?' · '+when:''}${t.pin?' · fisso':''}`}</span></div></div>
         <button class="dots" data-act="imenu" data-id="${t.id}" aria-label="Opzioni" title="Opzioni">${DOTS}</button>
       </div></article>`};
   let html='';
@@ -1855,7 +1855,7 @@ function renderProjects(){
   autoArchive(doneProjects);
   html+=[].map(p=>`<div class="donebar" style="margin:0"><span>«${esc(p.name)}»: tutte le task fatte</span><button class="btn" data-act="archive" data-id="${p.id}">Archivia progetto</button></div>`).join('');
   if(!items.length&&!fp){
-    el.innerHTML=html+`<div class="empty"><strong>Niente da fare</strong><span>Aggiungi una task, un progetto con le sue task o un evento: il calendario si riempie da solo.</span><button class="btn primary" data-act="newmenu">+ Nuovo</button></div><datalist id="tplList">${TEMPLATES.map(([n])=>`<option value="${esc(n)}">`).join('')}</datalist>`;
+    el.innerHTML=html+`<div class="empty"><strong>Niente da fare</strong><span>Aggiungi una task o un evento: il calendario si riempie da solo.</span><button class="btn primary" data-act="newmenu">+ Nuovo</button></div><datalist id="tplList">${TEMPLATES.map(([n])=>`<option value="${esc(n)}">`).join('')}</datalist>`;
     return;
   }
   if(manual()){const groups=DLG.filter(([g])=>g==='today'||items.some(t=>t._g===g));
@@ -2137,7 +2137,7 @@ function move(id,dir){
   const o=list[j];const a=t.order||0,b=o.order||0;
   put('tasks',{...t,order:b===a?b+dir:b});put('tasks',{...o,order:a});
 }
-function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Progetto',run:()=>openProject()},{label:'↳ Task di un progetto',run:()=>openTask(null)},{label:'Evento',run:newBlockNow},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
+function newMenuItems(withClient=true){return [{header:true,label:'Nuovo'},{label:'Task',run:()=>openSolo()},{label:'Evento',run:newBlockNow},...(withClient?[{label:'Cliente',run:()=>openClient()}]:[])]}
 function newBlockNow(){
   const today=key(new Date()),vis=visibleDays();const k=vis.includes(today)?today:vis.find(dayIsOn)||vis[0];
   let st=k===today?Math.ceil((nowMin()+1)/60)*60:hoursFor(k)[0];if(st>=1380)st=hoursFor(k)[0];
@@ -2258,7 +2258,7 @@ function renderPlayer(){
       else{kick='Fuori orario';title=nt?nt.title:'Niente in coda';art='☾'}
       bar=inHours?`<div class="pl-bar"><span>${hm(hs)}</span><div class="pl-track"><div class="pl-fill" style="--c:var(--accent);width:${Math.round((nm-hs)/(he-hs)*100)}%"></div></div><span>fine ${hm(he)}</span></div>`:'';
     }
-    sub=nt?`${next.date===k?'Oggi':shortDate(next.date)} alle ${hm(next.start)}`:'Aggiungi una task o un progetto';
+    sub=nt?`${next.date===k?'Oggi':shortDate(next.date)} alle ${hm(next.start)}`:'Aggiungi una task';
   }
   const M=coachMsgs(st),m=M[Math.floor(Date.now()/12000)%M.length];
   el.style.setProperty('--c',c);
@@ -2303,7 +2303,7 @@ $('#player').addEventListener('click',e=>{
   if(a==='skip'){track(true);const ids=orderedPending().map(x=>x.id),i=ids.indexOf(id);if(i<0||i>=ids.length-1)return;[ids[i],ids[i+1]]=[ids[i+1],ids[i]];reorderIds(ids)}
 });
 setInterval(()=>{if(!welcomeOpen)renderPlayer()},15000);
-$('#listProj').onclick=()=>openProjectList();
+
 /* splitter */
 (()=>{
   const sp=$('#split'),side=document.querySelector('.side'),imp=$('#sideImp');
@@ -2377,7 +2377,6 @@ function openBlockView(b,occ){
     `<li><span>🕒</span><div><b>${esc(longDate(occ))}${b.allDay?' · tutto il giorno':` · ${hm(cur.start)}–${hm(cur.end)}`}</b><small>${rec?'si ripete '+esc(repLabel(b)):b.allDay?'giornata intera':esc(dur(cur.end-cur.start))}</small></div></li>`,
     b.place&&b.place.label?`<li><span>📍</span><div><b>${esc(b.place.label)}</b><small>${maps?`<a href="${maps}" target="_blank" rel="noopener">Apri in Maps</a>`:'luogo'}</small></div></li>`:'',
     !b.allDay&&(bx||by||tr)?`<li><span>${tm?tm[1]:'🚗'}</span><div><b>${bx?`Parti alle ${hm(cur.start-bx)}`:'Nessun viaggio prima'}${by?` · rientro ${dur(by)}`:''}</b><small>${tr&&tr.minutes?`${esc(tm[2])} · ${dur(tr.minutes)}${tr.lines&&tr.lines.length?' · linee '+esc(tr.lines.join(' → ')):''}`:'viaggio e preparazione'}</small></div></li>`:'',
-    pr?`<li><span>📁</span><div><b>${esc(pr.name)}</b><small>progetto</small></div></li>`:'',
     job?`<li><span>💼</span><div><b>${esc(job.title||'Lavoro')}</b><small>lavoro nelle Attività</small></div></li>`:'',
     b.notes?`<li class="tv-notes"><span>📝</span><div><div class="tv-n">${link(b.notes)}</div><small>descrizione</small></div></li>`:''
   ].filter(Boolean).join('');
@@ -2609,7 +2608,7 @@ function openTask(t){
     <div class="row"><div class="field"><label for="tDur">Tempo stimato</label><select id="tDur">${durOptions(t.minutes)}</select></div>
     <div class="field"><label for="tDl">Scadenza</label><input id="tDl" type="date" value="${isNew?key(new Date()):t.deadline||''}"></div></div>${dlChips('tDl')}
     <div class="field" ${manual()?'hidden':''}><span class="lbl">Priorità</span><div class="seg3" id="tPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${(t.priority||S.projects[t.projectId]?.priority||2)===v}">${PRIO[v]}</button>`).join('')}</div></div>
-    <div class="field"><label for="tProj">Progetto</label><select id="tProj">${Object.values(S.projects).filter(x=>!isSolo(x)&&(!x.archived||x.id===t.projectId)).map(x=>`<option value="${x.id}" ${x.id===t.projectId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
+    <div class="field" hidden><label for="tProj">Progetto</label><select id="tProj">${Object.values(S.projects).filter(x=>!isSolo(x)&&(!x.archived||x.id===t.projectId)).map(x=>`<option value="${x.id}" ${x.id===t.projectId?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>
     ${isNew?'':`<label class="check"><input type="checkbox" id="tDone" ${t.done?'checked':''}> Fatta</label>`}
     ${inf?`<p class="note">In calendario: da ${shortDate(inf.start.date)} ${hm(inf.start.start)} a ${shortDate(inf.endDate)} ${hm(inf.end)}${inf.late?'. Finisce dopo la scadenza: alza la priorità del progetto o libera tempo.':'.'}</p>`:''}
     <div class="acts">${isNew?'':'<button type="button" class="btn danger left" id="tDel">Elimina</button>'}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi':'Salva'}</button></div>`;
@@ -2668,7 +2667,7 @@ function placeField(id,label,val,ph){return `<div class="field"><label for="${id
 function projectField(b){
   const ps=realProjects().sort((x,y)=>x.name.localeCompare(y.name)),cur=b.projectId&&S.projects[b.projectId];
   const list=cur&&!ps.some(x=>x.id===cur.id)?[...ps,cur]:ps;
-  return `<div class="field"><label for="bProj">Fa parte di un progetto (facoltativo)</label><select id="bProj"><option value="">Nessun progetto</option>${list.map(x=>`<option value="${x.id}" ${x.id===b.projectId?'selected':''}>${esc(x.name)}${x.client?' · '+esc(x.client):''}</option>`).join('')}<option value="__new">+ Nuovo progetto…</option></select><input id="bProjN" placeholder="Nome del nuovo progetto" hidden></div>`}
+  return `<div class="field" hidden><label for="bProj">Fa parte di un progetto (facoltativo)</label><select id="bProj"><option value="">Nessun progetto</option>${list.map(x=>`<option value="${x.id}" ${x.id===b.projectId?'selected':''}>${esc(x.name)}${x.client?' · '+esc(x.client):''}</option>`).join('')}<option value="__new">+ Nuovo progetto…</option></select><input id="bProjN" placeholder="Nome del nuovo progetto" hidden></div>`}
 function tripFields(b){
   const mode=b.travel?.mode||S.settings.travelMode||'transit',from=b.from||homePlace();
   return `${placeField('bPlace','Dove (facoltativo)',b.place?.label,'es. NABA, Via Segantini')}
@@ -3074,8 +3073,6 @@ function taskMenuItems(t){
   const p=S.projects[t.projectId];
   return [{label:'Modifica task',run:()=>openTask(t)},{label:t.done?'Segna da fare':'Segna come fatta',run:()=>put('tasks',{...t,done:!t.done,doneAt:!t.done?Date.now():null})},
     ...(t.pin?[{label:'Torna a orario automatico',run:()=>pinTask(t.id,null,null)}]:[]),
-    {label:`Mostra solo «${p.name}»`,run:()=>{tagFilter=p.id;setTab('proj');renderProjects()}},
-    {label:'Modifica progetto',run:()=>openProject(p)},
     {label:'Elimina task',danger:1,run:()=>del('tasks',t.id)}];
 }
 function colorItem(id){const t=taskById(id);if(!t)return null;
@@ -3120,8 +3117,6 @@ function askMoreSolos(pid){
 }
 function soloMenuItems(pr){
   return [{label:'Modifica task',run:()=>openSolo(pr)},{label:pr.done?'Segna da fare':'Segna come fatta',run:()=>put('projects',{...pr,done:!pr.done,doneAt:!pr.done?Date.now():null})},
-    {label:'Sposta in un progetto…',run:()=>openMoveToProject(pr)},
-    {label:'Trasforma in progetto',run:()=>{put('projects',{...pr,kind:null,done:false});addTask(pr.id,pr.name,pr.minutes||60)}},
     {label:'Elimina task',danger:1,run:()=>del('projects',pr.id)}];
 }
 function projMenuItems(pr){
@@ -3491,11 +3486,9 @@ const HELP=`Scrivimi cosa fare, per esempio:
 • nuovo cliente Nike
 • archivia spot nike
 • task mandare mail a Luca 15 min priorità alta
-• nuovo progetto Video mostra con le task video reel e video 3 minuti 2h
 • sabato 24 sono al lavoro
 • dentista giovedì dalle 15 alle 16
 • aggiungi video verticale 1h30 a spot prodotto
-• nuovo progetto Spot Nike cliente Nike priorità alta
 • priorità alta a spot prodotto
 • fatto montaggio spot
 • cancella dentista
@@ -3903,7 +3896,7 @@ function finCommand(raw,n){
 
 const chatLog=[];
 const CHIPS={root:[['+ Aggiungi','sub:add'],['💶 Attività','sub:fin'],['✓ Fatto','fatto '],['Sono libero','sono libero '],['Pausa','pausa 30 min'],['?','aiuto']],
-  add:[['← ','sub:root'],['Task','task '],['Progetto','nuovo progetto '],['Task','aggiungi  a '],['Evento','evento domani alle '],['Pausa pranzo','pausa pranzo dalle 13 alle 14'],['Lavoro (Conti)','!nuovo lavoro']],
+  add:[['← ','sub:root'],['Task','task '],['Task','aggiungi  a '],['Evento','evento domani alle '],['Pausa pranzo','pausa pranzo dalle 13 alle 14'],['Lavoro (Conti)','!nuovo lavoro']],
   fin:[['← ','sub:root'],['Nuovo lavoro','!nuovo lavoro'],['Quanto mi devono?','!quanto mi devono'],['Da fatturare','!cosa devo fatturare'],['Fatturato del mese','!quanto ho fatturato questo mese'],['Quest’anno','!quanto ho guadagnato quest anno'],['Incassato…','ha pagato'],['Nuovo preventivo','nuovo preventivo per ']]};
 let chipLevel='root';
 function renderChips(){const el=$('#cchips');if(!el)return;
@@ -4045,7 +4038,7 @@ function aiConnectCard(){
   if(!AI.st)return `<div class="msg bot">Controllo il collegamento dell'assistente…</div>`;
   return `<div class="aic">
     <b class="aic-t">Collega l'assistente a Tasky</b>
-    <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nelle Attività. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
+    <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, clienti e lavori nelle Attività. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
     <div class="aic-opt"><b>Gemini di Google — gratis</b><ol><li>Apri <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e accedi col tuo account Google.</li><li>Tocca <b>Crea chiave API</b> (Create API key), copiala e incollala qui sotto.</li></ol><small>Gratis con un limite di messaggi al giorno, più che sufficiente per l'uso normale.</small></div>
     <details class="aic-opt"><summary><b>Claude</b> — a consumo, circa 1–2 centesimi a comando</summary><ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, in <b>Billing</b> aggiungi un po' di credito.</li><li>In <b>API Keys</b> crea una chiave e incollala qui sotto.</li></ol></details>
     <div class="aic-f"><input id="aiKey" type="password" placeholder="Incolla qui la chiave" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
@@ -4062,12 +4055,11 @@ function aiGreeting(){const oq=$('#chat').classList.contains('qmode')&&S.quotes[
 /* ---------- contesto: cosa vede Claude a ogni messaggio ---------- */
 const aiStatic=()=>`Sei ${aiName()}, l'assistente integrato in Tasky: l'app di task, calendario e attività (lavori e conti) di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
 
-Il tuo compito è SOLO gestire Tasky: leggere e modificare task, eventi, progetti, clienti, giorni e lavori nelle Attività con gli strumenti a disposizione, e rispondere a domande sui suoi impegni e sui suoi dati (es. "cosa ho domani?", "quanto ho fatturato a ottobre?", "come mi organizzo la settimana?").
+Il tuo compito è SOLO gestire Tasky: leggere e modificare task, eventi, clienti, giorni e lavori nelle Attività con gli strumenti a disposizione, e rispondere a domande sui suoi impegni e sui suoi dati (es. "cosa ho domani?", "quanto ho fatturato a ottobre?", "come mi organizzo la settimana?").
 NON rispondere a nient'altro: niente cultura generale, notizie, meteo, ricette, traduzioni, codice, consigli medici o legali, testi da scrivere, chiacchiere fuori tema. Non hai accesso a internet né ad altre app. Se la richiesta non riguarda Tasky, rispondi con una sola frase gentile tipo "Qui posso aiutarti solo con Tasky: task, eventi, progetti e attività." e proponi cosa puoi fare. Saluti e ringraziamenti: rispondi in breve e torna operativo.
 
 Come funziona Tasky:
 - Task: cose da fare con una scadenza (data). Possono essere "singole" oppure dentro un progetto. Se non dice la scadenza usa oggi. Una task NON va nel calendario a un orario preciso se non lo chiede: per metterla in calendario usa pianifica_task.
-- Progetti: raccolgono task, possono avere un cliente e una scadenza.
 - Eventi: impegni fissi con data e orario (riprese, call, appuntamenti). Tipo "lavoro" o "personale". Possono durare tutto il giorno e ripetersi. Compleanni = tutto il giorno, ogni anno, tipo personale. Rinnovi/abbonamenti = ogni mese.
 - Giorni: lavorativi o liberi (giorno_libero). Gli eventi restano anche nei giorni liberi.
 - Attività (prima «Conti»): lavori del mese con importo fatturato, contanti, stato (prev=previsto, corso=in corso, fatt=da fatturare, attesa=attesa pagamento, pagato=incassato), giorni di lavoro che possono bloccare il calendario.
@@ -4127,9 +4119,6 @@ const AI_TOOLS=[
  {name:'modifica_task',description:'Modifica una task esistente (anche segnarla fatta o da fare).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},scadenza:{type:'string',description:'YYYY-MM-DD oppure "nessuna"'},durata_min:{type:'integer'},fatta:{type:'boolean'},progetto:{type:'string',description:'id o nome del progetto in cui spostarla'}},required:['id']}},
  {name:'pianifica_task',description:'Mette una task nel calendario a un orario (le task già lì dopo scorrono per non sovrapporsi). Con data "nessuna" la toglie dal calendario.',input_schema:{type:'object',properties:{id:{type:'string'},data:{type:'string'},inizio:S_TIME,durata_min:{type:'integer'}},required:['id','data']}},
  {name:'elimina_task',description:'Elimina una task.',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
- {name:'crea_progetto',description:'Crea un progetto (contenitore di task).',input_schema:{type:'object',properties:{nome:{type:'string'},cliente:{type:'string',description:'nome o id; se non esiste viene creato'},scadenza:S_DATE,colore:{type:'string'}},required:['nome']}},
- {name:'modifica_progetto',description:'Modifica, archivia o ripristina un progetto.',input_schema:{type:'object',properties:{id:{type:'string'},nome:{type:'string'},cliente:{type:'string'},scadenza:{type:'string',description:'YYYY-MM-DD oppure "nessuna"'},colore:{type:'string'},archiviato:{type:'boolean'}},required:['id']}},
- {name:'elimina_progetto',description:'Elimina un progetto e tutte le sue task.',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
  {name:'aggiungi_evento',description:'Crea un evento in calendario.',input_schema:{type:'object',properties:{titolo:{type:'string'},data:S_DATE,inizio:S_TIME,fine:S_TIME,tutto_il_giorno:{type:'boolean'},ripeti:S_REP,tipo:{type:'string',enum:['lavoro','personale']},descrizione:{type:'string'},luogo:{type:'string'},progetto:{type:'string'},colore:{type:'string'},prima_min:{type:'integer',description:'minuti di viaggio/preparazione prima'},dopo_min:{type:'integer',description:'minuti di rientro dopo'}},required:['titolo','data']}},
  {name:'modifica_evento',description:'Modifica un evento. Per un evento ricorrente indica data_occorrenza e solo_questa=true per cambiare solo quel giorno, false per tutta la serie.',input_schema:{type:'object',properties:{id:{type:'string'},data_occorrenza:S_DATE,solo_questa:{type:'boolean'},titolo:{type:'string'},data:S_DATE,inizio:S_TIME,fine:S_TIME,tutto_il_giorno:{type:'boolean'},ripeti:S_REP,tipo:{type:'string',enum:['lavoro','personale']},descrizione:{type:'string'},luogo:{type:'string'},colore:{type:'string'},prima_min:{type:'integer'},dopo_min:{type:'integer'}},required:['id']}},
  {name:'elimina_evento',description:'Elimina un evento. Se ricorrente: solo_questa=true + data_occorrenza toglie solo quel giorno.',input_schema:{type:'object',properties:{id:{type:'string'},data_occorrenza:S_DATE,solo_questa:{type:'boolean'}},required:['id']}},
@@ -4608,8 +4597,7 @@ function finReport(y){
       <div class="fcard"><h3>Chi incide di più sul fatturato</h3>${cl.some(c=>c.amount)?`<div class="fdonut-wrap">${donut(cl.filter(c=>c.amount>0).map(c=>({l:c.name,v:c.amount,c:c.color})))}<ul class="flist">${cl.filter(c=>c.amount>0).map(c=>`<li><span class="dot" style="--c:${c.color}"></span>${esc(c.name)}<b>${Math.round(c.amount/totA*100)}%</b></li>`).join('')}</ul></div>`:'<p class="note">Ancora nessun lavoro nel '+y+'.</p>'}</div>
     </div>
     <div class="fcard"><h3>Clienti: guadagno e tempo</h3>${cl.length?`<div class="ft-wrap"><table class="ft rep"><thead><tr><th>Cliente</th><th class="r">Entrate</th><th class="r">Netto</th><th class="r">Incidenza</th><th class="r">Ore</th><th class="r">Netto all'ora</th></tr></thead><tbody>${cl.map(c=>`<tr><td data-l="Cliente"><span class="dot" style="--c:${c.color}"></span> ${esc(c.name)}</td><td data-l="Fatturato" class="r">${eur(c.amount)}</td><td data-l="Netto" class="r"><b>${eur(c.net)}</b></td><td data-l="Incidenza" class="r">${Math.round(c.amount/totA*100)}%</td><td data-l="Ore" class="r">${c.min?hrs(c.min):'—'}</td><td data-l="Netto all'ora" class="r">${rate(c.net,c.min)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Nessun dato.</p>'}</div>
-    <div class="fcard"><h3>Progetti: guadagno e tempo</h3>${pl.length?`<div class="ft-wrap"><table class="ft rep"><thead><tr><th>Progetto</th><th>Cliente</th><th class="r">Ore</th><th class="r">Fatturato</th><th class="r">Netto</th><th class="r">Netto all'ora</th></tr></thead><tbody>${pl.map(x=>`<tr><td data-l="Progetto"><span class="dot" style="--c:${x.p.color}"></span> ${esc(x.p.name)}</td><td data-l="Cliente">${esc(clientName(x.p)||'—')}</td><td data-l="Ore" class="r">${x.min?hrs(x.min):'—'}</td><td data-l="Fatturato" class="r">${x.amount?eur(x.amount):'—'}</td><td data-l="Netto" class="r"><b>${x.net?eur(x.net):'—'}</b></td><td data-l="Netto all'ora" class="r">${rate(x.net,x.min)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">Collega i lavori ai progetti per vedere quanto rende ogni ora.</p>'}
-      <p class="note">Le ore vengono dal tempo registrato sulle task del progetto e dagli eventi collegati al progetto.</p></div>`;
+  `;
 }
 function finQuotes(y){
   const qs=Object.values(S.quotes).filter(q=>+q.year===y).sort((a,b)=>(b.num||0)-(a.num||0));
@@ -4744,7 +4732,7 @@ function openJob(j,preset){
   form.innerHTML=`<h3>${isNew?'Nuovo lavoro':'Lavoro'}</h3>
     <div class="field"><label for="jQn">Preventivo <small>(scrivi il numero o scegli: compila cliente e importo)</small></label><input id="jQn" inputmode="numeric" placeholder="es. 162" autocomplete="off"><select id="jQ" aria-label="Scegli il preventivo"><option value="">Nessuno</option>${qs.map(q=>`<option value="${q.id}" ${q.id===j.quoteId?'selected':''}>${esc(qCode(q))} · ${esc(q.title||'')}</option>`).join('')}<option value="__url" ${!j.quoteId&&j.quoteUrl?'selected':''}>Link esterno…</option></select><input id="jQu" type="url" value="${esc(j.quoteUrl||'')}" placeholder="Incolla il link al preventivo (Google Drive, Sheets…)" hidden></div>
     <div class="field"><label for="jC">Cliente</label><select id="jC">${clientOptions(j.clientId)}</select><input id="jCn" placeholder="Nome del nuovo cliente" hidden></div>
-    <div class="field"><label for="jP">Progetto</label><select id="jP"></select><input id="jPn" placeholder="Nome del nuovo progetto" hidden></div>
+    <div class="field" hidden><label for="jP">Progetto</label><select id="jP"></select><input id="jPn" placeholder="Nome del nuovo progetto" hidden></div>
     <div class="field"><label for="jT">Descrizione</label><input id="jT" value="${esc(j.title||'')}" placeholder="es. Laboratorio Media Lab"></div>
     <div class="row"><div class="field"><label for="jM">Mese</label><input id="jM" type="month" value="${j.month}"></div><div class="field"><label for="jD">Giorno/i</label><input id="jD" value="${esc(j.day||'')}" placeholder="scegli qui sotto o scrivi"></div></div>
     <div class="jdays"><div class="jd-h"><span class="lbl">Giorni di lavoro</span><span class="jd-q"><button type="button" data-jq="wd">Lun–Ven</button><button type="button" data-jq="all">Tutti</button><button type="button" data-jq="none">Nessuno</button></span></div><div class="jd-g" id="jGrid"></div>
