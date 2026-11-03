@@ -1109,7 +1109,7 @@ const PRIO={1:'Alta',2:'Media',3:'Bassa'};
 const LS='taskbymoody.v1';
 let PPM=(()=>{try{const v=parseFloat(localStorage.getItem('tbm-ppm'));return v>=.5&&v<=3?v:1.1}catch(e){return 1.1}})();
 const defSettings=()=>({workStart:540,workEnd:1080,workDays:[1,2,3,4,5],lunch:false,lunchStart:780,lunchEnd:840,daysOff:[],daysOn:[],dayHours:{}});
-const S={settings:defSettings(),clients:{},projects:{},tasks:{},blocks:{},jobs:{},quotes:{},biz:{}};
+const S={settings:defSettings(),clients:{},projects:{},tasks:{},blocks:{},jobs:{},quotes:{},biz:{},contracts:{}};
 let db=null,mode='loading',readOnly=false,showDone=false;
 let viewStart=key(new Date());
 const $=s=>document.querySelector(s);
@@ -1268,7 +1268,7 @@ async function init(){
   try{if(window.claude&&window.claude.use)ns=await window.claude.use('db')}catch(e){}
   if(ns){
     db=ns;mode='cloud';setStatus('cloud','Sincronizzato');
-    for(const c of ['clients','projects','tasks','blocks','jobs','quotes','biz']){
+    for(const c of ['clients','projects','tasks','blocks','jobs','quotes','biz','contracts']){
       db.collection(c).onSnapshot(snap=>{
         const m={};snap.docs.forEach(d=>{if(d.exists)m[d.id]={...JSON.parse(JSON.stringify(d.data())),id:d.id}});
         S[c]=m;loadedSet.add(c);render();if(!batchOpen)setTimeout(refreshStable,0);
@@ -2542,6 +2542,8 @@ function openClient(ed,fromList){
         <div class="row3">${f('bCap','CAP',b.cap)}${f('bCity','Città',b.city)}${f('bProv','Provincia',b.prov,'MI')}</div>
         <div class="row">${f('bSdi','Codice SDI',b.sdi,'7 caratteri')}${f('bPec','PEC',b.pec)}</div>
         ${f('bMail','Email amministrazione',b.mail)}</details>`})()}
+    <label class="chk"><input type="checkbox" id="cReqC" ${ed?.reqCode?'checked':''}> Per i nuovi lavori serve un codice (PO) per fatturare</label>
+    <label class="chk"><input type="checkbox" id="cReqK" ${ed?.reqContract?'checked':''}> I nuovi lavori sono sotto contratto</label>
     <div class="acts">${ed?`<button type="button" class="btn danger left" id="cDel">Elimina</button>`:''}<button type="button" class="btn ghost" id="cancel">${fromList?'Indietro':'Annulla'}</button><button type="submit" class="btn primary">${ed?'Salva':'Aggiungi cliente'}</button></div>`;
   const getC=wireSwatches();
   const back=()=>fromList?openClientList():dlg.close();
@@ -2555,8 +2557,8 @@ function openClient(ed,fromList){
     if(near&&forced!==name){forced=name;w.textContent=`C'è già un cliente molto simile: "${near.name}". Premi di nuovo per aggiungere comunque "${name}".`;w.hidden=false;form.querySelector('[type=submit]').textContent='Aggiungi comunque';return}
     if(ed){
       Object.values(S.projects).filter(p=>p.clientId===ed.id).forEach(p=>{const np={...p,client:name};if(p.color===ed.color)np.color=color;put('projects',np)});
-      put('clients',{...ed,name,color,bill:readBill()});
-    }else{const c=findOrCreateClient(name,color),bl=readBill();if(Object.values(bl).some(Boolean))put('clients',{...c,bill:bl})}
+      put('clients',{...ed,name,color,bill:readBill(),reqCode:$('#cReqC').checked,reqContract:$('#cReqK').checked});
+    }else{const c=findOrCreateClient(name,color),bl=readBill(),rc=$('#cReqC').checked,rk=$('#cReqK').checked;if(Object.values(bl).some(Boolean)||rc||rk)put('clients',{...c,bill:bl,reqCode:rc,reqContract:rk})}
     back();
   };
   show();
@@ -2999,8 +3001,8 @@ $('#dayBtn').onclick=()=>{const m=$('#dayBtn').dataset.mode;
   else if(m==='closed'){const k=key(new Date());setDayRec(k,{end:null});const st=S.settings;st.dayHours={...(st.dayHours||{})};const cur=hoursFor(k);st.dayHours[k]=[cur[0],Math.max(cur[1],Math.min(1440,nowMin()+120))];saveSettings();render()}};
 
 /* ---------- backup ---------- */
-const COLLS=['clients','projects','tasks','blocks','jobs','quotes','biz'];
-function backupData(){return {app:'task-by-moody',version:2,exportedAt:new Date().toISOString(),data:JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,jobs:S.jobs,quotes:S.quotes,biz:S.biz,settings:S.settings}))}}
+const COLLS=['clients','projects','tasks','blocks','jobs','quotes','biz','contracts'];
+function backupData(){return {app:'task-by-moody',version:2,exportedAt:new Date().toISOString(),data:JSON.parse(JSON.stringify({clients:S.clients,projects:S.projects,tasks:S.tasks,blocks:S.blocks,jobs:S.jobs,quotes:S.quotes,biz:S.biz,contracts:S.contracts,settings:S.settings}))}}
 function bkMsg(html,err){const m=$('#bkMsg');if(!m)return;m.hidden=false;m.innerHTML=html;m.classList.toggle('warn',!!err)}
 function wireBackup(){
   $('#bkExport').onclick=async()=>{
@@ -3029,7 +3031,7 @@ function wireBackup(){
 function restoreBackup(d){
   if(readOnly)return;
   COLLS.forEach(c=>{
-    if(!d[c]&&['jobs','quotes','biz'].includes(c))return;
+    if(!d[c]&&['jobs','quotes','biz','contracts'].includes(c))return;
     const nw=d[c]||{};
     Object.keys(S[c]).forEach(id=>{if(!nw[id])del(c,id)});
     Object.values(nw).forEach(o=>{if(o&&o.id&&JSON.stringify(S[c][o.id])!==JSON.stringify(o))put(c,o)});
@@ -4606,12 +4608,12 @@ function renderFin(force){
   if(mode==='loading'){el.innerHTML='<div class="empty">Carico…</div>';return}
   if(FIN.q&&S.quotes[FIN.q]){renderQuoteEditor(el,S.quotes[FIN.q]);return}
   FIN.q=null;
-  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['prev','Preventivi'],['cli','Clienti'],['abb','Abbonamenti'],['report','Report']];
+  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['prev','Preventivi'],['con','Contratti'],['cli','Clienti'],['abb','Abbonamenti'],['report','Report']];
   el.innerHTML=`<div class="fin-head">
       <div class="fin-seg" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-fv="${k}" aria-selected="${FIN.view===k}">${l}</button>`).join('')}</div>
       <div class="fin-yr"><button type="button" class="wk-arrow" data-fy="-1" aria-label="Anno precedente">‹</button><b>${y}</b><button type="button" class="wk-arrow" data-fy="1" aria-label="Anno successivo">›</button></div>
       <button type="button" class="btn ghost fin-biz" data-fa="biz" title="Dati attività, fisco, logo e firma">⚙︎ Dati attività</button>
-    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='abb'?finSubs():FIN.view==='cli'?finClients():FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
+    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='abb'?finSubs():FIN.view==='cli'?finClients():FIN.view==='con'?finContracts():FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
   const st=el.querySelector('.fm-strip'),on=st&&st.querySelector('.fm-m.on');if(on&&st.scrollWidth>st.clientWidth)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
 }
 function finMonths(y){
@@ -4691,16 +4693,70 @@ function finQuotes(y){
 }
 
 /* ---------- fatture ---------- */
-const invRiv=j=>j.invRivalsa?(+j.amount||0)*0.04:0;
+const invRiv=j=>j.invRivalsa?Math.round(((+j.amount||0)+(j.invBollo?2:0))*4)/100:0;
 const invTot=j=>(+j.amount||0)+invRiv(j)+(j.invBollo?2:0);
 function nextInvoiceNo(y){let n=0;Object.values(S.jobs).forEach(j=>{const m=String(j.invoiceNo||'').match(/^(\d+)\s*\/\s*(\d{4})$/);if(m&&+m[2]===y)n=Math.max(n,+m[1])});return `${n+1}/${y}`}
+const contractsOf=cid=>Object.values(S.contracts||{}).filter(c=>!cid||c.clientId===cid).sort((a,b)=>String(b.start||'').localeCompare(String(a.start||'')));
+const jobContract=j=>(j.contractId&&S.contracts[j.contractId])||null;
+const jobBlock=j=>{const c=jobContract(j);return c?(c.blocks||[]).find(b=>b.id===j.blockId)||null:null};
+const jobWaitDate=j=>{const b=jobBlock(j);return b&&b.from&&b.from>key(new Date())?b.from:null};
+const jobWaitCode=j=>!!j.needCode&&!String(j.invCode||'').trim();
+const blockOfMonth=(c,m)=>(c.blocks||[]).find(b=>b.m1&&b.m2&&m>=b.m1&&m<=b.m2)||null;
+const ctxLabel=j=>{const c=jobContract(j),b=jobBlock(j);return c?(c.code?'contratto '+c.code:'contratto')+(b&&b.label?' · '+b.label:''):''};
 function invGroups(y){
   const all=Object.values(S.jobs).filter(j=>(+j.amount||0)>0);
-  const toIssue=all.filter(j=>!j.invoiceNo&&j.status!=='pagato'&&j.status!=='prev');
+  const open=all.filter(j=>!j.invoiceNo&&j.status!=='pagato'&&j.status!=='prev');
+  const waitCode=open.filter(jobWaitCode),rest=open.filter(j=>!jobWaitCode(j)),waitDate=rest.filter(jobWaitDate),toIssue=rest.filter(j=>!jobWaitDate(j));
   const toCollect=all.filter(j=>j.invoiceNo&&j.status!=='pagato');
   const paid=all.filter(j=>j.status==='pagato'&&+String(j.paidAt||j.invoiceDate||j.month).slice(0,4)===y);
   const by=(a,b)=>String(a.invoiceDate||a.month).localeCompare(String(b.invoiceDate||b.month));
-  return {toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
+  return {waitCode:waitCode.sort(by),waitDate:waitDate.sort((a,b)=>String(jobWaitDate(a)).localeCompare(String(jobWaitDate(b)))),toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
+}
+function finContracts(){
+  const cs=contractsOf(),today=key(new Date()),ym=k=>k?MESI3[+k.slice(5,7)-1]+' '+k.slice(0,4):'';
+  const card=c=>{const cl=S.clients[c.clientId],js=Object.values(S.jobs).filter(j=>j.contractId===c.id),hrs=js.reduce((a,j)=>a+(+j.qty||0),0);
+    const bl=(c.blocks||[]).slice().sort((a,b)=>String(a.m1||'').localeCompare(String(b.m1||'')));
+    const stat=l=>{const t=l.filter(j=>!j.invoiceNo&&j.status!=='pagato').reduce((a,j)=>a+(+j.amount||0),0),f=l.filter(j=>j.invoiceNo&&j.status!=='pagato').reduce((a,j)=>a+(+j.amount||0),0),p=l.filter(j=>j.status==='pagato').reduce((a,j)=>a+(+j.amount||0),0);
+      return [t&&'da fatturare '+eur0(t),f&&'fatturato '+eur0(f),p&&'incassato '+eur0(p)].filter(Boolean).join(' · ')||'nessun lavoro'};
+    const row=b=>{const bj=js.filter(j=>j.blockId===b.id),w=b.from&&b.from>today;
+      return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)"><span class="qmain"><b>${esc(b.label||'Blocco')}</b><small>${esc(ym(b.m1))}${b.m2&&b.m2!==b.m1?' → '+esc(ym(b.m2)):''}${b.hours?' · '+b.hours+' h':''}${b.from?` · fatturabile dal ${fmtD(b.from,'it')}${w?' (non ancora)':''}`:''}</small><small>${stat(bj)}</small></span><button type="button" class="btn" data-ctj="${c.id}|${b.id}">+ Lavoro</button></div>`};
+    const loose=js.filter(j=>!j.blockId||!(c.blocks||[]).some(b=>b.id===j.blockId));
+    return `<div class="fcard"><div class="fm-h"><h3>${esc(c.title||'Contratto')}</h3><button type="button" class="btn" data-ct="${c.id}">Modifica</button></div>
+      <p class="note">${esc(cl?.name||'Nessun cliente')}${c.code?' · codice <b>'+esc(c.code)+'</b>':' · <span class="fmut">codice da inserire</span>'}${c.start?' · '+esc(ym(c.start))+(c.end?' → '+esc(ym(c.end)):''):''}${c.hours?` · ${hrs?hrs+' / ':''}${c.hours} h`:''}</p>
+      ${bl.map(row).join('')}${loose.length?`<div style="padding:8px 0;border-top:1px solid var(--line)"><small class="fmut">Lavori senza blocco: ${loose.length} · ${stat(loose)}</small></div>`:''}
+      ${bl.length?'':'<p class="note">Nessun blocco di fatturazione: aggiungili con «Modifica».</p>'}</div>`};
+  return `<div class="fcard"><div class="fm-h"><h2>Contratti <small class="fmut">${cs.length}</small></h2><button type="button" class="btn primary" data-ct="new">+ Contratto</button></div>
+    <p class="note">Un contratto raggruppa i lavori di un cliente (es. ore annuali con blocchi di fatturazione). Ogni blocco può avere una data da cui si può fatturare.</p></div>
+    ${cs.length?cs.map(card).join(''):'<div class="empty"><strong>Nessun contratto</strong><span>Creane uno per tenere in ordine cosa hai fatturato e cosa ti hanno pagato.</span></div>'}`;
+}
+function openContract(c,preset){
+  const isNew=!c;c=c||{id:uid(),clientId:null,title:'',code:'',start:'',end:'',hours:'',notes:'',blocks:[],...(preset||{})};
+  let blocks=(c.blocks||[]).map(b=>({...b}));
+  const bl=()=>blocks.map((b,i)=>`<div class="fcard" style="padding:10px;margin:0 0 8px" data-bi="${i}"><div class="field"><label>Nome blocco</label><input data-f="label" value="${esc(b.label||'')}" placeholder="es. Set–Nov"></div>
+    <div class="row"><div class="field"><label>Dal mese</label><input data-f="m1" type="month" value="${b.m1||''}"></div><div class="field"><label>Al mese</label><input data-f="m2" type="month" value="${b.m2||''}"></div></div>
+    <div class="row"><div class="field"><label>Fatturabile dal</label><input data-f="from" type="date" value="${b.from||''}"></div><div class="field"><label>Ore</label><input data-f="hours" inputmode="decimal" value="${b.hours||''}"></div></div>
+    <button type="button" class="btn ghost" data-bdel="${i}">Rimuovi blocco</button></div>`).join('');
+  form.innerHTML=`<h3>${isNew?'Nuovo contratto':'Contratto'}</h3>
+    <div class="field"><label for="ctC">Cliente</label><select id="ctC">${clientOptions(c.clientId)}</select></div>
+    <div class="field"><label for="ctT">Titolo</label><input id="ctT" value="${esc(c.title||'')}" placeholder="es. Media Lab 2026/27"></div>
+    <div class="field"><label for="ctK">Codice del contratto</label><input id="ctK" value="${esc(c.code||'')}" placeholder="lo inserisci tu" autocomplete="off"></div>
+    <div class="row"><div class="field"><label for="ctS">Dal mese</label><input id="ctS" type="month" value="${c.start||''}"></div><div class="field"><label for="ctE">Al mese</label><input id="ctE" type="month" value="${c.end||''}"></div></div>
+    <div class="field"><label for="ctH">Ore totali</label><input id="ctH" inputmode="decimal" value="${c.hours||''}" placeholder="es. 400"></div>
+    <div class="lbl" style="margin:8px 0 4px">Blocchi di fatturazione</div><div id="ctB">${bl()}</div>
+    <button type="button" class="btn" id="ctAdd">+ Blocco</button>
+    <div class="field"><label for="ctN">Note</label><textarea id="ctN" rows="2">${esc(c.notes||'')}</textarea></div>
+    <div class="acts">${isNew?'':'<button type="button" class="btn danger left" id="ctDel">Elimina</button>'}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi':'Salva'}</button></div>`;
+  const readB=()=>{form.querySelectorAll('[data-bi]').forEach(d=>{const b=blocks[+d.dataset.bi];d.querySelectorAll('[data-f]').forEach(i=>{b[i.dataset.f]=i.value.trim()})})};
+  const redraw=()=>{$('#ctB').innerHTML=bl()};
+  $('#ctAdd').onclick=()=>{readB();blocks.push({id:uid(),label:'',m1:'',m2:'',from:'',hours:''});redraw()};
+  $('#ctB').onclick=e=>{const d=e.target.closest('[data-bdel]');if(!d)return;readB();blocks.splice(+d.dataset.bdel,1);redraw()};
+  $('#cancel').onclick=()=>dlg.close();
+  if(!isNew)armDelete($('#ctDel'),'Conferma eliminazione',()=>{Object.values(S.jobs).filter(j=>j.contractId===c.id).forEach(j=>put('jobs',{...j,contractId:null,blockId:null}));del('contracts',c.id);dlg.close();renderFin(true)});
+  form.onsubmit=e=>{e.preventDefault();readB();const cid=$('#ctC').value;
+    const out=blocks.filter(b=>b.label||b.m1||b.from).map(b=>({id:b.id,label:b.label||(b.m1?MESI3[+b.m1.slice(5,7)-1]+(b.m2&&b.m2!==b.m1?'–'+MESI3[+b.m2.slice(5,7)-1]:'')+' '+b.m1.slice(0,4):'Blocco'),m1:b.m1||'',m2:b.m2||b.m1||'',from:b.from||'',hours:b.hours||''}));
+    put('contracts',{...c,clientId:cid&&cid!=='__new'?cid:null,title:$('#ctT').value.trim(),code:$('#ctK').value.trim(),start:$('#ctS').value,end:$('#ctE').value,hours:$('#ctH').value.trim(),notes:$('#ctN').value.trim(),blocks:out});
+    dlg.close();FIN.view='con';renderFin(true)};
+  show(true);
 }
 function finClients(){
   const q=(FIN.cq||'').trim().toLowerCase(),js=Object.values(S.jobs);
@@ -4749,13 +4805,15 @@ function openSub(x){
 function finInvoices(y){
   const g=invGroups(y),today=key(new Date()),sum=l=>l.reduce((a,j)=>a+invTot(j),0);
   const row=(j,kind)=>{const c=S.clients[j.clientId],late=kind==='collect'&&j.invoiceDue&&j.invoiceDue<today,miss=kind==='issue'&&c?billWarn(c):[];
-    const sub=kind==='issue'?`${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}${miss.length?' · <span class="fwarn">dati fattura</span>':''}`
+    const sub=kind==='issue'||kind==='code'||kind==='date'?`${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}${kind==='code'?' · <b>serve il codice</b>':''}${kind==='date'?` · fatturabile dal <b>${fmtD(jobWaitDate(j),'it')}</b>`:''}${kind==='issue'&&miss.length?' · <span class="fwarn">dati fattura</span>':''}`
       :kind==='collect'?`N° ${esc(j.invoiceNo)} · emessa ${j.invoiceDate?fmtD(j.invoiceDate,'it'):'—'}${j.invoiceDue?` · scade ${fmtD(j.invoiceDue,'it')}`:''}${j.invoiceSent?'':' · <b>non ancora inviata</b>'}`
       :`N° ${esc(j.invoiceNo||'—')} · incassata ${j.paidAt?fmtD(j.paidAt,'it'):''}`;
-    return `<button type="button" class="qrow inv${late?' late':''}" data-fi="${j.id}" style="--rc:${kind==='paid'?'#22A55B':late?'#E5484D':kind==='collect'?'#EF7D1A':'#2F7DE1'}"><span class="qmain"><b>${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'Lavoro')}</b><small>${sub}${late?' · <b style="color:#E5484D">scaduta</b>':''}</small></span><span class="qtot">${eur(invTot(j))}</span><span class="qst">${kind==='issue'?'Emetti':kind==='collect'?'Incassata?':'✓'}</span></button>`};
+    return `<button type="button" class="qrow inv${late?' late':''}" data-fi="${j.id}" style="--rc:${kind==='paid'?'#22A55B':late?'#E5484D':kind==='collect'?'#EF7D1A':kind==='code'||kind==='date'?'#9AA0A6':'#2F7DE1'}"><span class="qmain"><b>${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'Lavoro')}</b><small>${sub}${late?' · <b style="color:#E5484D">scaduta</b>':''}</small></span><span class="qtot">${eur(invTot(j))}</span><span class="qst">${kind==='issue'?'Emetti':kind==='code'?'Codice?':kind==='date'?'In attesa':kind==='collect'?'Incassata?':'✓'}</span></button>`};
   const sec=(t,l,kind,empty)=>`<div class="fcard"><div class="fm-h"><h3>${t}</h3><b>${eur(sum(l))}</b></div>${l.length?`<div class="qlist">${l.map(j=>row(j,kind)).join('')}</div>`:`<p class="note">${empty}</p>`}</div>`;
   return `<div class="kpis big6 k3">${kpi('Da fatturare',sum(g.toIssue))}${kpi('Ti devono',sum(g.toCollect),'neg')}${kpi('Incassato nel '+y,sum(g.paid),'big')}</div>
     ${sec('Da fatturare',g.toIssue,'issue','Nessun lavoro in attesa di fattura. Un lavoro compare qui quando è «In corso» o «Da fatturare» e ha un importo.')}
+    ${g.waitCode.length?sec('In attesa del codice per fatturare',g.waitCode,'code',''):''}
+    ${g.waitDate.length?sec('In attesa della data di fatturazione (contratti)',g.waitDate,'date',''):''}
     ${sec('Da incassare',g.toCollect,'collect','Nessuna fattura in attesa di pagamento.')}
     ${sec('Incassate nel '+y,g.paid,'paid','Ancora nessuna fattura incassata nel '+y+'.')}`;
 }
@@ -4763,7 +4821,8 @@ function openInvoice(j){
   const y=new Date().getFullYear(),today=key(new Date()),c=S.clients[j.clientId];
   const no=j.invoiceNo||nextInvoiceNo(y),d=j.invoiceDate||today;
   form.innerHTML=`<h3>Fattura</h3>
-    <p class="note" style="margin:0">${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'')} · ${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}</p>
+    <p class="note" style="margin:0">${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'')} · ${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}</p>
+    ${jobWaitDate(j)?`<p class="note warn">Da contratto si può fatturare dal ${fmtD(jobWaitDate(j),'it')}.</p>`:''}
     <div class="row3"><div class="field"><label for="iN">Numero</label><input id="iN" value="${esc(no)}"></div><div class="field"><label for="iD">Data</label><input id="iD" type="date" value="${d}"></div><div class="field"><label for="iS">Scadenza</label><input id="iS" type="date" value="${j.invoiceDue||addDays(d,30)}"></div></div>
     <div class="field"><label for="iCod">Codice per la fattura <small>(da riportare in fattura)</small></label><div style="display:flex;gap:6px"><input id="iCod" value="${esc(j.invCode||'')}" placeholder="es. PO 4500123 / CIG ABC123" autocomplete="off" style="flex:1"><button type="button" class="btn ghost" id="iCodCp">Copia</button></div></div>
     <div class="field"><label for="iA">Importo (compenso) €</label><input id="iA" inputmode="decimal" value="${String(+j.amount||0).replace('.',',')}"></div>
@@ -4775,7 +4834,7 @@ function openInvoice(j){
     <div class="field" id="iPdW"><label for="iPd">Data incasso</label><input id="iPd" type="date" value="${j.paidAt||today}"></div>
     ${c&&billWarn(c).length?`<p class="note warn">Mancano i dati di fatturazione di ${esc(c.name)}: ${esc(billWarn(c).join(', '))}. <button type="button" class="linkbtn" id="iFix">Completa</button></p>`:''}
     <div class="acts">${j.invoiceNo?`<button type="button" class="btn danger left" id="iDel">Annulla fattura</button>`:''}<button type="button" class="btn ghost" id="cancel">Chiudi</button><button type="submit" class="btn primary">${j.invoiceNo?'Salva':'Emetti'}</button></div>`;
-  const upd=()=>{const a=num($('#iA').value),r=$('#iR').checked?a*0.04:0,b=$('#iB').checked?2:0,t=taxCalc(a+r,+($('#iD').value||today).slice(0,4));
+  const upd=()=>{const a=num($('#iA').value),b=$('#iB').checked?2:0,r=$('#iR').checked?Math.round((a+b)*4)/100:0,t=taxCalc(a+r,+($('#iD').value||today).slice(0,4));
     $('#iCalc').innerHTML=`<span>Totale fattura <b>${eur(a+r+b)}</b>${r?` <small>(rivalsa ${eur(r)})</small>`:''}</span><span>Netto stimato <b>${eur(t.net)}</b></span>`;$('#iPdW').hidden=!$('#iPaid').checked};
   ['#iA','#iR','#iB','#iPaid','#iD'].forEach(s=>$(s).addEventListener('input',upd));upd();
   $('#iD').addEventListener('change',()=>{$('#iS').value=addDays($('#iD').value||today,30)});
@@ -4828,6 +4887,9 @@ function openJob(j,preset){
     <div class="jcalc" id="jCalc"></div>
     <div class="field"><label for="jS">Stato</label><select id="jS">${JST.map(([v,l])=>`<option value="${v}" ${v===(j.status||'prev')?'selected':''}>${l}</option>`).join('')}</select></div>
     <div class="field"><label for="jCod">Codice per la fattura <small>(ordine, CIG, commessa, tipo progetto…)</small></label><input id="jCod" value="${esc(j.invCode||'')}" placeholder="es. PO 4500123 / CIG ABC123" autocomplete="off"></div>
+    <label class="chk"><input type="checkbox" id="jNeed" ${(isNew?(j.needCode??!!S.clients[j.clientId]?.reqCode):j.needCode)?'checked':''}> Serve un codice (PO) per emettere la fattura <small>(finché manca, non va in «Da fatturare»)</small></label>
+    <label class="chk"><input type="checkbox" id="jCtr" ${(j.contractId||(isNew&&!j.contractId&&S.clients[j.clientId]?.reqContract))?'checked':''}> Sotto contratto</label>
+    <div id="jCtrW" hidden><div class="row"><div class="field"><label for="jCtrS">Contratto</label><select id="jCtrS"></select></div><div class="field"><label for="jBlk">Blocco di fatturazione</label><select id="jBlk"></select></div></div><p class="note" id="jCtrN"></p></div>
     <div class="row"><div class="field"><label for="jN">Fattura n°</label><input id="jN" value="${esc(j.invoiceNo||'')}" placeholder="es. 31"></div><div class="field"><label for="jID">Data fattura</label><input id="jID" type="date" value="${j.invoiceDate||''}"></div></div>
     <label class="chk"><input type="checkbox" id="jIR" ${j.invRivalsa?'checked':''}> Rivalsa INPS 4% in fattura</label>
     <label class="chk"><input type="checkbox" id="jIS" ${j.invoiceSent?'checked':''}> Fattura inviata</label>
@@ -4859,7 +4921,18 @@ function openJob(j,preset){
     $('#jCalc').innerHTML=a||k?`<span>Tasse stimate <b>${eur(t.tot)}</b> <small>(INPS ${eur(t.inps)} + imposta ${eur(t.irpef)})</small></span><span>Netto <b>${eur(t.net+k)}</b></span>`:'';
     const c=S.clients[C.value],miss=c&&a>0?billWarn(c):[],w=$('#jWarn');
     w.hidden=!miss.length;if(miss.length){w.innerHTML=`Per fatturare a ${esc(c.name)} mancano: ${esc(miss.join(', '))}. <button type="button" class="linkbtn" id="jFix">Completa i dati del cliente</button>`;$('#jFix').onclick=()=>openClient(c)}};
-  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');autoCol();upd()};
+  const ctrOn=()=>$('#jCtr').checked&&$('#jCtrS').value;
+  const ctrFill=()=>{const on=$('#jCtr').checked,w=$('#jCtrW'),cid=C.value&&C.value!=='__new'?C.value:null,cl=contractsOf(cid);w.hidden=!on;if(!on)return;
+    const cur=j.contractId&&S.contracts[j.contractId]?j.contractId:'';const keep=$('#jCtrS').value||cur;
+    $('#jCtrS').innerHTML=cl.map(c=>`<option value="${c.id}">${esc(c.title||c.code||'Contratto')}${c.code?' · '+esc(c.code):''}</option>`).join('');
+    if(keep&&cl.some(c=>c.id===keep))$('#jCtrS').value=keep;
+    const ct=S.contracts[$('#jCtrS').value];
+    $('#jBlk').innerHTML='<option value="">Automatico (dal mese)</option>'+((ct&&ct.blocks)||[]).map(b=>`<option value="${b.id}">${esc(b.label||'Blocco')}</option>`).join('');
+    if(ct&&j.blockId&&ct.id===j.contractId&&(ct.blocks||[]).some(b=>b.id===j.blockId))$('#jBlk').value=j.blockId;
+    $('#jCtrN').textContent=cl.length?(ct&&ct.code?'Codice contratto '+ct.code+' · ':'')+'Se non scegli il blocco, lo assegno dal mese del lavoro.':'Nessun contratto per questo cliente: crealo in Attività › Contratti.'};
+  $('#jCtr').onchange=ctrFill;$('#jCtrS').onchange=ctrFill;ctrFill();
+  let needTouched=!isNew||!!j.needCode;$('#jNeed').addEventListener('change',()=>{needTouched=true});
+  C.onchange=()=>{Cn.hidden=C.value!=='__new';if(!Cn.hidden)Cn.focus();fillProjects('');autoCol();if(isNew&&!needTouched){const cc=S.clients[C.value];$('#jNeed').checked=!!cc?.reqCode;if(cc?.reqContract&&!$('#jCtr').checked)$('#jCtr').checked=true}ctrFill();upd()};
   Cn.oninput=()=>fillProjects();
   P.onchange=()=>{Pn.hidden=P.value!=='__new';if(!Pn.hidden){Pn.focus();return}const p=S.projects[P.value];if(p&&!$('#jT').value.trim())$('#jT').value=p.name;upd()};
   Q.onchange=()=>{Qu.hidden=Q.value!=='__url';const q=S.quotes[Q.value];if(q){$('#jA').value=String(qTotals(q).imp).replace('.',',');$('#jR').value='';$('#jQt').value='';if(q.clientId&&S.clients[q.clientId]){C.value=q.clientId;Cn.hidden=true;fillProjects('')}if(!$('#jT').value.trim())$('#jT').value=q.title||'';const qn=$('#jQn');if(qn)qn.value=String(q.num)}upd()};
@@ -4879,7 +4952,8 @@ function openJob(j,preset){
     let pid=P.value||null;if(pid==='__new'){const n=Pn.value.trim();if(!n){Pn.focus();return}const c=S.clients[cid];const np={id:uid(),name:n,client:c?.name||'',clientId:cid,color:c?.color||freeColor(),priority:2,deadline:null,created:Date.now()};put('projects',np);pid=np.id}
     const mo=M.value||j.month,qv=Q.value,cs=toMin($('#jCs').value||'09:00'),ce=Math.max(toMin($('#jCe').value||'18:00'),cs+15);
     const nj={...j,month:mo,day:$('#jD').value.trim(),days:[...days].filter(k=>k.startsWith(mo)).sort(),cal:{on:$('#jCal').checked,start:cs,end:ce,color:jcol},clientId:cid,projectId:pid,title:$('#jT').value.trim(),quoteId:qv&&qv!=='__url'?qv:null,quoteUrl:qv==='__url'?Qu.value.trim():'',
-      amount:num($('#jA').value),rate:num($('#jR').value)||null,qty:num($('#jQt').value)||null,cash:num($('#jK').value),status:$('#jS').value,invCode:$('#jCod').value.trim(),invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
+      amount:num($('#jA').value),rate:num($('#jR').value)||null,qty:num($('#jQt').value)||null,cash:num($('#jK').value),status:$('#jS').value,invCode:$('#jCod').value.trim(),needCode:$('#jNeed').checked,contractId:ctrOn()?($('#jCtrS').value||null):null,blockId:ctrOn()?($('#jBlk').value||null):null,invoiceNo:fixInvNo($('#jN').value,mo),invoiceDate:$('#jID').value||null,invoiceSent:$('#jIS').checked,invRivalsa:$('#jIR').checked,notes:$('#jNo').value.trim()};
+    if(nj.contractId&&!nj.blockId){const bb=blockOfMonth(S.contracts[nj.contractId]||{blocks:[]},nj.month);if(bb)nj.blockId=bb.id}
     put('jobs',nj);syncJobBlocks(nj);{const lq=nj.quoteId&&S.quotes[nj.quoteId];if(lq&&lq.status!=='accettato'&&lq.status!=='rifiutato')put('quotes',{...lq,status:'accettato'})}
     const [yy,mm]=mo.split('-').map(Number);if(yy&&mm){FIN.year=yy;FIN.month=mm-1}
     dlg.close();renderFin();
@@ -5046,6 +5120,8 @@ $('#fin').addEventListener('click',e=>{
   const fm=t.closest('[data-fm]');if(fm){FIN.month=+fm.dataset.fm;renderFin();return}
   const fi=t.closest('[data-fi]');if(fi&&S.jobs[fi.dataset.fi]){openInvoice(S.jobs[fi.dataset.fi]);return}
   const cl=t.closest('[data-cl]');if(cl){openClient(cl.dataset.cl==='new'?null:S.clients[cl.dataset.cl],false);return}
+  const ctj=t.closest('[data-ctj]');if(ctj){const [cid,bid]=ctj.dataset.ctj.split('|'),ct=S.contracts[cid];if(ct){const b=(ct.blocks||[]).find(x=>x.id===bid);openJob(null,{clientId:ct.clientId,contractId:cid,blockId:bid||null,needCode:!!S.clients[ct.clientId]?.reqCode,...(b&&b.m1?{month:b.m1}:{})})}return}
+  const ct=t.closest('[data-ct]');if(ct){openContract(ct.dataset.ct==='new'?null:S.contracts[ct.dataset.ct]);return}
   const sb=t.closest('[data-sb]');if(sb){openSub(sb.dataset.sb==='new'?null:S.biz[sb.dataset.sb]);return}
   const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;const qq=S.quotes[FIN.q];FIN.qv=!!qq&&qStat(qq)!=='bozza';renderFin(true);return}
   const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
