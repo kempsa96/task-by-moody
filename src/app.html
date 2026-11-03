@@ -1377,13 +1377,13 @@ function freeIntervals(k,fromMin,extra){
 let PLAN={segs:[],info:{},pending:[]};
 const msOf=(k,m)=>parse(k).getTime()+m*60000;
 const manual=()=>S.settings.planMode!=='auto';
-function pinLen(t){return Math.max(15,(t.pin&&t.pin.len)||t.minutes||60)}
+function pinLen(t){return Math.max(15,t.minutes||(t.pin&&t.pin.len)||60)}
 const withMin=(b,m)=>(b.pin&&m!==b.minutes)?{...b,minutes:m,pin:{...b.pin,len:m}}:{...b,minutes:m};
 function placeTask(id,date,start,len){
   const t=taskById(id);if(!t)return;len=Math.max(15,len||t.minutes||60);
   if(msOf(date,start+len)<=Date.now()+60000){logPast(id,date,start,start+len);return}
   const base=t.solo?S.projects[id]:S.tasks[id],coll=t.solo?'projects':'tasks';
-  put(coll,{...base,pin:{d:date,s:start,len}});
+  put(coll,{...base,minutes:len,pin:{d:date,s:start,len}});
 }
 function manualPlan(fromMs){
   const d0=new Date(fromMs),k0=key(d0),m0=d0.getHours()*60+d0.getMinutes(),now=Date.now(),segs=[],info={},pending=[];
@@ -1516,7 +1516,7 @@ function previewReflow(date,id,ns,len){
 function placeWithReflow(id,date,ns,len){
   const sh=reflowPlan(date,id,ns,len);
   placeTask(id,date,ns,len);
-  sh.forEach(x=>{const t=taskById(x.id);if(!t)return;const base=t.solo?S.projects[x.id]:S.tasks[x.id];put(t.solo?'projects':'tasks',{...base,pin:{d:date,s:x.s,len:x.len}})});
+  sh.forEach(x=>{const t=taskById(x.id);if(!t)return;const base=t.solo?S.projects[x.id]:S.tasks[x.id];put(t.solo?'projects':'tasks',{...base,minutes:x.len,pin:{d:date,s:x.s,len:x.len}})});
   return sh.length;
 }
 function dropTask(m){
@@ -1632,7 +1632,7 @@ function resolveTask(id,action){
     if(action==='done'){put(coll,{...base,done:true,doneAt:Date.now()});return}
     if(action==='later'){put(coll,{...base,pin:null});return}
     if(action==='reset'){const p=base.pin;const log=(base.log||[]).filter(L=>!(p&&L.d===p.d&&L.s>=p.s-1&&L.e<=p.s+pinLen(t)+1));put(coll,{...base,pin:null,log});return}
-    const x=+action;if(x){const today=key(new Date()),st=Math.ceil(nowMin()/15)*15;put(coll,{...base,pin:{d:today,s:Math.min(st,1440-x),len:x}})}
+    const x=+action;if(x){const today=key(new Date()),st=Math.ceil(nowMin()/15)*15;put(coll,{...base,minutes:x,pin:{d:today,s:Math.min(st,1440-x),len:x}})}
     return;
   }
   if(action==='done')put(coll,{...base,done:true,doneAt:Date.now()});
@@ -2066,7 +2066,7 @@ cal.addEventListener('pointerup',e=>{
     if(r.delta){
       if(r.isBlk){const b=S.blocks[r.id],ob=blocksOn(r.occ).find(x=>x.id===r.id);if(b&&ob)moveBlock(b,r.occ,r.occ,ob.start,Math.max(ob.start+15,Math.min(1440,ob.end+r.delta)))}
       else if(r.li!=null){resizeLog(r.id,r.li,r.delta)}
-      else if(manual()){const t=taskById(r.id);if(t&&t.pin){const base=t.solo?S.projects[r.id]:S.tasks[r.id];put(t.solo?'projects':'tasks',{...base,pin:{...t.pin,len:Math.max(15,pinLen(t)+r.delta)}})}}
+      else if(manual()){const t=taskById(r.id);if(t&&t.pin){const base=t.solo?S.projects[r.id]:S.tasks[r.id];{const nl=Math.max(15,pinLen(t)+r.delta);put(t.solo?'projects':'tasks',{...base,minutes:nl,pin:{...t.pin,len:nl}})}}}
       else{const t=taskById(r.id);if(t){const nm=Math.max(15,(t.minutes||15)+r.delta);if(t.solo)put('projects',{...S.projects[r.id],minutes:nm});else put('tasks',{...S.tasks[r.id],minutes:nm})}}
     }else render();
     return}
