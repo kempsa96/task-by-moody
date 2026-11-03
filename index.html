@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="tbm-build" content="202611032011">
+<meta name="tbm-build" content="202611032021">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611032011"></script>
-<script src="tbm-cloud.js?v=202611032011"></script>
+<script src="supabase.js?v=202611032021"></script>
+<script src="tbm-cloud.js?v=202611032021"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -4821,12 +4821,14 @@ function openSub(x){
     put('biz',{...x,name:n,amount:num($('#sbA').value),cycle:$('#sbC').value,sign:$('#sbS').value,day:$('#sbD').value.trim(),notes:$('#sbT').value.trim()});dlg.close();renderFin(true)};
   show(true);
 }
+const jobWhen=j=>{const m=MESI3[+j.month.slice(5)-1]+' '+j.month.slice(0,4),d=(j.days&&j.days.length)?daysLabel(new Set(j.days)):(j.day||'');return d?`${d} ${m}`:`${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}`};
+const quoteLink=j=>{const q=j.quoteId&&S.quotes[j.quoteId];if(q)return ` · <span class="qlnk" role="link" tabindex="0" data-qlink="${q.id}" style="color:var(--accent);text-decoration:underline;cursor:pointer">📄 ${esc(qCode(q))}</span>`;if(j.quoteUrl)return ` · <span class="qlnk" role="link" tabindex="0" data-qurl="${esc(j.quoteUrl)}" style="color:var(--accent);text-decoration:underline;cursor:pointer">📄 preventivo ↗</span>`;return ''};
 function finInvoices(y){
   const g=invGroups(y),today=key(new Date()),sum=l=>l.reduce((a,j)=>a+invTot(j),0);
   const row=(j,kind)=>{const c=S.clients[j.clientId],late=kind==='collect'&&j.invoiceDue&&j.invoiceDue<today,miss=kind==='issue'&&c?billWarn(c):[];
-    const sub=kind==='issue'||kind==='code'||kind==='date'?`${MESI[+j.month.slice(5)-1]} ${j.month.slice(0,4)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}${kind==='code'?' · <b>serve il codice</b>':''}${kind==='date'?` · fatturabile dal <b>${fmtD(jobWaitDate(j),'it')}</b>`:''}${kind==='issue'&&miss.length?' · <span class="fwarn">dati fattura</span>':''}`
-      :kind==='collect'?`N° ${esc(j.invoiceNo)} · emessa ${j.invoiceDate?fmtD(j.invoiceDate,'it'):'—'}${j.invoiceDue?` · scade ${fmtD(j.invoiceDue,'it')}`:''}${j.invoiceSent?'':' · <b>non ancora inviata</b>'}`
-      :`N° ${esc(j.invoiceNo||'—')} · incassata ${j.paidAt?fmtD(j.paidAt,'it'):''}`;
+    const sub=kind==='issue'||kind==='code'||kind==='date'?`${jobWhen(j)}${quoteLink(j)}${ctxLabel(j)?' · '+esc(ctxLabel(j)):''}${kind==='code'?' · <b>serve il codice</b>':''}${kind==='date'?` · fatturabile dal <b>${fmtD(jobWaitDate(j),'it')}</b>`:''}${kind==='issue'&&miss.length?' · <span class="fwarn">dati fattura</span>':''}`
+      :kind==='collect'?`N° ${esc(j.invoiceNo)} · ${jobWhen(j)}${quoteLink(j)} · emessa ${j.invoiceDate?fmtD(j.invoiceDate,'it'):'—'}${j.invoiceDue?` · scade ${fmtD(j.invoiceDue,'it')}`:''}${j.invoiceSent?'':' · <b>non ancora inviata</b>'}`
+      :`N° ${esc(j.invoiceNo||'—')} · ${jobWhen(j)}${quoteLink(j)} · incassata ${j.paidAt?fmtD(j.paidAt,'it'):''}`;
     return `<button type="button" class="qrow inv${late?' late':''}" data-fi="${j.id}" style="--rc:${kind==='paid'?'#22A55B':late?'#E5484D':kind==='collect'?'#EF7D1A':kind==='code'||kind==='date'?'#9AA0A6':'#2F7DE1'}"><span class="qmain"><b>${esc(c?.name||'Senza cliente')} · ${esc(j.title||S.projects[j.projectId]?.name||'Lavoro')}</b><small>${sub}${late?' · <b style="color:#E5484D">scaduta</b>':''}</small></span><span class="qtot">${eur(invTot(j))}</span><span class="qst">${kind==='issue'?'Emetti':kind==='code'?'Codice?':kind==='date'?'In attesa':kind==='collect'?'Incassata?':'✓'}</span></button>`};
   const sec=(t,l,kind,empty)=>`<div class="fcard"><div class="fm-h"><h3>${t}</h3><b>${eur(sum(l))}</b></div>${l.length?`<div class="qlist">${l.map(j=>row(j,kind)).join('')}</div>`:`<p class="note">${empty}</p>`}</div>`;
   return `<div class="kpis big6 k3">${kpi('Da fatturare',sum(g.toIssue))}${kpi('Ti devono',sum(g.toCollect),'neg')}${kpi('Incassato nel '+y,sum(g.paid),'big')}</div>
@@ -5134,6 +5136,8 @@ function openBiz(){
 /* ---------- eventi della vista Conti ---------- */
 $('#fin').addEventListener('click',e=>{
   const t=e.target;
+  const ql=t.closest('[data-qlink]');if(ql&&S.quotes[ql.dataset.qlink]){FIN.view='prev';FIN.q=ql.dataset.qlink;FIN.qv=true;renderFin(true);return}
+  const qu=t.closest('[data-qurl]');if(qu){window.open(qu.dataset.qurl,'_blank','noopener');return}
   const fv=t.closest('[data-fv]');if(fv){FIN.view=fv.dataset.fv;renderFin();return}
   const fy=t.closest('[data-fy]');if(fy){FIN.year+= +fy.dataset.fy;renderFin();return}
   const fm=t.closest('[data-fm]');if(fm){FIN.month=+fm.dataset.fm;renderFin();return}
