@@ -966,6 +966,7 @@ button.fchip.finv{color:var(--fg)}button.fchip.finv.sent{color:#1E9E5A}.qst{font
 .daycol.wk0,.cal-head>.dayh.wk0{border-left:2px solid color-mix(in srgb,var(--fg) 26%,transparent)}
 .wkn{font-size:9.5px;font-weight:700;letter-spacing:.04em;color:var(--accent);text-transform:none;margin-left:2px}
 .cal-scroll.free{scroll-snap-type:x proximity;scroll-padding-left:var(--gw,56px)}
+.cal-scroll.pinch{scroll-snap-type:none!important}
 .cal-scroll.free .daycol{scroll-snap-align:start}
 .cal-scroll.free .wk-arrow{display:none}
 .cal-scroll.free .cal-head .dayh:last-of-type{padding-right:10px}
@@ -1672,7 +1673,7 @@ function stepWork(k,dir){let n=k;for(let i=0;i<14;i++){n=addDays(n,dir);if(isWor
 function weekStart(k){const d=parse(k).getDay();return addDays(k,-((d+6)%7))}
 const isPhone=()=>matchMedia('(max-width:820px)').matches;
 let calMode=(()=>{try{return localStorage.getItem('tbm-mode')==='free'?'free':'week'}catch(e){return 'week'}})();
-let zoomN=(()=>{try{const v=+localStorage.getItem('tbm-zoom');return v>=3&&v<=7?v:3}catch(e){return 3}})();
+let zoomN=(()=>{try{const v=+localStorage.getItem('tbm-zoom');return v>=1&&v<=7?v:3}catch(e){return 3}})();
 const isFree=()=>calMode==='free'||isPhone();
 let freeFrom=null,freeN=42,revealed=null,lastDW=0,freeT=null;
 const viewN=()=>7;
@@ -2329,7 +2330,7 @@ document.addEventListener('input',e=>{
 $('#openSettings').onclick=()=>openSettings();
 $('#range').style.cursor='pointer';$('#range').title='Apri la vista mensile';$('#range').setAttribute('role','button');$('#range').tabIndex=0;
 $('#range').onclick=()=>openMonthView();$('#range').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMonthView()}};
-function setZoom(n){n=Math.max(3,Math.min(7,n));if(n===zoomN)return;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(e){}render();toast(`${n} giorni`)}
+function setZoom(n){n=Math.max(1,Math.min(7,n));if(n===zoomN)return;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(e){}render();toast(`${n} giorni`)}
 let pinching=false;
 (()=>{const sc=$('#calScroll');if(!sc)return;sc.style.touchAction='pan-x pan-y';let pz=null;
   const dist=e=>Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY),midX=e=>(e.touches[0].clientX+e.touches[1].clientX)/2;
@@ -2337,22 +2338,22 @@ let pinching=false;
   const apply=(w,tr)=>{const c=`${gutW()}px repeat(${freeN}, ${w}px)`;grids().forEach(g=>{g.style.transition=tr||'none';g.style.gridTemplateColumns=c})};
   const sep=e=>[Math.abs(e.touches[0].clientX-e.touches[1].clientX),Math.abs(e.touches[0].clientY-e.touches[1].clientY)],midY=e=>(e.touches[0].clientY+e.touches[1].clientY)/2;
   const inSc=e=>{const r=sc.getBoundingClientRect(),x=midX(e),y=midY(e);return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom};
-  document.addEventListener('touchstart',e=>{if(e.touches.length===2&&isPhone()&&isFree()&&inSc(e)){const w0=dayW(),r=sc.getBoundingClientRect(),mx=midX(e)-r.left-gutW(),[sx,sy]=sep(e),hd=document.querySelector('#calInner .cal-head'),hh=hd?hd.offsetHeight:0,my=midY(e)-r.top;pz={d0:dist(e),w0,w:w0,mx,idx:(sc.scrollLeft+mx)/w0,raf:0,mode:null,sx,sy,p0:PPM,ppm:PPM,my,hh,min:(sc.scrollTop+my-hh)/PPM};pinching=true}},{passive:true});
+  document.addEventListener('touchstart',e=>{if(e.touches.length===2&&isPhone()&&isFree()&&inSc(e)){const w0=dayW(),r=sc.getBoundingClientRect(),mx=midX(e)-r.left-gutW(),[sx,sy]=sep(e),hd=document.querySelector('#calInner .cal-head'),hh=hd?hd.offsetHeight:0,my=midY(e)-r.top;sc.classList.add('pinch');pz={d0:dist(e),w0,w:w0,mx,idx:(sc.scrollLeft+mx)/w0,raf:0,mode:null,sx,sy,p0:PPM,ppm:PPM,my,hh,min:(sc.scrollTop+my-hh)/PPM};pinching=true}},{passive:true});
   const mv=e=>{if(!pz||e.touches.length!==2)return;e.preventDefault();
     if(!pz.mode){const [sx,sy]=sep(e);if(Math.max(Math.abs(sx-pz.sx),Math.abs(sy-pz.sy))<10)return;pz.mode=Math.abs(sy-pz.sy)>Math.abs(sx-pz.sx)?'v':'h'}
     const ratio=dist(e)/pz.d0;
     if(pz.mode==='v'){pz.ppm=Math.max(.55,Math.min(3,pz.p0*ratio));
       if(!pz.raf)pz.raf=requestAnimationFrame(()=>{if(!pz)return;pz.raf=0;PPM=pz.ppm;renderCal();sc.scrollTop=Math.max(0,pz.min*PPM+pz.hh-pz.my)});return}
-    const avail=sc.clientWidth-gutW(),w=Math.max(avail/7*.55,Math.min(avail/3*1.12,pz.w0*ratio));pz.w=w;
+    const avail=sc.clientWidth-gutW(),w=Math.max(avail/7*.55,Math.min(avail*1.1,pz.w0*ratio));pz.w=w;
     apply(w);sc.scrollLeft=Math.max(0,pz.idx*w-pz.mx)};
   const tween=(z,from,to,f0,f1,done)=>{const t0=performance.now(),D=190;const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3),w=from+(to-from)*e,f=f0+(f1-f0)*e;apply(w);sc.scrollLeft=Math.max(0,f*w);if(k<1)requestAnimationFrame(step);else done(f1)};requestAnimationFrame(step)};
   const end=e=>{if(!pz||e.touches.length>=2)return;const z=pz;pz=null;cancelAnimationFrame(z.raf);
-    if(z.mode!=='h'){if(z.mode==='v'){PPM=z.ppm;try{localStorage.setItem('tbm-ppm',String(PPM))}catch(x){}renderCal()}pinching=false;return}
+    if(z.mode!=='h'){sc.classList.remove('pinch');if(z.mode==='v'){PPM=z.ppm;try{localStorage.setItem('tbm-ppm',String(PPM))}catch(x){}renderCal()}pinching=false;return}
     const avail=sc.clientWidth-gutW(),w=z.w;
-    if(w<avail/7*.8){apply(z.w0);sc.scrollLeft=Math.max(0,z.idx*z.w0-z.mx);setTimeout(()=>{pinching=false},60);openMonthView();return}
-    const n=Math.max(3,Math.min(7,Math.round(avail/w))),tw=Math.max(38,Math.floor(avail/n));
+    if(w<avail/7*.8){apply(z.w0);sc.scrollLeft=Math.max(0,z.idx*z.w0-z.mx);setTimeout(()=>{pinching=false;sc.classList.remove('pinch')},60);openMonthView();return}
+    const n=Math.max(1,Math.min(7,Math.round(avail/w))),tw=Math.max(38,Math.floor(avail/n));
     const f0=Math.max(0,z.idx*w-z.mx)/w,f1=Math.max(0,Math.round(Math.max(0,z.idx*tw-z.mx)/tw));
-    tween(z,w,tw,f0,f1,i=>{if(freeFrom)viewStart=addDays(freeFrom,i);revealed=null;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(x){}pinching=false;render()})};
+    tween(z,w,tw,f0,f1,i=>{if(freeFrom)viewStart=addDays(freeFrom,i);revealed=null;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(x){}pinching=false;sc.classList.remove('pinch');render()})};
   document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',end,{passive:true});document.addEventListener('touchcancel',end,{passive:true});
   document.addEventListener('touchstart',e=>{if(e.touches.length!==2||!inSc(e))return;for(const t of e.touches){const tg=t.target;if(tg&&!tg._pzl){tg._pzl=1;tg.addEventListener('touchmove',mv,{passive:false});tg.addEventListener('touchend',end,{passive:true});tg.addEventListener('touchcancel',end,{passive:true})}}},{passive:true});
   sc.addEventListener('gesturestart',e=>e.preventDefault())})();
