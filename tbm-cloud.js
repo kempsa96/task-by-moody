@@ -112,6 +112,11 @@
   function resync() { if (!uid) return; flushOutbox().then(loadAll).catch(function () { setNet(false); }); }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { resync(); if (!channel || channel.state !== 'joined') subscribe(); } });
   window.addEventListener('online', resync);
+  // sul telefono l'app resta sospesa: ricarica anche al ritorno in primo piano e ogni 45 s mentre è aperta
+  function wake() { if (document.visibilityState !== 'hidden') { resync(); if (!channel || channel.state !== 'joined') subscribe(); } }
+  window.addEventListener('pageshow', wake);
+  window.addEventListener('focus', wake);
+  setInterval(function () { if (document.visibilityState === 'visible') wake(); }, 45000);
   setInterval(function () { if (Object.keys(outbox).length) flushOutbox(); }, 30000);
 
   /* ---------- interfaccia "db" che l'app usa ---------- */
