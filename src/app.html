@@ -737,6 +737,21 @@ dialog::backdrop{background:rgb(0 0 0 / .28);backdrop-filter:blur(4px)}
   #dayBtn{order:7;padding:6px 10px;font-size:13px}
   .brand b{font-size:19px}
 }
+/* ---------- Vista mensile ---------- */
+.mv-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:0 38px 10px 0}.mv-h h3{margin:0;font-size:18px}
+.mv-g{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.mv-w{font-size:11px;font-weight:700;color:var(--muted);text-align:center;padding:2px 0}
+.mv-d{border:0;background:var(--surface-2);border-radius:10px;min-height:76px;padding:4px;text-align:left;cursor:pointer;color:var(--fg);font:inherit;display:flex;flex-direction:column;gap:2px;overflow:hidden}
+.mv-d>b{font-size:12px}.mv-d.out{opacity:.45}.mv-d.off{background:var(--offhours,var(--surface-2))}
+.mv-d.today{box-shadow:0 0 0 2px var(--accent) inset}.mv-d.today>b{color:var(--accent)}
+.mv-e{display:block;font-size:10px;line-height:1.25;padding:1px 4px;border-radius:4px;background:color-mix(in srgb,var(--c) 22%,transparent);border-left:2px solid var(--c);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mv-d small{font-size:10px;color:var(--muted)}
+@media (max-width:560px){.mv-d{min-height:58px;padding:3px}.mv-e{font-size:9px;padding:0 2px}}
+/* ---------- Abbonamenti ---------- */
+.sb-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:8px 0 12px}
+.sb-row{display:flex;align-items:center;gap:10px;width:100%;border:0;background:var(--surface-2);border-radius:12px;padding:10px 12px;margin-bottom:6px;cursor:pointer;color:var(--fg);font:inherit;text-align:left}
+.sb-row .qmain{flex:1;min-width:0}.sb-row small{display:block;color:var(--muted);font-size:12px}
+.sb-row b.in{color:#22A55B}
 /* ---------- Conti ---------- */
 .fin{display:none;min-height:0;overflow:auto;-webkit-overflow-scrolling:touch;padding:2px 2px 24px}
 .app>.top{grid-row:1}.app>.tabs{grid-row:2}.app>.main,.app>.fin{grid-row:3}.app>.player{grid-row:4}
@@ -1003,7 +1018,7 @@ dialog{overflow:auto}
   <header class="top">
     <div class="t-l">
     <button type="button" class="brand" id="brandHome" title="Torna al calendario di oggi"><b>Tasky</b><span>by Moody</span></button>
-    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listCli">Clienti</button><button class="btn ghost" id="listFin">Conti</button></nav>
+    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listCal">Calendario</button><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listCli">Clienti</button><button class="btn ghost" id="listFin">Attività</button></nav>
     <div class="status" id="status"><i></i><span>Caricamento…</span></div>
     </div>
     <div class="t-c">
@@ -1029,7 +1044,7 @@ dialog{overflow:auto}
   <div class="tabs" role="tablist">
     <button role="tab" id="tabCal" aria-selected="true">Calendario</button>
     <button role="tab" id="tabProj" aria-selected="false">Task</button>
-    <button role="tab" id="tabFin" aria-selected="false">Conti</button>
+    <button role="tab" id="tabFin" aria-selected="false">Attività</button>
   </div>
   <main class="main" id="main" data-tab="cal">
     <section class="panel side">
@@ -1048,7 +1063,7 @@ dialog{overflow:auto}
       <div class="mini" id="mini"></div>
     </section>
   </main>
-  <section class="fin" id="fin" aria-label="Conti"></section>
+  <section class="fin" id="fin" aria-label="Attività"></section>
   <footer class="player" id="player" aria-live="polite"></footer>
 </div>
 <button class="fab" id="fab" aria-expanded="false" aria-controls="chat">
@@ -2132,6 +2147,7 @@ $('#addBtn').onclick=e=>{
   showCtx(r.right-200,r.bottom+6,newMenuItems());
 };
 $('#listImp').onclick=()=>openBlockList();
+$('#listCal').onclick=()=>setTab('cal');
 $('#brandHome').onclick=()=>{closeQA&&closeQA();if(dlg.open)dlg.close();closeFin();setTab('cal');$('#today').click()};
 $('#undoBtn').onclick=doUndo;$('#redoBtn').onclick=doRedo;
 $('#calInner').addEventListener('click',e=>{const b=e.target.closest('[data-wk]');if(!b)return;e.stopPropagation();shiftDays(+b.dataset.wk>0?1:-1)});
@@ -2305,6 +2321,32 @@ document.addEventListener('input',e=>{
   const t=TEMPLATES.find(([n])=>N(n)===N(e.target.value.trim()));if(t){const sel=$('#nd-'+pid);if(sel)sel.innerHTML=durOptions(t[1])}
 });
 $('#openSettings').onclick=()=>openSettings();
+$('#range').style.cursor='pointer';$('#range').title='Apri la vista mensile';$('#range').setAttribute('role','button');$('#range').tabIndex=0;
+$('#range').onclick=()=>openMonthView();$('#range').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openMonthView()}};
+function openMonthView(ym){
+  const vs=visibleDays();ym=ym||(isFree()?viewStart:vs[0]).slice(0,7);
+  const [y,m]=ym.split('-').map(Number),first=new Date(y,m-1,1),today=key(new Date()),st=weekStart(key(first));
+  const label=first.toLocaleDateString('it-IT',{month:'long',year:'numeric'});
+  let cells='';
+  for(let i=0;i<42;i++){
+    const k=addDays(st,i),d=parse(k);if(i>=35&&d.getMonth()!==m-1)break;
+    const evs=blocksOn(k,true).filter(b=>!isPause(b)).sort((a,b)=>(b.allDay?1:0)-(a.allDay?1:0)||(a.start||0)-(b.start||0));
+    const shown=evs.slice(0,3);
+    cells+=`<button type="button" class="mv-d${d.getMonth()!==m-1?' out':''}${!dayIsOn(k)?' off':''}${k===today?' today':''}" data-mvg="${k}"><b>${d.getDate()}</b>${shown.map(b=>`<span class="mv-e" style="--c:${b.color||'var(--accent)'}">${esc(b.title||'Evento')}</span>`).join('')}${evs.length>3?`<small>+${evs.length-3}</small>`:''}</button>`;
+  }
+  form.innerHTML=`<div class="mv-h"><button type="button" class="wk-arrow" data-mvn="-1" aria-label="Mese precedente">‹</button><h3>${esc(label.charAt(0).toUpperCase()+label.slice(1))}</h3><button type="button" class="wk-arrow" data-mvn="1" aria-label="Mese successivo">›</button></div>
+    <div class="mv-g">${['Lun','Mar','Mer','Gio','Ven','Sab','Dom'].map(x=>`<span class="mv-w">${x}</span>`).join('')}${cells}</div>
+    <div class="acts"><button type="button" class="btn ghost" id="mvToday">Oggi</button><button type="button" class="btn primary" id="cancel">Chiudi</button></div>`;
+  $('#cancel').onclick=()=>dlg.close();
+  $('#mvToday').onclick=()=>{viewStart=key(new Date());miniMonth=null;dlg.close();render();scrollToWork();scrollToToday()};
+  form.onsubmit=e=>e.preventDefault();
+  const mvgo=e=>{
+    const n=e.target.closest('[data-mvn]');if(n){const dd=new Date(y,m-1+ +n.dataset.mvn,1);openMonthView(`${dd.getFullYear()}-${String(dd.getMonth()+1).padStart(2,'0')}`);return}
+    const g=e.target.closest('[data-mvg]');if(g){viewStart=g.dataset.mvg;miniMonth=null;dlg.close();render();if(!isFree())scrollToWork()}
+  };
+  form.querySelector('.mv-h').onclick=mvgo;form.querySelector('.mv-g').onclick=mvgo;
+  show(true);
+}
 $('#today').onclick=()=>{viewStart=key(new Date());miniMonth=null;render();scrollToWork();scrollToToday()};
 $('#prev').onclick=()=>shiftDays(-1);
 $('#next').onclick=()=>shiftDays(1);
@@ -2336,7 +2378,7 @@ function openBlockView(b,occ){
     b.place&&b.place.label?`<li><span>📍</span><div><b>${esc(b.place.label)}</b><small>${maps?`<a href="${maps}" target="_blank" rel="noopener">Apri in Maps</a>`:'luogo'}</small></div></li>`:'',
     !b.allDay&&(bx||by||tr)?`<li><span>${tm?tm[1]:'🚗'}</span><div><b>${bx?`Parti alle ${hm(cur.start-bx)}`:'Nessun viaggio prima'}${by?` · rientro ${dur(by)}`:''}</b><small>${tr&&tr.minutes?`${esc(tm[2])} · ${dur(tr.minutes)}${tr.lines&&tr.lines.length?' · linee '+esc(tr.lines.join(' → ')):''}`:'viaggio e preparazione'}</small></div></li>`:'',
     pr?`<li><span>📁</span><div><b>${esc(pr.name)}</b><small>progetto</small></div></li>`:'',
-    job?`<li><span>💼</span><div><b>${esc(job.title||'Lavoro')}</b><small>lavoro nei Conti</small></div></li>`:'',
+    job?`<li><span>💼</span><div><b>${esc(job.title||'Lavoro')}</b><small>lavoro nelle Attività</small></div></li>`:'',
     b.notes?`<li class="tv-notes"><span>📝</span><div><div class="tv-n">${link(b.notes)}</div><small>descrizione</small></div></li>`:''
   ].filter(Boolean).join('');
   form.innerHTML=`<div class="tv">
@@ -2388,7 +2430,7 @@ function openProject(p){
     ${!p.clientId&&p.client?`<p class="note">Cliente scritto a mano: ${esc(p.client)}. Sceglilo dalla lista per collegarlo.</p>`:''}
     <div class="field"><span class="lbl">Priorità</span><div class="seg3" id="pPrio">${[1,2,3].map(v=>`<button type="button" data-v="${v}" aria-pressed="${p.priority===v}">${PRIO[v]}</button>`).join('')}</div></div>
     <div class="field"><span class="lbl">Colore</span>${swatches(p.color)}<span class="note">Prende il colore del cliente, ma puoi cambiarlo.</span></div>
-    ${(()=>{const js=Object.values(S.jobs).filter(j=>j.projectId===p.id);return `<div class="field"><label for="pJob">Lavoro nei Conti</label><select id="pJob"><option value="">Nessuno</option>${js.map(j=>`<option value="${j.id}" selected>${esc(ymLabel(j.month))} · ${esc(j.title||p.name)} · ${eur((+j.amount||0)+(+j.cash||0))}</option>`).join('')}${Object.values(S.jobs).filter(j=>!j.projectId&&(!p.clientId||j.clientId===p.clientId)).sort((a,b)=>b.month.localeCompare(a.month)).slice(0,20).map(j=>`<option value="${j.id}">${esc(ymLabel(j.month))} · ${esc(S.clients[j.clientId]?.name||'')} · ${esc(j.title||'')}</option>`).join('')}<option value="__new">+ Crea il lavoro per questo progetto</option></select><span class="note">Collega il progetto alla riga dei Conti: tempo speso e guadagno finiscono nel report.</span></div>`})()}
+    ${(()=>{const js=Object.values(S.jobs).filter(j=>j.projectId===p.id);return `<div class="field"><label for="pJob">Lavoro nelle Attività</label><select id="pJob"><option value="">Nessuno</option>${js.map(j=>`<option value="${j.id}" selected>${esc(ymLabel(j.month))} · ${esc(j.title||p.name)} · ${eur((+j.amount||0)+(+j.cash||0))}</option>`).join('')}${Object.values(S.jobs).filter(j=>!j.projectId&&(!p.clientId||j.clientId===p.clientId)).sort((a,b)=>b.month.localeCompare(a.month)).slice(0,20).map(j=>`<option value="${j.id}">${esc(ymLabel(j.month))} · ${esc(S.clients[j.clientId]?.name||'')} · ${esc(j.title||'')}</option>`).join('')}<option value="__new">+ Crea il lavoro per questo progetto</option></select><span class="note">Collega il progetto alla riga delle Attività: tempo speso e guadagno finiscono nel report.</span></div>`})()}
     <div class="acts">${isNew?'':`<button type="button" class="btn danger left" id="pDel">Elimina</button><button type="button" class="btn" id="pArch">${p.archived?'Ripristina':'Archivia'}</button>`}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Crea progetto':'Salva'}</button></div>`;
   const getC=wireSwatches();let prio=p.priority;
   if(!isNew)$('#pArch').onclick=()=>{archiveProject(p,!p.archived);dlg.close()};
@@ -2403,7 +2445,7 @@ function openProject(p){
     if(clientId)client=S.clients[clientId].name;
     {const jv=$('#pJob').value,cur=Object.values(S.jobs).filter(j=>j.projectId===p.id);
       cur.forEach(j=>{if(j.id!==jv)put('jobs',{...j,projectId:null})});
-      if(jv==='__new'){const now=new Date();put('jobs',{id:uid(),month:ymOf(now.getFullYear(),now.getMonth()),day:'',clientId,projectId:p.id,title:name,amount:0,cash:0,status:'corso',invRivalsa:true,created:Date.now()});toast('Lavoro creato nei Conti: aggiungi l’importo quando lo sai')}
+      if(jv==='__new'){const now=new Date();put('jobs',{id:uid(),month:ymOf(now.getFullYear(),now.getMonth()),day:'',clientId,projectId:p.id,title:name,amount:0,cash:0,status:'corso',invRivalsa:true,created:Date.now()});toast('Lavoro creato nelle Attività: aggiungi l’importo quando lo sai')}
       else if(jv&&S.jobs[jv]&&S.jobs[jv].projectId!==p.id)put('jobs',{...S.jobs[jv],projectId:p.id,clientId:S.jobs[jv].clientId||clientId})}
     const prioChanged=!isNew&&prio!==p.priority;put('projects',{...p,name,clientId,client,deadline:$('#pDl').value||null,priority:prio,rank:prio===p.priority?(p.rank??null):null,color:getC()});if(prioChanged)setProjectPriority({...S.projects[p.id]},prio);dlg.close();
     if(isNew){tagFilter=p.id;setTab('proj');renderProjects();setTimeout(()=>{const i=$('#nt-'+p.id);if(i)i.focus()},50)}};
@@ -3457,7 +3499,7 @@ const HELP=`Scrivimi cosa fare, per esempio:
 • priorità alta a spot prodotto
 • fatto montaggio spot
 • cancella dentista
-Conti:
+Attività (ex Conti):
 • aggiungi un lavoro a ottobre per NABA, laboratorio Media Lab, 1000 euro (se manca qualcosa te lo chiedo)
 • quanto mi devono? · cosa devo fatturare?
 • quanto ho fatturato a ottobre? · quanto ho guadagnato quest'anno?
@@ -3776,7 +3818,7 @@ function wizAsk(){
     let cid=data.clientId;if(!cid&&data.clientNew)cid=findOrCreateClient(data.clientNew).id;
     const j={id:uid(),month:data.month,day:data.day||'',clientId:cid,projectId:data.projectId||null,title:data.title||'',amount:+data.amount||0,cash:+data.cash||0,status:data.status,invRivalsa:true,created:Date.now(),...(data.status==='pagato'?{paidAt:key(new Date())}:{})};
     put('jobs',j);FIN.year=+data.month.slice(0,4);FIN.month=+data.month.slice(5)-1;WIZ=null;
-    return `Fatto! L’ho aggiunto ai lavori di ${ymLabel(data.month)}. Lo trovi in Conti › Mesi.`}},acts:[['Modifica nella scheda','__jobform']],draft:data};
+    return `Fatto! L’ho aggiunto ai lavori di ${ymLabel(data.month)}. Lo trovi in Attività › Mesi.`}},acts:[['Modifica nella scheda','__jobform']],draft:data};
 }
 function wizStart(raw,n){
   const d={},cut=[];
@@ -3830,10 +3872,10 @@ function finCommand(raw,n){
   // quanto ho fatturato / guadagnato
   if(/\bquanto\b.*\b(fatturat\w*|guadagnat\w*|incassat\w*|netto|entrat\w*)\b|\b(riepilogo|resoconto|bilancio)\b.*\b(mese|anno|ottobre|novembre|settembre|gennaio|febbraio|marzo|aprile|maggio|giugno|luglio|agosto|dicembre|\d{4})\b/.test(n)){
     const mo=parseMonth(n),yr=/\b(20\d\d)\b/.exec(n),now=new Date();
-    if(mo&&mo.match)return {text:finSummaryText(+mo.ym.slice(0,4),+mo.ym.slice(5)-1),acts:[['Apri Conti','__fin']]};
+    if(mo&&mo.match)return {text:finSummaryText(+mo.ym.slice(0,4),+mo.ym.slice(5)-1),acts:[['Apri Attività','__fin']]};
     const y=yr?+yr[1]:now.getFullYear();
     if(/\b(anno|nel 20|quest anno|quest'anno|totale)\b/.test(n)||yr)return {text:finSummaryText(y,null),acts:[['Apri Report','__report']]};
-    return {text:finSummaryText(now.getFullYear(),now.getMonth()),acts:[['Apri Conti','__fin']]};
+    return {text:finSummaryText(now.getFullYear(),now.getMonth()),acts:[['Apri Attività','__fin']]};
   }
   // X ha pagato / fattura incassata
   if(/\b(ha pagato|hanno pagato|incassat\w*|e arrivato il pagamento|mi ha pagato|saldat\w*)\b/.test(n)&&!/^(aggiungi|nuovo|lavoro)/.test(n)){
@@ -3854,13 +3896,13 @@ function finCommand(raw,n){
   if(/\b(nuovo|crea|fai|fammi|prepara)\b.*\bpreventivo\b|^preventivo\b/.test(n)){
     const fc=findClient(n);newQuote();const q=Object.values(S.quotes).find(x=>x.id===FIN.q);if(q&&fc){put('quotes',{...q,clientId:fc.c.id})}
     setTimeout(()=>{toggleChat(false);openFin('prev');FIN.q=q&&q.id;renderFin(true)},200);
-    return {text:`Ho creato il preventivo ${q?qCode(q):''}${fc?' per '+fc.c.name:''}: lo apro in Conti.`};
+    return {text:`Ho creato il preventivo ${q?qCode(q):''}${fc?' per '+fc.c.name:''}: lo apro in Attività.`};
   }
   return null;
 }
 
 const chatLog=[];
-const CHIPS={root:[['+ Aggiungi','sub:add'],['💶 Conti','sub:fin'],['✓ Fatto','fatto '],['Sono libero','sono libero '],['Pausa','pausa 30 min'],['?','aiuto']],
+const CHIPS={root:[['+ Aggiungi','sub:add'],['💶 Attività','sub:fin'],['✓ Fatto','fatto '],['Sono libero','sono libero '],['Pausa','pausa 30 min'],['?','aiuto']],
   add:[['← ','sub:root'],['Task','task '],['Progetto','nuovo progetto '],['Task','aggiungi  a '],['Evento','evento domani alle '],['Pausa pranzo','pausa pranzo dalle 13 alle 14'],['Lavoro (Conti)','!nuovo lavoro']],
   fin:[['← ','sub:root'],['Nuovo lavoro','!nuovo lavoro'],['Quanto mi devono?','!quanto mi devono'],['Da fatturare','!cosa devo fatturare'],['Fatturato del mese','!quanto ho fatturato questo mese'],['Quest’anno','!quanto ho guadagnato quest anno'],['Incassato…','ha pagato'],['Nuovo preventivo','nuovo preventivo per ']]};
 let chipLevel='root';
@@ -3885,7 +3927,7 @@ function renderChat(){
 }
 function resolveConfirm(i,yes){
   const m=chatLog[i];if(!m||!m.confirm||m.resolved)return;m.resolved=true;
-  if(yes){const before=snap();const fin=!!m.draft;chatLog.push({who:'bot',text:m.confirm.run(),undo:1,snap:before,acts:fin?[['Apri Conti','__fin']]:null})}
+  if(yes){const before=snap();const fin=!!m.draft;chatLog.push({who:'bot',text:m.confirm.run(),undo:1,snap:before,acts:fin?[['Apri Attività','__fin']]:null})}
   else chatLog.push({who:'bot',text:m.confirm.cancel});
   renderChat();
 }
@@ -4003,7 +4045,7 @@ function aiConnectCard(){
   if(!AI.st)return `<div class="msg bot">Controllo il collegamento dell'assistente…</div>`;
   return `<div class="aic">
     <b class="aic-t">Collega l'assistente a Tasky</b>
-    <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nei Conti. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
+    <p>Mi parli come in una chat normale (anche a voce) e io faccio le cose direttamente nell'app: task, eventi, progetti, clienti e lavori nelle Attività. Lavoro solo dentro Tasky: niente internet né domande su altro.</p>
     <div class="aic-opt"><b>Gemini di Google — gratis</b><ol><li>Apri <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a> e accedi col tuo account Google.</li><li>Tocca <b>Crea chiave API</b> (Create API key), copiala e incollala qui sotto.</li></ol><small>Gratis con un limite di messaggi al giorno, più che sufficiente per l'uso normale.</small></div>
     <details class="aic-opt"><summary><b>Claude</b> — a consumo, circa 1–2 centesimi a comando</summary><ol><li>Apri <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a>, in <b>Billing</b> aggiungi un po' di credito.</li><li>In <b>API Keys</b> crea una chiave e incollala qui sotto.</li></ol></details>
     <div class="aic-f"><input id="aiKey" type="password" placeholder="Incolla qui la chiave" autocomplete="off" spellcheck="false"><button type="button" class="btn primary" id="aiConnect">Collega</button></div>
@@ -4018,17 +4060,17 @@ function aiGreeting(){const oq=$('#chat').classList.contains('qmode')&&S.quotes[
   return `<div class="msg bot">Ciao Francesco! Sono ${aiName()}, collegato a Tasky. Dimmi pure cosa ti serve, anche a voce: aggiungo task ed eventi, sposto le cose, ti dico cosa hai in programma.</div><div class="sugg">${AI_SUGG.map(s=>`<button class="chip" data-sugg="${esc(s)}">${esc(s)}</button>`).join('')}</div>`}
 
 /* ---------- contesto: cosa vede Claude a ogni messaggio ---------- */
-const aiStatic=()=>`Sei ${aiName()}, l'assistente integrato in Tasky: l'app di task, calendario e conti di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
+const aiStatic=()=>`Sei ${aiName()}, l'assistente integrato in Tasky: l'app di task, calendario e attività (lavori e conti) di Francesco (videomaker freelance, attività "Moody", Milano). Rispondi sempre in italiano, in modo naturale, breve e diretto, come in una chat.
 
-Il tuo compito è SOLO gestire Tasky: leggere e modificare task, eventi, progetti, clienti, giorni e lavori nei Conti con gli strumenti a disposizione, e rispondere a domande sui suoi impegni e sui suoi dati (es. "cosa ho domani?", "quanto ho fatturato a ottobre?", "come mi organizzo la settimana?").
-NON rispondere a nient'altro: niente cultura generale, notizie, meteo, ricette, traduzioni, codice, consigli medici o legali, testi da scrivere, chiacchiere fuori tema. Non hai accesso a internet né ad altre app. Se la richiesta non riguarda Tasky, rispondi con una sola frase gentile tipo "Qui posso aiutarti solo con Tasky: task, eventi, progetti e conti." e proponi cosa puoi fare. Saluti e ringraziamenti: rispondi in breve e torna operativo.
+Il tuo compito è SOLO gestire Tasky: leggere e modificare task, eventi, progetti, clienti, giorni e lavori nelle Attività con gli strumenti a disposizione, e rispondere a domande sui suoi impegni e sui suoi dati (es. "cosa ho domani?", "quanto ho fatturato a ottobre?", "come mi organizzo la settimana?").
+NON rispondere a nient'altro: niente cultura generale, notizie, meteo, ricette, traduzioni, codice, consigli medici o legali, testi da scrivere, chiacchiere fuori tema. Non hai accesso a internet né ad altre app. Se la richiesta non riguarda Tasky, rispondi con una sola frase gentile tipo "Qui posso aiutarti solo con Tasky: task, eventi, progetti e attività." e proponi cosa puoi fare. Saluti e ringraziamenti: rispondi in breve e torna operativo.
 
 Come funziona Tasky:
 - Task: cose da fare con una scadenza (data). Possono essere "singole" oppure dentro un progetto. Se non dice la scadenza usa oggi. Una task NON va nel calendario a un orario preciso se non lo chiede: per metterla in calendario usa pianifica_task.
 - Progetti: raccolgono task, possono avere un cliente e una scadenza.
 - Eventi: impegni fissi con data e orario (riprese, call, appuntamenti). Tipo "lavoro" o "personale". Possono durare tutto il giorno e ripetersi. Compleanni = tutto il giorno, ogni anno, tipo personale. Rinnovi/abbonamenti = ogni mese.
 - Giorni: lavorativi o liberi (giorno_libero). Gli eventi restano anche nei giorni liberi.
-- Conti: lavori del mese con importo fatturato, contanti, stato (prev=previsto, corso=in corso, fatt=da fatturare, attesa=attesa pagamento, pagato=incassato), giorni di lavoro che possono bloccare il calendario.
+- Attività (prima «Conti»): lavori del mese con importo fatturato, contanti, stato (prev=previsto, corso=in corso, fatt=da fatturare, attesa=attesa pagamento, pagato=incassato), giorni di lavoro che possono bloccare il calendario.
 
 Regole:
 - Date YYYY-MM-DD, orari HH:MM (24h), fuso Europa/Roma. Calcola "domani", "lunedì prossimo", "tra una settimana" partendo dalla data di oggi indicata sotto.
@@ -4093,9 +4135,9 @@ const AI_TOOLS=[
  {name:'elimina_evento',description:'Elimina un evento. Se ricorrente: solo_questa=true + data_occorrenza toglie solo quel giorno.',input_schema:{type:'object',properties:{id:{type:'string'},data_occorrenza:S_DATE,solo_questa:{type:'boolean'}},required:['id']}},
  {name:'giorno_libero',description:'Segna uno o più giorni come liberi (non lavora) o di nuovo lavorativi.',input_schema:{type:'object',properties:{date:{type:'array',items:S_DATE},libero:{type:'boolean'}},required:['date','libero']}},
  {name:'aggiungi_cliente',description:'Crea un cliente (se esiste già con quel nome restituisce quello).',input_schema:{type:'object',properties:{nome:{type:'string'}},required:['nome']}},
- {name:'aggiungi_lavoro',description:'Aggiunge un lavoro nei Conti (fatturato del mese).',input_schema:{type:'object',properties:{titolo:{type:'string'},cliente:{type:'string'},progetto:{type:'string'},mese:{type:'string',description:'YYYY-MM'},giorni:{type:'array',items:S_DATE,description:'giorni di lavoro'},importo:{type:'number',description:'fatturato in euro'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},blocca_calendario:{type:'boolean',description:'crea eventi nei giorni di lavoro'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['titolo','mese']}},
- {name:'modifica_lavoro',description:'Modifica un lavoro nei Conti (stato, importi, fattura, giorni...).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},importo:{type:'number'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},numero_fattura:{type:'string'},data_fattura:S_DATE,fattura_inviata:{type:'boolean'},giorni:{type:'array',items:S_DATE},blocca_calendario:{type:'boolean'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['id']}},
- {name:'elimina_lavoro',description:'Elimina un lavoro dai Conti (e i suoi eventi).',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
+ {name:'aggiungi_lavoro',description:'Aggiunge un lavoro nelle Attività (fatturato del mese).',input_schema:{type:'object',properties:{titolo:{type:'string'},cliente:{type:'string'},progetto:{type:'string'},mese:{type:'string',description:'YYYY-MM'},giorni:{type:'array',items:S_DATE,description:'giorni di lavoro'},importo:{type:'number',description:'fatturato in euro'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},blocca_calendario:{type:'boolean',description:'crea eventi nei giorni di lavoro'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['titolo','mese']}},
+ {name:'modifica_lavoro',description:'Modifica un lavoro nelle Attività (stato, importi, fattura, giorni...).',input_schema:{type:'object',properties:{id:{type:'string'},titolo:{type:'string'},importo:{type:'number'},contanti:{type:'number'},stato:{type:'string',enum:['prev','corso','fatt','attesa','pagato']},numero_fattura:{type:'string'},data_fattura:S_DATE,fattura_inviata:{type:'boolean'},giorni:{type:'array',items:S_DATE},blocca_calendario:{type:'boolean'},dalle:S_TIME,alle:S_TIME,colore:{type:'string'},note:{type:'string'}},required:['id']}},
+ {name:'elimina_lavoro',description:'Elimina un lavoro dalle Attività (e i suoi eventi).',input_schema:{type:'object',properties:{id:{type:'string'}},required:['id']}},
  {name:'modifica_cliente',description:'Crea o aggiorna un cliente con i dati di fatturazione (anche letti da una foto/screenshot). Se il cliente esiste (id o nome) lo aggiorna, altrimenti lo crea.',input_schema:{type:'object',properties:{id:{type:'string'},...{nome:{type:'string',description:'nome breve del cliente (come lo chiami tu)'},ragione_sociale:{type:'string'},partita_iva:{type:'string'},codice_fiscale:{type:'string'},indirizzo:{type:'string',description:'via e numero civico'},cap:{type:'string'},citta:{type:'string'},provincia:{type:'string',description:'sigla, es. MI'},sdi:{type:'string',description:'codice destinatario SDI'},pec:{type:'string'},email:{type:'string'}}}}},
  {name:'verifica_partita_iva',description:'Cerca una partita IVA europea nel registro ufficiale VIES: dice se è valida e restituisce ragione sociale e indirizzo (solo questo, nient altro su internet).',input_schema:{type:'object',properties:{partita_iva:{type:'string'}},required:['partita_iva']}},
  {name:'crea_preventivo',description:'Crea un nuovo preventivo (con i dati di Francesco, logo e firma già impostati) e lo apre.',input_schema:{type:'object',properties:{cliente:{type:'string',description:'nome o id del cliente'},titolo:{type:'string',description:'titolo del progetto'},descrizione:{type:'string',description:'descrizione del progetto (paragrafo)'},lingua:{type:'string',enum:['it','en'],description:'lingua delle etichette e dei testi standard'},data:S_DATE,valido_fino:S_DATE,voci:{type:'array',description:'voci del preventivo',items:{type:'object',properties:{titolo:{type:'string'},descrizione:{type:'string',description:'riga sotto il titolo, es. (vedi descrizione del progetto)'},prezzo:{type:'number',description:'euro, 0 = incluso'},quantita:{type:'number'}},required:['titolo']}},sconto:{type:'number'},rivalsa:{type:'boolean',description:'rivalsa INPS 4%'},bollo:{type:'boolean',description:'marca da bollo 2€'},condizioni:{type:'string'},note:{type:'string'},stato:{type:'string',enum:['bozza','inviato','accettato','rifiutato']}}}},
@@ -4205,7 +4247,7 @@ async function aiRun(name,a){
     put('blocks',{...b,...nb,...(a.ripeti?{repeat:aiRep(a.ripeti)}:{})});return {ok:true}}
   case 'elimina_evento':{
     const b=S.blocks[a.id];if(!b)throw new Error('evento non trovato');
-    if(b.jobId)return {ok:false,errore:'questo evento viene da un lavoro nei Conti: togli il giorno dal lavoro con modifica_lavoro'};
+    if(b.jobId)return {ok:false,errore:'questo evento viene da un lavoro nelle Attività: togli il giorno dal lavoro con modifica_lavoro'};
     if(isRec(b)&&a.solo_questa){const occ=aiDate(a.data_occorrenza);if(!occ)throw new Error('serve data_occorrenza');put('blocks',{...b,exceptions:{...(b.exceptions||{}),[occ]:'skip'}});return {ok:true,solo:occ}}
     del('blocks',b.id);return {ok:true}}
   case 'giorno_libero':{(a.date||[]).forEach(k=>setPresence(aiDate(k),!a.libero));saveSettings();return {ok:true}}
@@ -4493,12 +4535,12 @@ function renderFin(force){
   if(mode==='loading'){el.innerHTML='<div class="empty">Carico…</div>';return}
   if(FIN.q&&S.quotes[FIN.q]){renderQuoteEditor(el,S.quotes[FIN.q]);return}
   FIN.q=null;
-  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['report','Report'],['prev','Preventivi']];
+  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['report','Report'],['prev','Preventivi'],['abb','Abbonamenti']];
   el.innerHTML=`<div class="fin-head">
       <div class="fin-seg" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-fv="${k}" aria-selected="${FIN.view===k}">${l}</button>`).join('')}</div>
       <div class="fin-yr"><button type="button" class="wk-arrow" data-fy="-1" aria-label="Anno precedente">‹</button><b>${y}</b><button type="button" class="wk-arrow" data-fy="1" aria-label="Anno successivo">›</button></div>
       <button type="button" class="btn ghost fin-biz" data-fa="biz" title="Dati attività, fisco, logo e firma">⚙︎ Dati attività</button>
-    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
+    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='abb'?finSubs():FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
   const st=el.querySelector('.fm-strip'),on=st&&st.querySelector('.fm-m.on');if(on&&st.scrollWidth>st.clientWidth)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
 }
 function finMonths(y){
@@ -4589,6 +4631,32 @@ function invGroups(y){
   const paid=all.filter(j=>j.status==='pagato'&&+String(j.paidAt||j.invoiceDate||j.month).slice(0,4)===y);
   const by=(a,b)=>String(a.invoiceDate||a.month).localeCompare(String(b.invoiceDate||b.month));
   return {toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
+}
+const subsList=()=>Object.values(S.biz).filter(x=>x&&x.kind==='sub').sort((a,b)=>(a.sign==='in')-(b.sign==='in')||(a.name||'').localeCompare(b.name||'','it'));
+const subMonthly=x=>(+x.amount||0)/(x.cycle==='y'?12:1);
+function finSubs(){
+  const l=subsList(),out=l.filter(x=>x.sign!=='in').reduce((a,x)=>a+subMonthly(x),0),inn=l.filter(x=>x.sign==='in').reduce((a,x)=>a+subMonthly(x),0),net=out-inn;
+  const row=x=>`<button type="button" class="sb-row" data-sb="${x.id}"><span class="qmain"><b>${esc(x.name||'Abbonamento')}</b><small>${x.cycle==='y'?'Annuale':'Mensile'}${x.day?' · '+esc(x.day):''}${x.notes?' · '+esc(x.notes):''}</small></span><b class="${x.sign==='in'?'in':''}">${x.sign==='in'?'+':''}${eur(x.amount)}<small>${x.cycle==='y'?'/anno':'/mese'}</small></b></button>`;
+  return `<div class="fcard"><div class="fm-h"><h2>Abbonamenti</h2><button type="button" class="btn primary" data-sb="new">+ Abbonamento</button></div>
+    <div class="kpis sb-sum">${kpi('Spesa al mese',out)}${kpi('Entrate al mese',inn)}${kpi('Costo netto al mese',net,'big')}${kpi('Costo netto all’anno',net*12)}</div>
+    ${l.length?l.map(row).join(''):'<div class="empty"><strong>Nessun abbonamento</strong><span>Aggiungi gli abbonamenti: nome, importo e ogni quanto si rinnova.</span></div>'}
+    <p class="note">Gli importi annuali sono divisi per 12 nei totali mensili. Le quote che ti rimborsano (es. abbonamento diviso) sono entrate e riducono il costo.</p></div>`;
+}
+function openSub(x){
+  const isNew=!x;x=x||{id:'sub_'+uid(),kind:'sub',name:'',amount:0,cycle:'m',sign:'out',day:'',notes:''};
+  form.innerHTML=`<h3>${isNew?'Nuovo abbonamento':'Abbonamento'}</h3>
+    <div class="field"><label for="sbN">Nome</label><input id="sbN" value="${esc(x.name)}" placeholder="es. Adobe Creative Cloud" autocomplete="off"></div>
+    <div class="row"><div class="field"><label for="sbA">Importo (€)</label><input id="sbA" inputmode="decimal" value="${x.amount||''}" placeholder="0"></div>
+    <div class="field"><label for="sbC">Rinnovo</label><select id="sbC"><option value="m" ${x.cycle!=='y'?'selected':''}>Ogni mese</option><option value="y" ${x.cycle==='y'?'selected':''}>Ogni anno</option></select></div></div>
+    <div class="field"><label for="sbS">Tipo</label><select id="sbS"><option value="out" ${x.sign!=='in'?'selected':''}>Spesa (pago io)</option><option value="in" ${x.sign==='in'?'selected':''}>Entrata (mi rimborsano / quota divisa)</option></select></div>
+    <div class="field"><label for="sbD">Quando si rinnova <small>(facoltativo)</small></label><input id="sbD" value="${esc(x.day||'')}" placeholder="es. il 15 del mese"></div>
+    <div class="field"><label for="sbT">Note</label><input id="sbT" value="${esc(x.notes||'')}"></div>
+    <div class="acts">${isNew?'':'<button type="button" class="btn danger left" id="sbDel">Elimina</button>'}<button type="button" class="btn ghost" id="cancel">Annulla</button><button type="submit" class="btn primary">${isNew?'Aggiungi':'Salva'}</button></div>`;
+  $('#cancel').onclick=()=>dlg.close();
+  if(!isNew)armDelete($('#sbDel'),'Conferma eliminazione',()=>{del('biz',x.id);dlg.close();renderFin(true)});
+  form.onsubmit=e=>{e.preventDefault();const n=$('#sbN').value.trim();if(!n){$('#sbN').focus();return}
+    put('biz',{...x,name:n,amount:num($('#sbA').value),cycle:$('#sbC').value,sign:$('#sbS').value,day:$('#sbD').value.trim(),notes:$('#sbT').value.trim()});dlg.close();renderFin(true)};
+  show(true);
 }
 function finInvoices(y){
   const g=invGroups(y),today=key(new Date()),sum=l=>l.reduce((a,j)=>a+invTot(j),0);
@@ -4881,6 +4949,7 @@ $('#fin').addEventListener('click',e=>{
   const fy=t.closest('[data-fy]');if(fy){FIN.year+= +fy.dataset.fy;renderFin();return}
   const fm=t.closest('[data-fm]');if(fm){FIN.month=+fm.dataset.fm;renderFin();return}
   const fi=t.closest('[data-fi]');if(fi&&S.jobs[fi.dataset.fi]){openInvoice(S.jobs[fi.dataset.fi]);return}
+  const sb=t.closest('[data-sb]');if(sb){openSub(sb.dataset.sb==='new'?null:S.biz[sb.dataset.sb]);return}
   const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;renderFin(true);return}
   const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
   if(t.closest('select,a,input'))return;
