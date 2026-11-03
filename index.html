@@ -4671,7 +4671,7 @@ function openJob(j,preset){
   const isNew=!j,y=FIN.year,m=FIN.month;
   j=j||{id:uid(),month:`${y}-${String(m+1).padStart(2,'0')}`,day:'',clientId:null,projectId:null,title:'',amount:0,cash:0,status:'prev',invRivalsa:true,created:Date.now(),...(preset||{})};
   const qs=Object.values(S.quotes).sort((a,b)=>(b.year-a.year)||(b.num-a.num));
-  const st=S.settings,cal=j.cal||{on:false,start:st.workStart,end:st.workEnd};
+  const st=S.settings,cal=j.cal||{on:isNew,start:st.workStart,end:st.workEnd};
   let days=new Set(j.days||[]);
   form.innerHTML=`<h3>${isNew?'Nuovo lavoro':'Lavoro'}</h3>
     <div class="field"><label for="jQn">Preventivo <small>(scrivi il numero o scegli: compila cliente e importo)</small></label><input id="jQn" inputmode="numeric" placeholder="es. 162" autocomplete="off"><select id="jQ" aria-label="Scegli il preventivo"><option value="">Nessuno</option>${qs.map(q=>`<option value="${q.id}" ${q.id===j.quoteId?'selected':''}>${esc(qCode(q))} · ${esc(q.title||'')}</option>`).join('')}<option value="__url" ${!j.quoteId&&j.quoteUrl?'selected':''}>Link esterno…</option></select><input id="jQu" type="url" value="${esc(j.quoteUrl||'')}" placeholder="Incolla il link al preventivo (Google Drive, Sheets…)" hidden></div>
