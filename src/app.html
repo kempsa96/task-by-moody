@@ -4463,7 +4463,8 @@ const qValidFrom=d=>{const n=parseInt(biz().qValid);return n>0&&n!==90?addDays(d
 const qCode=q=>(biz().qFmt||'P-{n}_{yyyy}').replace('{n}',q.num).replace('{yyyy}',q.year).replace('{yy}',String(q.year).slice(2));
 function qTotals(q){
   const sub=(q.items||[]).reduce((a,it)=>a+num(it.price)*(num(it.qty)||0),0),disc=Math.min(sub,num(q.discount)),imp=sub-disc;
-  const riv=q.rivalsa?imp*0.04:0,bol=q.bollo?2:0;return {sub,disc,imp,riv,bol,tot:imp+riv+bol};
+  const r2=x=>Math.round((x+Number.EPSILON)*100)/100,bol=q.bollo?2:0,riv=q.rivalsa?r2((imp+bol)*0.04):0; // come Fiscozen: la rivalsa 4% si calcola anche sul bollo (600+2=602 → 24,08)
+  return {sub:r2(sub),disc:r2(disc),imp:r2(imp),riv,bol,tot:r2(imp+bol+riv)};
 }
 function nextQuoteNum(){const b=biz(),used=Object.values(S.quotes).map(q=>+q.num||0);return Math.max(+b.qNext||1,used.length?Math.max(...used)+1:1)}
 const QL={

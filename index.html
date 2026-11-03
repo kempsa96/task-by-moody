@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1">
-<meta name="tbm-build" content="202611031952">
+<meta name="tbm-build" content="202611031956">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031952"></script>
-<script src="tbm-cloud.js?v=202611031952"></script>
+<script src="supabase.js?v=202611031956"></script>
+<script src="tbm-cloud.js?v=202611031956"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -4482,7 +4482,8 @@ const qValidFrom=d=>{const n=parseInt(biz().qValid);return n>0&&n!==90?addDays(d
 const qCode=q=>(biz().qFmt||'P-{n}_{yyyy}').replace('{n}',q.num).replace('{yyyy}',q.year).replace('{yy}',String(q.year).slice(2));
 function qTotals(q){
   const sub=(q.items||[]).reduce((a,it)=>a+num(it.price)*(num(it.qty)||0),0),disc=Math.min(sub,num(q.discount)),imp=sub-disc;
-  const riv=q.rivalsa?imp*0.04:0,bol=q.bollo?2:0;return {sub,disc,imp,riv,bol,tot:imp+riv+bol};
+  const r2=x=>Math.round((x+Number.EPSILON)*100)/100,bol=q.bollo?2:0,riv=q.rivalsa?r2((imp+bol)*0.04):0; // come Fiscozen: la rivalsa 4% si calcola anche sul bollo (600+2=602 → 24,08)
+  return {sub:r2(sub),disc:r2(disc),imp:r2(imp),riv,bol,tot:r2(imp+bol+riv)};
 }
 function nextQuoteNum(){const b=biz(),used=Object.values(S.quotes).map(q=>+q.num||0);return Math.max(+b.qNext||1,used.length?Math.max(...used)+1:1)}
 const QL={
