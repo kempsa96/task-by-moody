@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031141">
+<meta name="tbm-build" content="202611031142">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031141"></script>
-<script src="tbm-cloud.js?v=202611031141"></script>
+<script src="supabase.js?v=202611031142"></script>
+<script src="tbm-cloud.js?v=202611031142"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -2355,23 +2355,25 @@ let pinching=false;
   const grids=()=>document.querySelectorAll('#calInner .cal-grid');
   const apply=(w,tr)=>{const c=`${gutW()}px repeat(${freeN}, ${w}px)`;grids().forEach(g=>{g.style.transition=tr||'none';g.style.gridTemplateColumns=c})};
   const sep=e=>[Math.abs(e.touches[0].clientX-e.touches[1].clientX),Math.abs(e.touches[0].clientY-e.touches[1].clientY)],midY=e=>(e.touches[0].clientY+e.touches[1].clientY)/2;
-  sc.addEventListener('touchstart',e=>{if(e.touches.length===2&&isPhone()&&isFree()){const w0=dayW(),r=sc.getBoundingClientRect(),mx=midX(e)-r.left-gutW(),[sx,sy]=sep(e),hd=document.querySelector('#calInner .cal-head'),hh=hd?hd.offsetHeight:0,my=midY(e)-r.top;pz={d0:dist(e),w0,w:w0,mx,idx:(sc.scrollLeft+mx)/w0,raf:0,mode:null,sx,sy,p0:PPM,ppm:PPM,my,hh,min:(sc.scrollTop+my-hh)/PPM};pinching=true}},{passive:true});
+  const inSc=e=>{const r=sc.getBoundingClientRect(),x=midX(e),y=midY(e);return x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom};
+  document.addEventListener('touchstart',e=>{if(e.touches.length===2&&isPhone()&&isFree()&&inSc(e)){const w0=dayW(),r=sc.getBoundingClientRect(),mx=midX(e)-r.left-gutW(),[sx,sy]=sep(e),hd=document.querySelector('#calInner .cal-head'),hh=hd?hd.offsetHeight:0,my=midY(e)-r.top;pz={d0:dist(e),w0,w:w0,mx,idx:(sc.scrollLeft+mx)/w0,raf:0,mode:null,sx,sy,p0:PPM,ppm:PPM,my,hh,min:(sc.scrollTop+my-hh)/PPM};pinching=true}},{passive:true});
   const mv=e=>{if(!pz||e.touches.length!==2)return;e.preventDefault();
     if(!pz.mode){const [sx,sy]=sep(e);if(Math.max(Math.abs(sx-pz.sx),Math.abs(sy-pz.sy))<10)return;pz.mode=Math.abs(sy-pz.sy)>Math.abs(sx-pz.sx)?'v':'h'}
     const ratio=dist(e)/pz.d0;
     if(pz.mode==='v'){pz.ppm=Math.max(.55,Math.min(3,pz.p0*ratio));
       if(!pz.raf)pz.raf=requestAnimationFrame(()=>{if(!pz)return;pz.raf=0;PPM=pz.ppm;renderCal();sc.scrollTop=Math.max(0,pz.min*PPM+pz.hh-pz.my)});return}
     const avail=sc.clientWidth-gutW(),w=Math.max(avail/7*.55,Math.min(avail/3*1.12,pz.w0*ratio));pz.w=w;
-    if(!pz.raf)pz.raf=requestAnimationFrame(()=>{if(!pz)return;pz.raf=0;apply(pz.w);sc.scrollLeft=Math.max(0,pz.idx*pz.w-pz.mx)})};
-  const tween=(z,from,to,done)=>{const t0=performance.now(),D=170;const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3),w=from+(to-from)*e;apply(w);sc.scrollLeft=Math.max(0,z.idx*w-z.mx);if(k<1)requestAnimationFrame(step);else done()};requestAnimationFrame(step)};
+    apply(w);sc.scrollLeft=Math.max(0,pz.idx*w-pz.mx)};
+  const tween=(z,from,to,f0,f1,done)=>{const t0=performance.now(),D=190;const step=t=>{const k=Math.min(1,(t-t0)/D),e=1-Math.pow(1-k,3),w=from+(to-from)*e,f=f0+(f1-f0)*e;apply(w);sc.scrollLeft=Math.max(0,f*w);if(k<1)requestAnimationFrame(step);else done(f1)};requestAnimationFrame(step)};
   const end=e=>{if(!pz||e.touches.length>=2)return;const z=pz;pz=null;cancelAnimationFrame(z.raf);
     if(z.mode!=='h'){if(z.mode==='v'){PPM=z.ppm;try{localStorage.setItem('tbm-ppm',String(PPM))}catch(x){}renderCal()}pinching=false;return}
     const avail=sc.clientWidth-gutW(),w=z.w;
     if(w<avail/7*.8){apply(z.w0);sc.scrollLeft=Math.max(0,z.idx*z.w0-z.mx);setTimeout(()=>{pinching=false},60);openMonthView();return}
     const n=Math.max(3,Math.min(7,Math.round(avail/w))),tw=Math.max(38,Math.floor(avail/n));
-    tween(z,w,tw,()=>{const i=Math.max(0,Math.round(Math.max(0,z.idx*tw-z.mx)/tw));if(freeFrom)viewStart=addDays(freeFrom,i);revealed=null;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(x){}pinching=false;render()})};
+    const f0=Math.max(0,z.idx*w-z.mx)/w,f1=Math.max(0,Math.round(Math.max(0,z.idx*tw-z.mx)/tw));
+    tween(z,w,tw,f0,f1,i=>{if(freeFrom)viewStart=addDays(freeFrom,i);revealed=null;zoomN=n;try{localStorage.setItem('tbm-zoom',String(n))}catch(x){}pinching=false;render()})};
   document.addEventListener('touchmove',mv,{passive:false});document.addEventListener('touchend',end,{passive:true});document.addEventListener('touchcancel',end,{passive:true});
-  sc.addEventListener('touchstart',e=>{if(e.touches.length!==2)return;for(const t of e.touches){const tg=t.target;if(tg&&!tg._pzl){tg._pzl=1;tg.addEventListener('touchmove',mv,{passive:false});tg.addEventListener('touchend',end,{passive:true});tg.addEventListener('touchcancel',end,{passive:true})}}},{passive:true});
+  document.addEventListener('touchstart',e=>{if(e.touches.length!==2||!inSc(e))return;for(const t of e.touches){const tg=t.target;if(tg&&!tg._pzl){tg._pzl=1;tg.addEventListener('touchmove',mv,{passive:false});tg.addEventListener('touchend',end,{passive:true});tg.addEventListener('touchcancel',end,{passive:true})}}},{passive:true});
   sc.addEventListener('gesturestart',e=>e.preventDefault())})();
 function openMonthView(ym){
   const vs=visibleDays();ym=ym||(isFree()?viewStart:vs[0]).slice(0,7);
