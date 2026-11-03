@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="tbm-build" content="202611031045">
+<meta name="tbm-build" content="202611031048">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Tasky">
@@ -13,8 +13,8 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192-v2.png">
 <link rel="apple-touch-icon" href="apple-touch-icon-v2.png">
-<script src="supabase.js?v=202611031045"></script>
-<script src="tbm-cloud.js?v=202611031045"></script>
+<script src="supabase.js?v=202611031048"></script>
+<script src="tbm-cloud.js?v=202611031048"></script>
 </head>
 <body>
 <title>Tasky by Moody</title>
@@ -1037,7 +1037,7 @@ dialog{overflow:auto}
   <header class="top">
     <div class="t-l">
     <button type="button" class="brand" id="brandHome" title="Torna al calendario di oggi"><b>Tasky</b><span>by Moody</span></button>
-    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listCal">Calendario</button><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listCli">Clienti</button><button class="btn ghost" id="listFin">Attività</button></nav>
+    <nav class="lists" aria-label="Elenchi"><button class="btn ghost" id="listCal">Calendario</button><button class="btn ghost" id="listImp">Eventi</button><button class="btn ghost" id="listProj">Progetti</button><button class="btn ghost" id="listFin">Attività</button></nav>
     <div class="status" id="status"><i></i><span>Caricamento…</span></div>
     </div>
     <div class="t-c">
@@ -2323,7 +2323,6 @@ $('#player').addEventListener('click',e=>{
 });
 setInterval(()=>{if(!welcomeOpen)renderPlayer()},15000);
 $('#listProj').onclick=()=>openProjectList();
-$('#listCli').onclick=()=>openClientList();
 /* splitter */
 (()=>{
   const sp=$('#split'),side=document.querySelector('.side'),imp=$('#sideImp');
@@ -4555,12 +4554,12 @@ function renderFin(force){
   if(mode==='loading'){el.innerHTML='<div class="empty">Carico…</div>';return}
   if(FIN.q&&S.quotes[FIN.q]){renderQuoteEditor(el,S.quotes[FIN.q]);return}
   FIN.q=null;
-  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['report','Report'],['prev','Preventivi'],['abb','Abbonamenti']];
+  const y=FIN.year,tabs=[['mesi','Mesi'],['fatt','Fatture'],['prev','Preventivi'],['cli','Clienti'],['abb','Abbonamenti'],['report','Report']];
   el.innerHTML=`<div class="fin-head">
       <div class="fin-seg" role="tablist">${tabs.map(([k,l])=>`<button type="button" role="tab" data-fv="${k}" aria-selected="${FIN.view===k}">${l}</button>`).join('')}</div>
       <div class="fin-yr"><button type="button" class="wk-arrow" data-fy="-1" aria-label="Anno precedente">‹</button><b>${y}</b><button type="button" class="wk-arrow" data-fy="1" aria-label="Anno successivo">›</button></div>
       <button type="button" class="btn ghost fin-biz" data-fa="biz" title="Dati attività, fisco, logo e firma">⚙︎ Dati attività</button>
-    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='abb'?finSubs():FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
+    </div><div class="fin-body">${FIN.view==='report'?finReport(y):FIN.view==='prev'?finQuotes(y):FIN.view==='abb'?finSubs():FIN.view==='cli'?finClients():FIN.view==='fatt'?finInvoices(y):finMonths(y)}</div>`;
   const st=el.querySelector('.fm-strip'),on=st&&st.querySelector('.fm-m.on');if(on&&st.scrollWidth>st.clientWidth)st.scrollLeft=on.offsetLeft-st.clientWidth/2+on.offsetWidth/2;
 }
 function finMonths(y){
@@ -4651,6 +4650,14 @@ function invGroups(y){
   const paid=all.filter(j=>j.status==='pagato'&&+String(j.paidAt||j.invoiceDate||j.month).slice(0,4)===y);
   const by=(a,b)=>String(a.invoiceDate||a.month).localeCompare(String(b.invoiceDate||b.month));
   return {toIssue:toIssue.sort(by),toCollect:toCollect.sort(by),paid:paid.sort(by).reverse()};
+}
+function finClients(){
+  const cs=Object.values(S.clients).sort((a,b)=>a.name.localeCompare(b.name,'it')),js=Object.values(S.jobs);
+  const row=c=>{const n=js.filter(j=>j.clientId===c.id).length,tot=js.filter(j=>j.clientId===c.id).reduce((a,j)=>a+(+j.amount||0)+(+j.cash||0),0),miss=billMissing(c);
+    return `<button type="button" class="sb-row" data-cl="${c.id}"><span class="dot" style="--c:${c.color||'var(--muted)'}"></span><span class="qmain"><b>${esc(c.name)}</b><small>${n?n+(n===1?' lavoro':' lavori'):'nessun lavoro'}${miss.length?' · <span class="fwarn">dati fattura</span>':''}</small></span>${tot?`<b>${eur0(tot)}</b>`:''}</button>`};
+  return `<div class="fcard"><div class="fm-h"><h2>Clienti</h2><button type="button" class="btn primary" data-cl="new">+ Cliente</button></div>
+    ${cs.length?cs.map(row).join(''):'<div class="empty"><strong>Nessun cliente</strong><span>Aggiungi il primo cliente: nome, colore e dati di fatturazione.</span></div>'}
+    <p class="note">Il colore del cliente è quello dei suoi eventi nel calendario. «dati fattura» = mancano dati per emettere la fattura.</p></div>`;
 }
 const subsList=()=>Object.values(S.biz).filter(x=>x&&x.kind==='sub').sort((a,b)=>(a.sign==='in')-(b.sign==='in')||(a.name||'').localeCompare(b.name||'','it'));
 const subMonthly=x=>(+x.amount||0)/(x.cycle==='y'?12:1);
@@ -4972,6 +4979,7 @@ $('#fin').addEventListener('click',e=>{
   const fy=t.closest('[data-fy]');if(fy){FIN.year+= +fy.dataset.fy;renderFin();return}
   const fm=t.closest('[data-fm]');if(fm){FIN.month=+fm.dataset.fm;renderFin();return}
   const fi=t.closest('[data-fi]');if(fi&&S.jobs[fi.dataset.fi]){openInvoice(S.jobs[fi.dataset.fi]);return}
+  const cl=t.closest('[data-cl]');if(cl){openClient(cl.dataset.cl==='new'?null:S.clients[cl.dataset.cl],false);return}
   const sb=t.closest('[data-sb]');if(sb){openSub(sb.dataset.sb==='new'?null:S.biz[sb.dataset.sb]);return}
   const fq=t.closest('[data-fq]');if(fq){FIN.view='prev';FIN.q=fq.dataset.fq;renderFin(true);return}
   const fa=t.closest('[data-fa]');if(fa){const a=fa.dataset.fa;if(a==='newjob')openJob();else if(a==='newquote')newQuote();else if(a==='biz')openBiz();return}
