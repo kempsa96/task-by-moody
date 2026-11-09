@@ -100,14 +100,21 @@
     else { if (JSON.stringify(cache[row.coll][row.id]) === JSON.stringify(row.data)) return; cache[row.coll][row.id] = row.data; }
     saveCache(); emit(row.coll);
   }
-  var channel = null;
+  var channel = null, resubT = null;
   function subscribe() {
     if (channel) sb.removeChannel(channel);
-    channel = sb.channel('docs-' + uid)
+    var ch = channel = sb.channel('docs-' + uid)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'docs', filter: 'user_id=eq.' + uid }, onRow)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'docs', filter: 'user_id=eq.' + uid }, onRow)
       .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'docs' }, onRow)
-      .subscribe();
+      .subscribe(function (status) {
+        if (ch !== channel) return; // callback di un canale già sostituito
+        // se il collegamento in tempo reale cade, lo riapro e ricarico tutto
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          clearTimeout(resubT);
+          resubT = setTimeout(function () { if (document.visibilityState !== 'hidden') { subscribe(); resync(); } }, 3000);
+        } else if (status === 'SUBSCRIBED') { resync(); }
+      });
   }
   function resync() { if (!uid) return; flushOutbox().then(loadAll).catch(function () { setNet(false); }); }
   document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') { resync(); if (!channel || channel.state !== 'joined') subscribe(); } });
@@ -116,7 +123,7 @@
   function wake() { if (document.visibilityState !== 'hidden') { resync(); if (!channel || channel.state !== 'joined') subscribe(); } }
   window.addEventListener('pageshow', wake);
   window.addEventListener('focus', wake);
-  setInterval(function () { if (document.visibilityState === 'visible') wake(); }, 45000);
+  setInterval(function () { if (document.visibilityState === 'visible') wake(); }, 20000);
   setInterval(function () { if (Object.keys(outbox).length) flushOutbox(); }, 30000);
 
   /* ---------- interfaccia "db" che l'app usa ---------- */

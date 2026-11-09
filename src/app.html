@@ -4865,8 +4865,8 @@ function jobEvTitle(j){const c=S.clients[j.clientId],d=(j.title||S.projects[j.pr
 function syncJobBlocks(j){
   const mine=Object.values(S.blocks).filter(b=>b.jobId===j.id),want=j.cal&&j.cal.on?(j.days||[]):[];
   const title=jobEvTitle(j),color=(j.cal&&j.cal.color)||jobDefColor(j);
-  mine.forEach(b=>{if(!want.includes(b.date))del('blocks',b.id)});
-  want.forEach(k=>{const b=mine.find(x=>x.date===k),nb={...(b||{id:uid(),repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()}),date:k,start:j.cal.start,end:j.cal.end,title,color,projectId:j.projectId||null,jobId:j.id};
+  const seen=new Set();mine.forEach(b=>{if(!want.includes(b.date)||seen.has(b.date)){del('blocks',b.id);return}seen.add(b.date)});
+  want.forEach(k=>{const b=mine.find(x=>x.date===k&&seen.has(k)&&S.blocks[x.id]),nb={...(b||{id:'jb-'+j.id+'-'+k,repeat:{freq:'none',interval:1,endType:'never'},exceptions:{},created:Date.now()}),date:k,start:j.cal.start,end:j.cal.end,title,color,projectId:j.projectId||null,jobId:j.id};
     if(!b||JSON.stringify(b)!==JSON.stringify(nb))put('blocks',nb)});
 }
 function openJob(j,preset){
