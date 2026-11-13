@@ -150,11 +150,37 @@ tr:last-child td{border-bottom:none}
 .rep ul{margin:0;padding-left:18px;max-width:65ch}
 .rep li{margin-bottom:4px}
 
-/* Dialogs */
-dialog{border:none;padding:0;border-radius:16px;background:var(--card);color:var(--ink);width:min(640px,calc(100% - 20px));max-height:calc(100% - 20px)}
-dialog::backdrop{background:rgba(0,0,0,.45)}
+/* Dialogs: fogli a tutto schermo su telefono, con barra fissa in alto */
+html.locked,html.locked body{overflow:hidden;height:100%}
+dialog{border:none;padding:0;border-radius:16px;background:var(--card);color:var(--ink);width:min(640px,calc(100% - 24px));max-width:none;max-height:min(860px,calc(100dvh - 24px));overflow:hidden}
+dialog[open]{display:flex;flex-direction:column}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+@media (max-width:640px){dialog{width:100%;height:100dvh;max-height:100dvh;margin:0;border-radius:0}}
+.sheet{display:flex;flex-direction:column;min-height:0;flex:1;margin:0}
+.sheet-h{display:flex;align-items:center;gap:10px;padding:calc(10px + env(safe-area-inset-top)) 14px 10px;border-bottom:1px solid var(--line);background:var(--card);flex:none}
+@media (min-width:641px){.sheet-h{padding-top:12px}}
+.sheet-h h3{font-family:var(--display);font-weight:600;font-size:19px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.x{width:40px;height:40px;border-radius:50%;border:none;background:var(--paper);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;flex:none}
+.sheet-b{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px 16px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
 .ed{padding:18px;display:flex;flex-direction:column;gap:12px}
 .ed h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0}
+input[type=date]{-webkit-appearance:none;appearance:none;min-height:44px;display:block;min-width:0}
+input,select{min-height:44px}
+.btn{min-height:40px}
+.btn.sm{min-height:34px}
+a.btn{display:inline-flex;align-items:center;text-decoration:none}
+.goal{cursor:pointer;text-align:left;font:inherit;color:inherit;position:relative}
+.goal::after{content:"›";position:absolute;right:12px;top:8px;color:var(--muted);font-size:20px}
+.goal:hover{border-color:var(--ink)}
+.big{font-family:var(--display);font-weight:800;font-size:40px;line-height:1;font-variant-numeric:tabular-nums}
+.kv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.kv div{background:var(--paper);border-radius:10px;padding:10px}
+.kv b{display:block;font-family:var(--mono);font-size:17px;font-weight:500}
+.kv span{font-size:12px;color:var(--muted)}
+.lst{display:flex;flex-direction:column;gap:6px}
+.lst .r{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper);border-radius:10px;padding:9px 10px;font-size:14px}
+.lst .r span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.edit-goal{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:520px){.two{grid-template-columns:1fr}}
 label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
@@ -278,8 +304,10 @@ textarea{resize:vertical;min-height:64px}
 
 <!-- Editor -->
 <dialog id="dlg">
-  <form class="ed" id="form">
-    <h3 id="edTitle">Nuova idea</h3>
+  <form class="sheet" id="form">
+    <div class="sheet-h"><button type="button" class="x" id="close" aria-label="Chiudi">✕</button><h3 id="edTitle">Nuova idea</h3><button class="btn sm" type="submit" id="save">Salva</button></div>
+    <div class="sheet-b">
+    <div class="copyrow" id="edTop"></div>
     <label for="f-titolo">Titolo<input id="f-titolo" required></label>
     <div class="two">
       <label for="f-stato">Stato
@@ -301,31 +329,34 @@ textarea{resize:vertical;min-height:64px}
       </label>
     </div>
     <div class="checks" id="checks"><div class="ttl">Prima di pubblicare</div></div>
+    <label for="f-video_url">Link del video su TikTok<input id="f-video_url" type="url" inputmode="url" placeholder="https://www.tiktok.com/@francescozampaglione/video/…"></label>
     <label for="f-note">Note<textarea id="f-note"></textarea></label>
     <div class="actions">
-      <button class="btn" type="submit" id="save">Salva</button>
       <button class="btn ghost" type="button" id="copy">Copia caption</button>
       <span class="spacer"></span>
       <button class="btn danger" type="button" id="del">Elimina</button>
-      <button class="btn ghost" type="button" id="close">Chiudi</button>
     </div>
     <div class="msg" id="edMsg"></div>
+    </div>
   </form>
 </dialog>
 
 <!-- Picker per slot -->
 <dialog id="pickDlg">
-  <div class="ed">
-    <h3 id="pickTitle">Cosa pubblichi?</h3>
-    <div class="pick" id="pickList"></div>
-    <div class="actions"><button class="btn" type="button" id="pickNew">+ Nuova idea qui</button><span class="spacer"></span><button class="btn ghost" type="button" id="pickClose">Chiudi</button></div>
+  <div class="sheet">
+    <div class="sheet-h"><button type="button" class="x" id="pickClose" aria-label="Chiudi">✕</button><h3 id="pickTitle">Cosa pubblichi?</h3></div>
+    <div class="sheet-b">
+      <button class="btn" type="button" id="pickNew">+ Nuova idea in questo slot</button>
+      <div class="pick" id="pickList"></div>
+    </div>
   </div>
 </dialog>
 
 <!-- Obiettivi -->
 <dialog id="goalDlg">
-  <form class="ed" id="goalForm">
-    <h3>Obiettivi</h3>
+  <form class="sheet" id="goalForm">
+    <div class="sheet-h"><button type="button" class="x" id="goalClose" aria-label="Chiudi">✕</button><h3>Obiettivi</h3><button class="btn sm" type="submit">Salva</button></div>
+    <div class="sheet-b">
     <div class="two">
       <label for="g-ft">Follower da raggiungere<input id="g-ft" type="number" min="0" step="100" inputmode="numeric"></label>
       <label for="g-fs">Entro il<input id="g-fs" type="date"></label>
@@ -334,8 +365,16 @@ textarea{resize:vertical;min-height:64px}
       <label for="g-ct">Completamento medio (%)<input id="g-ct" type="number" min="1" max="100" inputmode="numeric"></label>
       <label for="g-sc">Punteggio medio (0-100)<input id="g-sc" type="number" min="1" max="100" inputmode="numeric"></label>
     </div>
-    <div class="actions"><button class="btn" type="submit">Salva</button><span class="spacer"></span><button class="btn ghost" type="button" id="goalClose">Chiudi</button></div>
     <div class="msg" id="goalMsg"></div>
+    </div>
+  </form>
+</dialog>
+
+<!-- Dettaglio obiettivo -->
+<dialog id="detDlg">
+  <form class="sheet" id="detForm">
+    <div class="sheet-h"><button type="button" class="x" id="detClose" aria-label="Chiudi">✕</button><h3 id="detTitle">Dettaglio</h3><button class="btn sm" type="submit">Salva</button></div>
+    <div class="sheet-b" id="detBody"></div>
   </form>
 </dialog>
 
@@ -401,6 +440,14 @@ function engagement(s){if(!s||!s.views)return null;return((s.likes||0)+2*(s.comm
 const published=()=>items.filter(i=>i.stato==="pubblicato");
 const todo=()=>items.filter(i=>i.stato!=="pubblicato");
 
+/* ---------- fogli (dialog) ---------- */
+function openDlg(id){const d=$(id);if(!d.open){try{d.showModal()}catch(e){d.setAttribute("open","")}}document.documentElement.classList.add("locked");const b=d.querySelector(".sheet-b");if(b)b.scrollTop=0}
+function closeDlg(id){const d=$(id);if(d.open)d.close()}
+for(const id of ["dlg","pickDlg","goalDlg","detDlg"]){const d=$(id);
+  d.addEventListener("close",()=>{if(![...document.querySelectorAll("dialog")].some(x=>x.open))document.documentElement.classList.remove("locked")});
+  d.addEventListener("click",e=>{if(e.target===d)d.close()});}
+const ttLink=i=>i.video_url||(i.video_id?"https://www.tiktok.com/@francescozampaglione/video/"+i.video_id:"");
+
 /* ---------- views ---------- */
 function setView(v){
   view=v;
@@ -417,8 +464,8 @@ function render(){renderOggi();renderPiano();renderPub();renderAna();
   const fl=[...new Set(items.map(i=>i.format).filter(Boolean))].sort();$("fmtList").innerHTML=fl.map(f=>`<option value="${esc(f)}">`).join("");}
 
 /* ---------- OGGI ---------- */
-function goalCard(k,v,sub,ratio,color){const r=Math.max(0,Math.min(1,ratio||0));
-  return `<div class="goal"><div class="k">${k}</div><div class="v">${v}</div><div class="bar"><i style="width:${Math.round(r*100)}%;background:${color}"></i></div><div class="s">${sub}</div></div>`}
+function goalCard(k,v,sub,ratio,color,key){const r=Math.max(0,Math.min(1,ratio||0));
+  return `<div class="goal" role="button" tabindex="0" data-goal="${key}"><div class="k">${k}</div><div class="v">${v}</div><div class="bar"><i style="width:${Math.round(r*100)}%;background:${color}"></i></div><div class="s">${sub}</div></div>`}
 function renderOggi(){
   const g={...DEFAULT_GOALS,...(goals||{})};
   const ws=weekStart(0),we=addDays(ws,7),wsI=isoD(ws),weI=isoD(we);
@@ -453,10 +500,10 @@ function renderOggi(){
   const sc10=recent10.map(i=>scoreOf(i.stats)).filter(Boolean).map(x=>x.total);
   const avgS=sc10.length?Math.round(sc10.reduce((a,b)=>a+b,0)/sc10.length):null;
   $("goals").innerHTML=
-    goalCard("Follower",cur!=null?fmtInt(cur):"–",fSub,fRatio,"var(--cyan)")+
-    goalCard("Views questa settimana",`${fmtN(wViews)}<small> / ${fmtN(g.views_settimana)}</small>`,`settimana scorsa ${fmtN(lwViews)} · dati TikTok con 1-2 giorni di ritardo`,wViews/g.views_settimana,"var(--accent)")+
-    goalCard("Post questa settimana",`${wPosts}<small> / ${g.post_settimana}</small>`,`${wPosts>=expected?"in linea":"dovresti essere a "+expected} · costanza: ${streak} ${streak===1?"giorno":"giorni"} di fila`,wPosts/g.post_settimana,wPosts>=expected?"var(--good)":"var(--warn)")+
-    goalCard("Punteggio medio",avgS==null?"–":`${avgS}<small> / 100</small>`,`ultimi ${sc10.length} video · obiettivo ${g.punteggio_target} · completamento ${pct(avgC)}`,avgS==null?0:avgS/g.punteggio_target,scoreColor(avgS));
+    goalCard("Follower",cur!=null?fmtInt(cur):"–",fSub,fRatio,"var(--cyan)","follower")+
+    goalCard("Views questa settimana",`${fmtN(wViews)}<small> / ${fmtN(g.views_settimana)}</small>`,`settimana scorsa ${fmtN(lwViews)} · dati TikTok con 1-2 giorni di ritardo`,wViews/g.views_settimana,"var(--accent)","views")+
+    goalCard("Post questa settimana",`${wPosts}<small> / ${g.post_settimana}</small>`,`${wPosts>=expected?"in linea":"dovresti essere a "+expected} · costanza: ${streak} ${streak===1?"giorno":"giorni"} di fila`,wPosts/g.post_settimana,wPosts>=expected?"var(--good)":"var(--warn)","post")+
+    goalCard("Punteggio medio",avgS==null?"–":`${avgS}<small> / 100</small>`,`ultimi ${sc10.length} video · obiettivo ${g.punteggio_target} · completamento ${pct(avgC)}`,avgS==null?0:avgS/g.punteggio_target,scoreColor(avgS),"score");
 
   // Prossimo post
   const t=todayIso();
@@ -561,7 +608,7 @@ function renderPub(){
         <div class="stat"><div class="v">${s.follower??"–"}</div><div class="k">follower</div></div>
       </div>
       ${v?`<div class="verdict ${esc(v.tono||"")}">${esc(v.testo||"")}</div>`:""}
-      <div class="copyrow">${sc?`<button class="btn ghost sm" type="button" data-parts="${esc(i.id)}">Dettaglio punteggio</button>`:""}${captionOf(i)?`<button class="btn ghost sm" type="button" data-copy="${esc(i.id)}">Copia caption</button>`:""}<button class="btn ghost sm" type="button" data-clone="${esc(i.id)}">Rifai simile</button></div>
+      <div class="copyrow">${ttLink(i)?`<a class="btn sm" href="${esc(ttLink(i))}" target="_blank" rel="noopener" data-ext="1">Apri su TikTok ↗</a>`:""}${sc?`<button class="btn ghost sm" type="button" data-parts="${esc(i.id)}">Dettaglio punteggio</button>`:""}${captionOf(i)?`<button class="btn ghost sm" type="button" data-copy="${esc(i.id)}">Copia caption</button>`:""}<button class="btn ghost sm" type="button" data-clone="${esc(i.id)}">Rifai simile</button></div>
       ${i.aggiornato?`<div class="meta">Dati al ${esc(i.aggiornato)}</div>`:""}
     </div>`}).join(""):`<div class="empty">Nessun video pubblicato registrato.</div>`;
 }
@@ -593,6 +640,8 @@ function renderAna(){
 
 /* ---------- interazioni ---------- */
 document.addEventListener("click",async e=>{
+  if(e.target.closest("[data-ext]"))return;
+  const gl=e.target.closest("[data-goal]");if(gl){openGoal(gl.dataset.goal);return}
   const cp=e.target.closest("[data-copy]");if(cp){e.stopPropagation();const it=items.find(x=>x.id===cp.dataset.copy);if(it)copyText(captionOf(it),"Caption copiata: incollala su TikTok");return}
   const pt=e.target.closest("[data-parts]");if(pt){e.stopPropagation();const el=$("parts-"+pt.dataset.parts);if(el){el.classList.toggle("on");pt.textContent=el.classList.contains("on")?"Nascondi dettaglio":"Dettaglio punteggio"}return}
   const cl=e.target.closest("[data-clone]");if(cl){e.stopPropagation();const it=items.find(x=>x.id===cl.dataset.clone);if(it)openEditor(null,{titolo:it.titolo+" (nuova versione)",format:it.format||"",testo:it.testo||"",scena:it.scena||"",hashtag:it.hashtag||"",stato:"idea",note:"Variante di “"+it.titolo+"”"+(scoreOf(it.stats)?" ("+scoreOf(it.stats).total+"/100). Da migliorare: "+weakest(scoreOf(it.stats)).k.toLowerCase()+".":"")});return}
@@ -602,31 +651,35 @@ document.addEventListener("click",async e=>{
   const fm=e.target.closest("[data-fmt]");if(fm){fmtFilter=fm.dataset.fmt;renderPub();return}
   const op=e.target.closest("[data-open]");if(op){openEditor(items.find(x=>x.id===op.dataset.open));return}
 });
-document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(".card,.pub")){e.preventDefault();e.target.click()}});
+document.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches(".card,.pub,.goal")){e.preventDefault();e.target.click()}});
 async function patch(it,data,msg){const res=await sb.from("tiktok_contenuti").update(data).eq("id",it.id);if(res.error){toast("Modifica non riuscita");return false}Object.assign(it,data);render();if(msg)toast(msg);return true}
 async function advance(it){const n=NEXT[it.stato];if(!n)return;const data={stato:n};if(n==="pubblicato"&&!it.pubblicato_il)data.pubblicato_il=new Date().toISOString();await patch(it,data,"Ora è: "+LBL[n].toLowerCase())}
 
 function openPicker(d,h){pickCtx={d,h};$("pickTitle").textContent=`${fmtDay(d,h)}: cosa pubblichi?`;
   const cand=todo().filter(i=>!i.data).sort((a,b)=>["pronto","da_montare","da_girare","idea"].indexOf(a.stato)-["pronto","da_montare","da_girare","idea"].indexOf(b.stato));
   $("pickList").innerHTML=cand.length?cand.map(i=>`<button type="button" data-pick="${esc(i.id)}"><strong>${esc(i.titolo)}</strong> <span class="chip">${esc(LBL[i.stato])}</span></button>`).join(""):`<div class="empty">Tutte le idee hanno già una data.</div>`;
-  $("pickDlg").showModal()}
-$("pickList").addEventListener("click",async e=>{const b=e.target.closest("[data-pick]");if(!b)return;const it=items.find(x=>x.id===b.dataset.pick);$("pickDlg").close();if(it)await patch(it,{data:pickCtx.d,orario:pickCtx.h},"Messo in calendario")});
-$("pickNew").addEventListener("click",()=>{$("pickDlg").close();openEditor(null,{data:pickCtx.d,orario:pickCtx.h,stato:"da_girare"})});
-$("pickClose").addEventListener("click",()=>$("pickDlg").close());
+  openDlg("pickDlg")}
+$("pickList").addEventListener("click",async e=>{const b=e.target.closest("[data-pick]");if(!b)return;const it=items.find(x=>x.id===b.dataset.pick);closeDlg("pickDlg");if(it)await patch(it,{data:pickCtx.d,orario:pickCtx.h},"Messo in calendario")});
+$("pickNew").addEventListener("click",()=>{closeDlg("pickDlg");openEditor(null,{data:pickCtx.d,orario:pickCtx.h,stato:"da_girare"})});
+$("pickClose").addEventListener("click",()=>closeDlg("pickDlg"));
 
 /* ---------- editor ---------- */
-const F=["titolo","stato","format","testo","scena","descrizione","hashtag","data","orario","note"];
+const F=["titolo","stato","format","testo","scena","descrizione","hashtag","data","orario","video_url","note"];
 function openEditor(it,preset){
   editing=it||null;delArmed=false;$("del").textContent="Elimina";$("edMsg").textContent="";
   $("edTitle").textContent=it?"Modifica":"Nuova idea";$("del").classList.toggle("hide",!it);
-  const f={titolo:"",stato:"idea",format:"",testo:"",scena:"",descrizione:"",hashtag:"",data:"",orario:"",note:"",...(preset||{}),...(it||{})};
+  const f={titolo:"",stato:"idea",format:"",testo:"",scena:"",descrizione:"",hashtag:"",data:"",orario:"",video_url:"",note:"",...(preset||{}),...(it||{})};
+  if(it&&!f.video_url)f.video_url=ttLink(it);
+  const sc=it&&scoreOf(it.stats);const link=it&&ttLink(it);
+  $("edTop").innerHTML=(link?`<a class="btn sm" href="${esc(link)}" target="_blank" rel="noopener">Apri su TikTok ↗</a>`:"")+(sc?`<span class="score" style="background:${scoreColor(sc.total)}">${sc.total}/100</span>`:"");
+  $("edTop").classList.toggle("hide",!link&&!sc);
   for(const k of F)$("f-"+k).value=f[k]??"";
   const done=new Set(Array.isArray(f.checklist)?f.checklist:[]);
   $("checks").innerHTML=`<div class="ttl">Prima di pubblicare</div>`+CHECKS.map((c,i)=>`<label for="ck${i}"><input type="checkbox" id="ck${i}" value="${esc(c)}"${done.has(c)?" checked":""}>${esc(c)}</label>`).join("");
-  hashCheck();$("dlg").showModal();
+  hashCheck();openDlg("dlg");
 }
 $("add").addEventListener("click",()=>openEditor(null));
-$("close").addEventListener("click",()=>$("dlg").close());
+$("close").addEventListener("click",()=>closeDlg("dlg"));
 $("copy").addEventListener("click",()=>copyText([$("f-descrizione").value.trim(),$("f-hashtag").value.trim()].filter(Boolean).join("\n\n"),"Caption copiata: incollala su TikTok"));
 $("cpTesto").addEventListener("click",()=>copyText($("f-testo").value.trim(),"Testo a schermo copiato"));
 function hashCheck(){const tags=($("f-hashtag").value.match(/#[^\s#]+/g)||[]);const msgs=[];
@@ -636,24 +689,95 @@ $("f-hashtag").addEventListener("input",hashCheck);
 $("form").addEventListener("submit",async e=>{
   e.preventDefault();const data={};for(const k of F)data[k]=$("f-"+k).value.trim();
   if(!data.titolo){$("edMsg").textContent="Serve almeno un titolo.";return}
-  data.data=data.data||null;data.checklist=[...document.querySelectorAll("#checks input:checked")].map(x=>x.value);
+  data.data=data.data||null;data.video_url=data.video_url||null;if(data.video_url){const m=data.video_url.match(/video\/(\d+)/);if(m)data.video_id=m[1]}data.checklist=[...document.querySelectorAll("#checks input:checked")].map(x=>x.value);
   if(data.stato==="pubblicato"&&!(editing&&editing.pubblicato_il))data.pubblicato_il=new Date().toISOString();
   $("save").disabled=true;$("edMsg").textContent="Salvataggio…";
   try{const res=editing?await sb.from("tiktok_contenuti").update(data).eq("id",editing.id):await sb.from("tiktok_contenuti").insert(data);
-    if(res.error)throw res.error;$("dlg").close();toast("Salvato");load()}
+    if(res.error)throw res.error;closeDlg("dlg");toast("Salvato");load()}
   catch(err){$("edMsg").textContent="Salvataggio non riuscito. Riprova tra poco."}
   finally{$("save").disabled=false}
 });
 $("del").addEventListener("click",async()=>{if(!editing)return;if(!delArmed){delArmed=true;$("del").textContent="Conferma eliminazione";return}
-  const res=await sb.from("tiktok_contenuti").delete().eq("id",editing.id);if(res.error){$("edMsg").textContent="Eliminazione non riuscita.";return}$("dlg").close();toast("Eliminato");load()});
+  const res=await sb.from("tiktok_contenuti").delete().eq("id",editing.id);if(res.error){$("edMsg").textContent="Eliminazione non riuscita.";return}closeDlg("dlg");toast("Eliminato");load()});
+
+/* ---------- dettaglio obiettivi ---------- */
+let detKey=null;
+function barsSvg(vals,labels,color,hi){const W=340,H=150,pb=20,pt=10,n=vals.length,bw=W/n;const max=niceMax(Math.max(1,...vals.map(v=>v||0)));
+  let o=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block"><line x1="0" x2="${W}" y1="${pt}" y2="${pt}" stroke="var(--line)"/><text x="2" y="${pt+10}" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${fmtN(max)}</text>`;
+  vals.forEach((v,i)=>{const h=v?(H-pt-pb)*(v/max):0;const x=i*bw+bw*.2;o+=v==null?`<rect x="${x}" y="${H-pb-2}" width="${bw*.6}" height="2" fill="var(--line)"/>`:`<rect x="${x}" y="${H-pb-h}" width="${bw*.6}" height="${Math.max(h,1)}" rx="3" fill="${i===hi?"var(--accent)":color}"/>`;
+    o+=`<text x="${i*bw+bw/2}" y="${H-5}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${labels[i]}</text>`});return o+"</svg>"}
+function lineSvg(pts,target){const W=340,H=150,pb=20,pt=12;const vals=pts.map(p=>p.v);const lo=Math.min(...vals),hi=Math.max(...vals);const pad2=Math.max(5,Math.round((hi-lo)*.3));const mn=lo-pad2,mx=hi+pad2;
+  const X=i=>pts.length<2?W/2:12+i*(W-24)/(pts.length-1),Y=v=>pt+(H-pt-pb)*(1-(v-mn)/(mx-mn));
+  let o=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">`;
+  o+=`<text x="2" y="${pt+8}" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${fmtInt(mx)}</text><text x="2" y="${H-pb-2}" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${fmtInt(mn)}</text>`;
+  o+=`<path d="${pts.map((p,i)=>(i?"L":"M")+X(i)+" "+Y(p.v)).join(" ")} L ${X(pts.length-1)} ${H-pb} L ${X(0)} ${H-pb} Z" fill="var(--cyan)" opacity=".12"/>`;
+  o+=`<path d="${pts.map((p,i)=>(i?"L":"M")+X(i)+" "+Y(p.v)).join(" ")}" fill="none" stroke="var(--cyan)" stroke-width="2.5"/>`;
+  const l=pts.length-1;o+=`<circle cx="${X(l)}" cy="${Y(pts[l].v)}" r="4" fill="var(--cyan)"/>`;
+  pts.forEach((p,i)=>{if(i%3===0||i===l){const d=parseD(p.d);o+=`<text x="${X(i)}" y="${H-5}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${d.getDate()}/${d.getMonth()+1}</text>`}});
+  return o+"</svg>"}
+function openGoal(key){detKey=key;const g={...DEFAULT_GOALS,...(goals||{})};const t=todayIso();let title="",html="";
+  const ws=weekStart(0);const wDays=[...Array(7)].map((_,i)=>isoD(addDays(ws,i)));const wl=["L","M","M","G","V","S","D"];
+  if(key==="follower"){title="Follower";
+    const f=giorni.filter(x=>x.follower_totali!=null).sort((a,b)=>a.data.localeCompare(b.data));
+    if(!f.length)html=`<div class="empty">Nessun dato sui follower ancora.</div>`;else{
+      const cur=f[f.length-1],first=f[0];const ref7=f.find(x=>x.data>=isoD(addDays(parseD(cur.data),-7)))||first;
+      const d7=cur.follower_totali-ref7.follower_totali;const span=Math.max(1,Math.round((parseD(cur.data)-parseD(ref7.data))/864e5));const perDay=d7/span;
+      const gap=g.follower_target-cur.follower_totali;let need="–",proj="–",when="–";
+      if(g.follower_scadenza){const days=Math.max(1,Math.round((parseD(g.follower_scadenza)-parseD(cur.data))/864e5));need=gap>0?Math.ceil(gap/days)+" al giorno":"raggiunto";proj=fmtInt(Math.round(cur.follower_totali+perDay*days))}
+      when=perDay>0?fmtDay(isoD(addDays(parseD(cur.data),Math.ceil(gap/perDay)))):"mai, al ritmo attuale";
+      html=`<div><div class="big">${fmtInt(cur.follower_totali)}</div><div class="sub">al ${fmtDay(cur.data)} · obiettivo ${fmtInt(g.follower_target)}</div></div>
+      <div class="box">${lineSvg(f.map(x=>({d:x.data,v:x.follower_totali})))}</div>
+      <div class="kv"><div><b>${d7>=0?"+":""}${d7}</b><span>ultimi 7 giorni</span></div><div><b>${gap>0?fmtInt(gap):"0"}</b><span>mancano</span></div><div><b>${need}</b><span>servono per la scadenza</span></div><div><b>${proj}</b><span>previsione alla scadenza</span></div></div>
+      <div class="box insight">${perDay<=0?"Al ritmo attuale i follower non crescono. Il motivo più probabile: i video portano views ma non un motivo per seguirti. Serie con titolo fisso e un nome per la community sono le leve più forti.":"Al ritmo attuale raggiungi l'obiettivo "+esc(when)+"."}</div>`}
+    html+=`<div class="edit-goal"><div class="two"><label for="d-ft">Follower da raggiungere<input id="d-ft" type="number" min="0" step="100" inputmode="numeric" value="${g.follower_target}"></label><label for="d-fs">Entro il<input id="d-fs" type="date" value="${g.follower_scadenza||""}"></label></div></div>`}
+  if(key==="views"){title="Views della settimana";
+    const vals=wDays.map(d=>{const r=giorni.find(x=>x.data===d);return r&&r.views!=null?r.views:null});const tot=vals.reduce((a,v)=>a+(v||0),0);
+    const lw=[...Array(7)].map((_,i)=>isoD(addDays(ws,i-7))).reduce((a,d)=>{const r=giorni.find(x=>x.data===d);return a+(r&&r.views||0)},0);
+    const left=Math.max(1,7-((new Date().getDay()+6)%7));const best=Math.max(...vals.map(v=>v||0));
+    const top=[...published()].filter(i=>{const d=pubLocalIso(i);return d&&wDays.includes(d)}).sort((a,b)=>((b.stats||{}).views||0)-((a.stats||{}).views||0)).slice(0,3);
+    html=`<div><div class="big">${fmtInt(tot)}</div><div class="sub">su ${fmtInt(g.views_settimana)} · i dati TikTok arrivano con 1-2 giorni di ritardo</div></div>
+    <div class="box">${barsSvg(vals,wl,"var(--ink)",wDays.indexOf(t))}</div>
+    <div class="kv"><div><b>${fmtInt(lw)}</b><span>settimana scorsa</span></div><div><b>${tot>=g.views_settimana?"raggiunto":fmtInt(Math.ceil((g.views_settimana-tot)/left))}</b><span>servono al giorno da qui a domenica</span></div><div><b>${fmtInt(best)}</b><span>giorno migliore</span></div><div><b>${lw?((tot-lw)/lw*100>=0?"+":"")+Math.round((tot-lw)/lw*100)+"%":"–"}</b><span>rispetto alla scorsa</span></div></div>
+    ${top.length?`<h2 style="margin:0">Video più visti della settimana</h2><div class="lst">${top.map(i=>`<div class="r"><span>${esc(i.titolo)}</span><span class="mono">${fmtN((i.stats||{}).views)}</span></div>`).join("")}</div>`:""}
+    <div class="edit-goal"><label for="d-vs">Views a settimana<input id="d-vs" type="number" min="0" step="1000" inputmode="numeric" value="${g.views_settimana}"></label></div>`}
+  if(key==="post"){title="Costanza";
+    const days=new Set(published().map(pubLocalIso).filter(Boolean));const counts=wDays.map(d=>published().filter(i=>pubLocalIso(i)===d).length);
+    const tot=counts.reduce((a,b)=>a+b,0);let streak=0,d=new Date();d.setHours(0,0,0,0);if(!days.has(isoD(d)))d=addDays(d,-1);while(days.has(isoD(d))){streak++;d=addDays(d,-1)}
+    const sorted=[...days].sort();let best=0,run=0,prev=null;for(const x of sorted){run=prev&&isoD(addDays(parseD(prev),1))===x?run+1:1;best=Math.max(best,run);prev=x}
+    const planned=todo().filter(i=>i.data&&wDays.includes(i.data)&&i.data>=t).length;
+    html=`<div><div class="big">${tot}<span style="font-size:20px;color:var(--muted)"> / ${g.post_settimana}</span></div><div class="sub">post questa settimana · ${planned} in calendario fino a domenica</div></div>
+    <div class="box">${barsSvg(counts,wl,"var(--good)",wDays.indexOf(t))}</div>
+    <div class="kv"><div><b>${streak}</b><span>giorni di fila (attuale)</span></div><div><b>${best}</b><span>record di giorni di fila</span></div><div><b>${Math.max(0,g.post_settimana-tot-planned)}</b><span>post da aggiungere al calendario</span></div><div><b>${(g.post_settimana/7).toFixed(1).replace(".",",")}</b><span>post al giorno per l'obiettivo</span></div></div>
+    <div class="box insight">Con 2 al giorno, meglio uno alle 12 e uno alle 18. La costanza conta più del singolo video, ma non superare i 3 al giorno.</div>
+    <div class="edit-goal"><label for="d-ps">Post a settimana<input id="d-ps" type="number" min="1" max="50" inputmode="numeric" value="${g.post_settimana}"></label></div>`}
+  if(key==="score"){title="Punteggio medio";
+    const rec=[...published()].sort((a,b)=>String(b.pubblicato_il).localeCompare(String(a.pubblicato_il))).slice(0,10).map(i=>({i,sc:scoreOf(i.stats)})).filter(x=>x.sc);
+    const avg=rec.length?Math.round(rec.reduce((a,x)=>a+x.sc.total,0)/rec.length):null;
+    const w={};rec.forEach(x=>{const k=weakest(x.sc).k;w[k]=(w[k]||0)+1});const topW=Object.entries(w).sort((a,b)=>b[1]-a[1])[0];
+    const fac=["Visione","Condivisioni","Salvataggi","Commenti","Follower","Like"].map(k=>{const v=rec.map(x=>x.sc.parts.find(p=>p.k===k).r);return{k,r:v.length?v.reduce((a,b)=>a+b,0)/v.length:0}});
+    html=`<div><div class="big" style="color:${scoreColor(avg)}">${avg??"–"}<span style="font-size:20px;color:var(--muted)"> / 100</span></div><div class="sub">media degli ultimi ${rec.length} video · obiettivo ${g.punteggio_target}</div></div>
+    <div class="parts on">${fac.map(f=>`<div class="part"><span>${f.k}</span><div class="bar"><i style="width:${Math.round(f.r*100)}%;background:${scoreColor(f.r*100)}"></i></div><span class="n">${Math.round(f.r*100)}%</span></div>`).join("")}</div>
+    ${topW?`<div class="box insight">Il punto debole più frequente è <strong>${esc(topW[0].toLowerCase())}</strong> (${topW[1]} video su ${rec.length}). ${esc(ADVICE[topW[0]])}</div>`:""}
+    <div class="lst">${rec.map(x=>`<div class="r" role="button" data-open="${esc(x.i.id)}"><span>${esc(x.i.titolo)}</span><span class="score" style="background:${scoreColor(x.sc.total)}">${x.sc.total}</span></div>`).join("")}</div>
+    <div class="edit-goal"><div class="two"><label for="d-sc">Punteggio medio (0-100)<input id="d-sc" type="number" min="1" max="100" inputmode="numeric" value="${g.punteggio_target}"></label><label for="d-ct">Completamento medio (%)<input id="d-ct" type="number" min="1" max="100" inputmode="numeric" value="${Math.round(g.completamento_target*100)}"></label></div></div>`}
+  $("detTitle").textContent=title;$("detBody").innerHTML=html+`<div class="msg" id="detMsg"></div>`;openDlg("detDlg")}
+$("detClose").addEventListener("click",()=>closeDlg("detDlg"));
+$("detBody").addEventListener("click",e=>{const r=e.target.closest("[data-open]");if(r){e.stopPropagation();closeDlg("detDlg");openEditor(items.find(x=>x.id===r.dataset.open))}});
+$("detForm").addEventListener("submit",async e=>{e.preventDefault();const g={...DEFAULT_GOALS,...(goals||{})};const v=id=>$(id)?$(id).value:null;
+  const row={follower_target:g.follower_target,follower_scadenza:g.follower_scadenza,views_settimana:g.views_settimana,post_settimana:g.post_settimana,completamento_target:g.completamento_target,punteggio_target:g.punteggio_target,updated_at:new Date().toISOString()};
+  if(detKey==="follower"){row.follower_target=+v("d-ft")||row.follower_target;row.follower_scadenza=v("d-fs")||null}
+  if(detKey==="views")row.views_settimana=+v("d-vs")||row.views_settimana;
+  if(detKey==="post")row.post_settimana=+v("d-ps")||row.post_settimana;
+  if(detKey==="score"){row.punteggio_target=+v("d-sc")||row.punteggio_target;row.completamento_target=(+v("d-ct")||30)/100}
+  const res=await sb.from("tiktok_obiettivi").upsert(row);if(res.error){$("detMsg").textContent="Salvataggio non riuscito.";return}closeDlg("detDlg");toast("Obiettivo aggiornato");load()});
 
 /* ---------- obiettivi ---------- */
 $("editGoals").addEventListener("click",()=>{const g={...DEFAULT_GOALS,...(goals||{})};
-  $("g-ft").value=g.follower_target;$("g-fs").value=g.follower_scadenza||"";$("g-vs").value=g.views_settimana;$("g-ps").value=g.post_settimana;$("g-ct").value=Math.round(g.completamento_target*100);$("g-sc").value=g.punteggio_target;$("goalMsg").textContent="";$("goalDlg").showModal()});
-$("goalClose").addEventListener("click",()=>$("goalDlg").close());
+  $("g-ft").value=g.follower_target;$("g-fs").value=g.follower_scadenza||"";$("g-vs").value=g.views_settimana;$("g-ps").value=g.post_settimana;$("g-ct").value=Math.round(g.completamento_target*100);$("g-sc").value=g.punteggio_target;$("goalMsg").textContent="";openDlg("goalDlg")});
+$("goalClose").addEventListener("click",()=>closeDlg("goalDlg"));
 $("goalForm").addEventListener("submit",async e=>{e.preventDefault();
   const row={follower_target:+$("g-ft").value||DEFAULT_GOALS.follower_target,follower_scadenza:$("g-fs").value||null,views_settimana:+$("g-vs").value||DEFAULT_GOALS.views_settimana,post_settimana:+$("g-ps").value||DEFAULT_GOALS.post_settimana,completamento_target:(+$("g-ct").value||30)/100,punteggio_target:+$("g-sc").value||60,updated_at:new Date().toISOString()};
-  const res=await sb.from("tiktok_obiettivi").upsert(row);if(res.error){$("goalMsg").textContent="Salvataggio non riuscito.";return}$("goalDlg").close();toast("Obiettivi salvati");load()});
+  const res=await sb.from("tiktok_obiettivi").upsert(row);if(res.error){$("goalMsg").textContent="Salvataggio non riuscito.";return}closeDlg("goalDlg");toast("Obiettivi salvati");load()});
 
 /* ---------- dati ---------- */
 let started=false,loading=false,again=false;
