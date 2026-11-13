@@ -197,6 +197,12 @@ textarea{resize:vertical;min-height:64px}
 .pick button{text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer}
 #gate{min-height:100vh;display:grid;place-items:center;padding:24px}
 .gbox{width:min(380px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
+#ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 8px);z-index:30;transform:translate(-50%,-70px);display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 10px;font-size:13px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,.12);pointer-events:none;opacity:0}
+#ptr svg{width:18px;height:18px;transition:transform .15s}
+#ptr.ready svg{transform:rotate(180deg)}
+#ptr.spin svg{animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+body{overscroll-behavior-y:contain}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:14px;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
@@ -378,6 +384,7 @@ textarea{resize:vertical;min-height:64px}
   </form>
 </dialog>
 
+<div id="ptr" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 4v13M6 11l6 6 6-6"/></svg><span id="ptrTxt">Trascina per aggiornare</span></div>
 <div class="toast" id="toast"></div>
 
 <script src="../supabase.js"></script>
@@ -798,6 +805,17 @@ function start(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});
   setInterval(()=>{if(!document.hidden)load()},120000);
 }
+/* ---------- trascina in basso per aggiornare ---------- */
+(function(){const el=$("ptr"),txt=$("ptrTxt"),TH=75;let y0=null,dy=0,busy=false;
+  const anyOpen=()=>[...document.querySelectorAll("dialog")].some(d=>d.open);
+  const set=(d)=>{const k=Math.min(d,TH*1.6);el.style.transform=`translate(-50%,${-70+k}px)`;el.style.opacity=Math.min(1,k/40);el.classList.toggle("ready",d>=TH);txt.textContent=d>=TH?"Rilascia per aggiornare":"Trascina per aggiornare"};
+  const reset=()=>{el.style.transition="transform .25s, opacity .25s";el.style.transform="translate(-50%,-70px)";el.style.opacity=0;setTimeout(()=>{el.style.transition="";el.classList.remove("ready","spin")},260)};
+  window.addEventListener("touchstart",e=>{if(busy||anyOpen()||window.scrollY>0||$("app").classList.contains("hide")){y0=null;return}y0=e.touches[0].clientY;dy=0},{passive:true});
+  window.addEventListener("touchmove",e=>{if(y0==null)return;dy=(e.touches[0].clientY-y0)*.55;if(dy>0&&window.scrollY<=0)set(dy);else if(dy<=0){y0=null;reset()}},{passive:true});
+  window.addEventListener("touchend",async()=>{if(y0==null)return;y0=null;if(dy<TH){reset();return}
+    busy=true;el.classList.remove("ready");el.classList.add("spin");txt.textContent="Aggiornamento…";el.style.transform="translate(-50%,0)";el.style.opacity=1;
+    const t0=Date.now();await load();const wait=Math.max(0,600-(Date.now()-t0));setTimeout(()=>{txt.textContent="Aggiornato";setTimeout(()=>{reset();busy=false},450)},wait)});
+})();
 function gate(){$("app").classList.add("hide");$("gate").classList.remove("hide")}
 $("gForm").addEventListener("submit",async e=>{e.preventDefault();$("gGo").disabled=true;$("gMsg").textContent="Accesso…";
   const {error}=await sb.auth.signInWithPassword({email:$("gE").value.trim(),password:$("gP").value});$("gGo").disabled=false;
