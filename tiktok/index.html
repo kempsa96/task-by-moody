@@ -118,6 +118,14 @@ nav.tabs button[aria-selected="true"]{color:var(--ink);background:var(--paper)}
 .stat{border-top:1px solid var(--line);padding-top:6px}
 .stat .v{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
 .stat .k{font-size:11px;color:var(--muted)}
+.score{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:13px;font-weight:500;border-radius:999px;padding:2px 9px;color:#fff;white-space:nowrap}
+.parts{display:none;flex-direction:column;gap:5px;background:var(--paper);border-radius:10px;padding:10px 12px;font-size:12px}
+.parts.on{display:flex}
+.part{display:grid;grid-template-columns:118px 1fr 52px;gap:8px;align-items:center}
+.part .bar{height:5px}
+.part .n{font-family:var(--mono);text-align:right;color:var(--muted)}
+.copyrow{display:flex;gap:6px;flex-wrap:wrap}
+.hint{font-size:12px;color:var(--warn)}
 .verdict{font-size:13px;border-left:3px solid var(--muted);padding:2px 0 2px 8px}
 .verdict.good{border-color:var(--good)} .verdict.mid{border-color:var(--warn)} .verdict.bad{border-color:var(--bad)}
 .legend{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
@@ -231,9 +239,10 @@ textarea{resize:vertical;min-height:64px}
   <div id="v-pub" class="hide">
     <div class="filters" id="filters"></div>
     <div class="legend" style="margin-bottom:12px">
-      <span><span class="dot" style="background:var(--good)"></span>completo oltre 30%</span>
-      <span><span class="dot" style="background:var(--warn)"></span>20–30%</span>
-      <span><span class="dot" style="background:var(--bad)"></span>sotto 20%</span>
+      <span>Punteggio:</span>
+      <span><span class="dot" style="background:var(--good)"></span>65 e oltre</span>
+      <span><span class="dot" style="background:var(--warn)"></span>45–64</span>
+      <span><span class="dot" style="background:var(--bad)"></span>sotto 45</span>
     </div>
     <div class="grid" id="pubList"></div>
   </div>
@@ -243,7 +252,7 @@ textarea{resize:vertical;min-height:64px}
     <section>
       <h2>Format</h2>
       <div class="tbl-wrap" id="fmtTbl"></div>
-      <div class="sub" style="margin-top:6px">Coinvolgimento = (like + 2×commenti + 3×condivisioni + 2×salvataggi) ÷ views.</div>
+      <div class="sub" style="margin-top:6px">Punteggio 0-100: visione 45, condivisioni 20, salvataggi 10, commenti 10, follower 10, like 5. Coinvolgimento = (like + 2×commenti + 3×condivisioni + 2×salvataggi) ÷ views.</div>
     </section>
     <section>
       <h2>Fascia oraria di pubblicazione</h2>
@@ -280,9 +289,11 @@ textarea{resize:vertical;min-height:64px}
     </div>
     <datalist id="fmtList"></datalist>
     <label for="f-testo">Testo a schermo<input id="f-testo"></label>
+    <div class="copyrow"><button class="btn ghost sm" type="button" id="cpTesto">Copia testo a schermo</button></div>
     <label for="f-scena">Scena<textarea id="f-scena"></textarea></label>
     <label for="f-descrizione">Descrizione<input id="f-descrizione"></label>
     <label for="f-hashtag">Hashtag<input id="f-hashtag" placeholder="#sharm #vacanza"></label>
+    <div class="hint" id="hashHint"></div>
     <div class="two">
       <label for="f-data">Data<input id="f-data" type="date"></label>
       <label for="f-orario">Orario
@@ -293,7 +304,7 @@ textarea{resize:vertical;min-height:64px}
     <label for="f-note">Note<textarea id="f-note"></textarea></label>
     <div class="actions">
       <button class="btn" type="submit" id="save">Salva</button>
-      <button class="btn ghost" type="button" id="copy">Copia descrizione</button>
+      <button class="btn ghost" type="button" id="copy">Copia caption</button>
       <span class="spacer"></span>
       <button class="btn danger" type="button" id="del">Elimina</button>
       <button class="btn ghost" type="button" id="close">Chiudi</button>
@@ -321,6 +332,7 @@ textarea{resize:vertical;min-height:64px}
       <label for="g-vs">Views a settimana<input id="g-vs" type="number" min="0" step="1000" inputmode="numeric"></label>
       <label for="g-ps">Post a settimana<input id="g-ps" type="number" min="1" max="50" inputmode="numeric"></label>
       <label for="g-ct">Completamento medio (%)<input id="g-ct" type="number" min="1" max="100" inputmode="numeric"></label>
+      <label for="g-sc">Punteggio medio (0-100)<input id="g-sc" type="number" min="1" max="100" inputmode="numeric"></label>
     </div>
     <div class="actions"><button class="btn" type="submit">Salva</button><span class="spacer"></span><button class="btn ghost" type="button" id="goalClose">Chiudi</button></div>
     <div class="msg" id="goalMsg"></div>
@@ -342,7 +354,30 @@ const SLOTS=["10:00","12:00","18:00"];
 const CHECKS=["Gancio scritto nel primo secondo","Durata sotto i 20 secondi","Testo nel terzo centrale, fuori dalle icone","Battuta finale che cresce","Solo hashtag pertinenti","Pubblico alle 10, 12 o 18"];
 const DAYS=["dom","lun","mar","mer","gio","ven","sab"];
 const DAYS_L=["Domenica","Lunedì","Martedì","Mercoledì","Giovedì","Venerdì","Sabato"];
-const DEFAULT_GOALS={follower_target:8000,follower_scadenza:null,views_settimana:30000,post_settimana:14,completamento_target:.30};
+const DEFAULT_GOALS={follower_target:8000,follower_scadenza:null,views_settimana:30000,post_settimana:14,completamento_target:.30,punteggio_target:60};
+/* Punteggio 0-100: visione 45, condivisioni 20, salvataggi 10, commenti 10, follower 10, like 5.
+   Soglie "piene" dai benchmark 2026 (condivisioni 1%, salvataggi 0,5%, like 6%); completamento atteso in base alla durata. */
+function complTarget(d){if(!d)return .35;if(d<=10)return .45;if(d<=20)return .35;if(d<=45)return .25;return .15}
+function scoreOf(s){
+  if(!s||!s.views)return null;const v=s.views,c=x=>Math.max(0,Math.min(1,x));
+  const ct=complTarget(s.durata);const comp=typeof s.completo==="number"?c(s.completo/ct):0;
+  const watch=(s.durata&&s.tempo_medio!=null)?c((s.tempo_medio/s.durata)/.6):null;
+  const ret=watch==null?comp:.6*comp+.4*watch;
+  const parts=[
+    {k:"Visione",w:45,r:ret,d:`${pct(s.completo)} fino alla fine (atteso ${pct(ct)})${watch!=null?" · "+pct(s.tempo_medio/s.durata)+" guardato in media":""}`},
+    {k:"Condivisioni",w:20,r:c((s.condivisioni||0)/v/.01),d:pct((s.condivisioni||0)/v,2)+" (pieno a 1%)"},
+    {k:"Salvataggi",w:10,r:c((s.salvataggi||0)/v/.005),d:pct((s.salvataggi||0)/v,2)+" (pieno a 0,5%)"},
+    {k:"Commenti",w:10,r:c((s.commenti||0)/v/.005),d:pct((s.commenti||0)/v,2)+" (pieno a 0,5%)"},
+    {k:"Follower",w:10,r:c((s.follower||0)/v/.003),d:pct((s.follower||0)/v,2)+" (pieno a 0,3%)"},
+    {k:"Like",w:5,r:c((s.likes||0)/v/.06),d:pct((s.likes||0)/v,1)+" (pieno a 6%)"}];
+  const total=Math.round(parts.reduce((a,p)=>a+p.w*p.r,0));
+  return{total,parts,few:v<200};
+}
+const scoreColor=t=>t==null?"var(--muted)":t>=65?"var(--good)":t>=45?"var(--warn)":"var(--bad)";
+function weakest(sc){return [...sc.parts].sort((a,b)=>(a.w*(1-a.r))<(b.w*(1-b.r))?1:-1)[0]}
+const ADVICE={Visione:"Accorcia e anticipa la battuta: gancio scritto nel primo secondo.",Condivisioni:"Rendilo più riconoscibile: una situazione che fa pensare a un amico preciso.",Salvataggi:"Aggiungi un motivo per rivederlo: un dettaglio nascosto o una lista utile.",Commenti:"Chiudi con una domanda o una presa di posizione che divide.",Follower:"Fai capire che è una serie: titolo fisso e “pt.” nel testo.",Like:"Cura il finale: la battuta deve arrivare negli ultimi 2 secondi."};
+async function copyText(t,okMsg){if(!t){toast("Niente da copiare");return}try{await navigator.clipboard.writeText(t);toast(okMsg||"Copiato")}catch(e){toast("Copia non riuscita")}}
+const captionOf=i=>[i.descrizione,i.hashtag].map(x=>(x||"").trim()).filter(Boolean).join("\n\n");
 
 let items=[],reports=[],giorni=[],goals=null,editing=null,delArmed=false,weekOff=0,pickCtx=null,fmtFilter="",sortBy="recenti",view="oggi",lastSync=null;
 const $=id=>document.getElementById(id);
@@ -412,13 +447,16 @@ function renderOggi(){
   while(postDays.has(isoD(d))){streak++;d=addDays(d,-1)}
   const dayIdx=(new Date().getDay()+6)%7+1;const expected=Math.round(g.post_settimana*dayIdx/7);
   // Completamento ultimi 10
-  const last10=[...pub].sort((a,b)=>String(b.pubblicato_il).localeCompare(String(a.pubblicato_il))).slice(0,10).map(i=>i.stats&&i.stats.completo).filter(x=>typeof x==="number");
+  const recent10=[...pub].sort((a,b)=>String(b.pubblicato_il).localeCompare(String(a.pubblicato_il))).slice(0,10);
+  const last10=recent10.map(i=>i.stats&&i.stats.completo).filter(x=>typeof x==="number");
   const avgC=last10.length?last10.reduce((a,b)=>a+b,0)/last10.length:null;
+  const sc10=recent10.map(i=>scoreOf(i.stats)).filter(Boolean).map(x=>x.total);
+  const avgS=sc10.length?Math.round(sc10.reduce((a,b)=>a+b,0)/sc10.length):null;
   $("goals").innerHTML=
     goalCard("Follower",cur!=null?fmtInt(cur):"–",fSub,fRatio,"var(--cyan)")+
     goalCard("Views questa settimana",`${fmtN(wViews)}<small> / ${fmtN(g.views_settimana)}</small>`,`settimana scorsa ${fmtN(lwViews)} · dati TikTok con 1-2 giorni di ritardo`,wViews/g.views_settimana,"var(--accent)")+
     goalCard("Post questa settimana",`${wPosts}<small> / ${g.post_settimana}</small>`,`${wPosts>=expected?"in linea":"dovresti essere a "+expected} · costanza: ${streak} ${streak===1?"giorno":"giorni"} di fila`,wPosts/g.post_settimana,wPosts>=expected?"var(--good)":"var(--warn)")+
-    goalCard("Completamento medio",pct(avgC),`ultimi ${last10.length} video · obiettivo ${pct(g.completamento_target)}`,avgC==null?0:avgC/g.completamento_target,tone(avgC));
+    goalCard("Punteggio medio",avgS==null?"–":`${avgS}<small> / 100</small>`,`ultimi ${sc10.length} video · obiettivo ${g.punteggio_target} · completamento ${pct(avgC)}`,avgS==null?0:avgS/g.punteggio_target,scoreColor(avgS));
 
   // Prossimo post
   const t=todayIso();
@@ -428,7 +466,7 @@ function renderOggi(){
     const free=nextFreeSlot();
     $("nextPost").innerHTML=`<div class="box next"><div class="meta"><span class="chip">${esc(LBL[n.stato])}</span>${n.data?`<span class="chip mono">${esc(fmtDay(n.data,n.orario))}</span>`:`<span>non ancora in calendario${free?" · primo slot libero "+esc(fmtDay(free.d,free.h)):""}</span>`}</div>
       <div class="t">${esc(n.titolo)}</div>${n.testo?`<div><span class="cap">${esc(n.testo)}</span></div>`:""}
-      <div class="actions"><button class="btn sm" type="button" data-open="${esc(n.id)}">Apri</button>${NEXT[n.stato]?`<button class="btn ghost sm" type="button" data-adv="${esc(n.id)}">Segna come ${esc(LBL[NEXT[n.stato]].toLowerCase())}</button>`:""}${!n.data&&free?`<button class="btn ghost sm" type="button" data-sched="${esc(n.id)}" data-d="${free.d}" data-h="${free.h}">Mettilo ${esc(fmtDay(free.d,free.h))}</button>`:""}</div></div>`;
+      <div class="actions"><button class="btn sm" type="button" data-open="${esc(n.id)}">Apri</button>${captionOf(n)?`<button class="btn ghost sm" type="button" data-copy="${esc(n.id)}">Copia caption</button>`:""}${NEXT[n.stato]?`<button class="btn ghost sm" type="button" data-adv="${esc(n.id)}">Segna come ${esc(LBL[NEXT[n.stato]].toLowerCase())}</button>`:""}${!n.data&&free?`<button class="btn ghost sm" type="button" data-sched="${esc(n.id)}" data-d="${free.d}" data-h="${free.h}">Mettilo ${esc(fmtDay(free.d,free.h))}</button>`:""}</div></div>`;
   }else $("nextPost").innerHTML=`<div class="empty">Niente in programma. Tocca + per aggiungere un'idea.</div>`;
 
   // Grafico
@@ -444,16 +482,18 @@ function renderOggi(){
   svg+="</svg>";$("chart").innerHTML=svg;
   const lastWith=[...days].reverse().find(x=>x.v!=null);$("chartNote").textContent=lastWith?"ultimo dato "+fmtDay(lastWith.d):"";
 
-  $("tip").innerHTML=esc(dailyTip({wPosts,expected,avgC,g,cur,streak}));
+  $("tip").innerHTML=esc(dailyTip({wPosts,expected,avgC,avgS,g,cur,streak,recent10}));
 }
 function niceMax(m){const p=Math.pow(10,Math.floor(Math.log10(m)));for(const k of [1,2,2.5,5,10]){if(k*p>=m)return k*p}return 10*p}
 function nextFreeSlot(){const now=new Date();for(let i=0;i<21;i++){const d=isoD(addDays(now,i));for(const h of SLOTS){if(i===0){const [hh,mm]=h.split(":").map(Number);if(now.getHours()*60+now.getMinutes()>hh*60+mm-30)continue}
   const busy=items.some(x=>x.stato!=="pubblicato"&&x.data===d&&x.orario===h)||published().some(x=>pubLocalIso(x)===d&&Math.abs(pubDate(x).getHours()-Number(h.slice(0,2)))<2);if(!busy)return{d,h}}}return null}
 function dailyTip(c){
   const best=formatStats()[0];
+  const last=c.recent10&&c.recent10[0];const ls=last&&scoreOf(last.stats);
   if(c.wPosts<c.expected) return `Sei a ${c.wPosts} post su ${c.expected} previsti per oggi: pubblica il prossimo alle ${nextFreeSlot()?.h||"18:00"}. La costanza conta più del singolo video.`;
   if(c.avgC!=null&&c.avgC<c.g.completamento_target) return `Il completamento medio è ${pct(c.avgC)} contro un obiettivo di ${pct(c.g.completamento_target)}. Accorcia: gancio scritto nel primo secondo e video sotto i 15 secondi.`;
-  if(best) return `Il format che rende di più è “${best.f}” (coinvolgimento ${pct(best.eng,1)}). Mettine almeno due in calendario questa settimana.`;
+  if(c.avgS!=null&&c.avgS<c.g.punteggio_target&&ls){const w=weakest(ls);return `Ultimo video “${last.titolo}”: ${ls.total}/100. Il punto più debole è ${w.k.toLowerCase()}. ${ADVICE[w.k]}`}
+  if(best) return `Il format che rende di più è “${best.f}” (punteggio medio ${best.score}). Mettine almeno due in calendario questa settimana.`;
   return "Il testo a schermo presenta la situazione, la tua faccia fa la battuta.";
 }
 
@@ -490,7 +530,7 @@ function cardHtml(i){
     <span class="t">${esc(i.titolo)}</span>
     ${i.testo?`<span><span class="cap">${esc(i.testo)}</span></span>`:""}
     <span class="meta">${i.format?`<span class="chip">${esc(i.format)}</span>`:""}${i.data?`<span class="chip mono">${esc(fmtDay(i.data,i.orario))}</span>`:""}${ch?`<span>checklist ${ch}/${CHECKS.length}</span>`:""}</span>
-    <span class="foot"><span class="meta">${i.descrizione?"“"+esc(i.descrizione)+"”":""}</span>${NEXT[i.stato]?`<button class="btn ghost sm" type="button" data-adv="${esc(i.id)}">→ ${esc(LBL[NEXT[i.stato]])}</button>`:""}</span>
+    <span class="foot"><span class="meta">${i.descrizione?"“"+esc(i.descrizione)+"”":""}</span><span class="copyrow">${captionOf(i)?`<button class="btn ghost sm" type="button" data-copy="${esc(i.id)}">Copia</button>`:""}${NEXT[i.stato]?`<button class="btn ghost sm" type="button" data-adv="${esc(i.id)}">→ ${esc(LBL[NEXT[i.stato]])}</button>`:""}</span></span>
   </div>`}
 $("wPrev").addEventListener("click",()=>{weekOff--;renderPiano()});
 $("wNext").addEventListener("click",()=>{weekOff++;renderPiano()});
@@ -499,14 +539,15 @@ $("wNext").addEventListener("click",()=>{weekOff++;renderPiano()});
 function renderPub(){
   const pub=published();const fmts=[...new Set(pub.map(i=>i.format).filter(Boolean))].sort();
   $("filters").innerHTML=`<button class="chip${fmtFilter?"":" on"}" type="button" data-fmt="">Tutti ${pub.length}</button>`+fmts.map(f=>`<button class="chip${fmtFilter===f?" on":""}" type="button" data-fmt="${esc(f)}">${esc(f)} ${pub.filter(i=>i.format===f).length}</button>`).join("")+
-    `<span class="spacer"></span><label for="sortSel" style="flex-direction:row;align-items:center;gap:6px">Ordina<select id="sortSel"><option value="recenti">più recenti</option><option value="views">più views</option><option value="completo">completamento</option><option value="eng">coinvolgimento</option></select></label>`;
+    `<span class="spacer"></span><label for="sortSel" style="flex-direction:row;align-items:center;gap:6px">Ordina<select id="sortSel"><option value="recenti">più recenti</option><option value="views">più views</option><option value="completo">completamento</option><option value="eng">coinvolgimento</option><option value="score">punteggio</option></select></label>`;
   $("sortSel").value=sortBy;
   let list=pub.filter(i=>!fmtFilter||i.format===fmtFilter);
-  const key={recenti:i=>i.pubblicato_il||"",views:i=>(i.stats||{}).views||0,completo:i=>(i.stats||{}).completo||0,eng:i=>engagement(i.stats)||0}[sortBy];
+  const key={score:i=>(scoreOf(i.stats)||{}).total||0,recenti:i=>i.pubblicato_il||"",views:i=>(i.stats||{}).views||0,completo:i=>(i.stats||{}).completo||0,eng:i=>engagement(i.stats)||0}[sortBy];
   list.sort((a,b)=>{const x=key(a),y=key(b);return typeof x==="string"?y.localeCompare(x):y-x});
-  $("pubList").innerHTML=list.length?list.map(i=>{const s=i.stats||{},v=i.verdetto,lr=s.views?(s.likes||0)/s.views:null;
+  $("pubList").innerHTML=list.length?list.map(i=>{const s=i.stats||{},v=i.verdetto,lr=s.views?(s.likes||0)/s.views:null,sc=scoreOf(s);
     return `<div class="pub" role="button" tabindex="0" data-open="${esc(i.id)}">
-      <div class="head"><div><div class="t">${esc(i.titolo)}</div><div class="meta">${i.format?`<span class="chip">${esc(i.format)}</span>`:""}${i.descrizione?"“"+esc(i.descrizione)+"”":""}</div></div><div class="d">${esc(fmtPub(i))}</div></div>
+      <div class="head"><div><div class="t">${esc(i.titolo)}</div><div class="meta">${i.format?`<span class="chip">${esc(i.format)}</span>`:""}${i.descrizione?"“"+esc(i.descrizione)+"”":""}</div></div><div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px"><span class="score" style="background:${scoreColor(sc&&sc.total)}" title="Punteggio">${sc?sc.total:"–"}<small style="opacity:.8">/100</small></span><div class="d">${esc(fmtPub(i))}</div></div></div>
+      ${sc?`<div class="parts" id="parts-${esc(i.id)}">${sc.parts.map(p=>`<div class="part"><span>${p.k} <span style="color:var(--muted)">${p.w}</span></span><div class="bar"><i style="width:${Math.round(p.r*100)}%;background:${scoreColor(p.r*100)}"></i></div><span class="n">${Math.round(p.w*p.r)}/${p.w}</span></div><div style="color:var(--muted);margin:-3px 0 2px">${esc(p.d)}</div>`).join("")}<div><strong>Da migliorare:</strong> ${esc(weakest(sc).k)}. ${esc(ADVICE[weakest(sc).k])}</div>${sc.few?`<div class="hint">Meno di 200 views: punteggio poco affidabile.</div>`:""}</div>`:""}
       <div><div class="meta" style="justify-content:space-between"><span>Guardato fino alla fine</span><span class="mono" style="color:${tone(s.completo)}">${pct(s.completo)}</span></div>
       <div class="bar"><i style="width:${Math.min(100,Math.round((s.completo||0)*100))}%;background:${tone(s.completo)}"></i></div></div>
       <div class="stats">
@@ -520,6 +561,7 @@ function renderPub(){
         <div class="stat"><div class="v">${s.follower??"–"}</div><div class="k">follower</div></div>
       </div>
       ${v?`<div class="verdict ${esc(v.tono||"")}">${esc(v.testo||"")}</div>`:""}
+      <div class="copyrow">${sc?`<button class="btn ghost sm" type="button" data-parts="${esc(i.id)}">Dettaglio punteggio</button>`:""}${captionOf(i)?`<button class="btn ghost sm" type="button" data-copy="${esc(i.id)}">Copia caption</button>`:""}<button class="btn ghost sm" type="button" data-clone="${esc(i.id)}">Rifai simile</button></div>
       ${i.aggiornato?`<div class="meta">Dati al ${esc(i.aggiornato)}</div>`:""}
     </div>`}).join(""):`<div class="empty">Nessun video pubblicato registrato.</div>`;
 }
@@ -531,17 +573,19 @@ function formatStats(){
   return Object.entries(m).map(([f,a])=>{const avg=k=>{const v=a.map(s=>s[k]).filter(x=>typeof x==="number");return v.length?v.reduce((x,y)=>x+y,0)/v.length:null};
     const views=a.reduce((x,s)=>x+(s.views||0),0);
     const eng=views?a.reduce((x,s)=>x+(s.likes||0)+2*(s.commenti||0)+3*(s.condivisioni||0)+2*(s.salvataggi||0),0)/views:null;
-    return{f,n:a.length,views:avg("views"),comp:avg("completo"),eng,fol:a.reduce((x,s)=>x+(s.follower||0),0)}}).sort((a,b)=>(b.eng||0)-(a.eng||0));
+    const scs=a.map(scoreOf).filter(Boolean).map(x=>x.total);
+    return{f,n:a.length,views:avg("views"),comp:avg("completo"),eng,score:scs.length?Math.round(scs.reduce((x,y)=>x+y,0)/scs.length):null,fol:a.reduce((x,s)=>x+(s.follower||0),0)}}).sort((a,b)=>(b.score||0)-(a.score||0));
 }
 function renderAna(){
   const fs=formatStats();
-  const bestE=Math.max(...fs.map(x=>x.eng||0)),bestV=Math.max(...fs.map(x=>x.views||0)),bestC=Math.max(...fs.map(x=>x.comp||0));
-  $("fmtTbl").innerHTML=fs.length?`<table><thead><tr><th>Format</th><th>Video</th><th>Views medie</th><th>Completo</th><th>Coinvolg.</th><th>Follower</th></tr></thead><tbody>${fs.map(x=>`<tr><td>${esc(x.f)}</td><td>${x.n}</td><td class="${x.views===bestV?"best":""}">${fmtN(x.views)}</td><td class="${x.comp===bestC?"best":""}">${pct(x.comp)}</td><td class="${x.eng===bestE?"best":""}">${pct(x.eng,1)}</td><td>${x.fol}</td></tr>`).join("")}</tbody></table>`:`<div class="empty" style="padding:12px">Ancora nessun dato.</div>`;
+  const bestS=Math.max(...fs.map(x=>x.score||0)),bestE=Math.max(...fs.map(x=>x.eng||0)),bestV=Math.max(...fs.map(x=>x.views||0)),bestC=Math.max(...fs.map(x=>x.comp||0));
+  $("fmtTbl").innerHTML=fs.length?`<table><thead><tr><th>Format</th><th>Video</th><th>Punteggio</th><th>Views medie</th><th>Completo</th><th>Coinvolg.</th><th>Follower</th></tr></thead><tbody>${fs.map(x=>`<tr><td>${esc(x.f)}</td><td>${x.n}</td><td class="${x.score===bestS?"best":""}">${x.score??"–"}</td><td class="${x.views===bestV?"best":""}">${fmtN(x.views)}</td><td class="${x.comp===bestC?"best":""}">${pct(x.comp)}</td><td class="${x.eng===bestE?"best":""}">${pct(x.eng,1)}</td><td>${x.fol}</td></tr>`).join("")}</tbody></table>`:`<div class="empty" style="padding:12px">Ancora nessun dato.</div>`;
   const B=[["Mattina (6-11)",6,11],["Pranzo (11-15)",11,15],["Pomeriggio (15-19)",15,19],["Sera (19-23)",19,23],["Notte (23-6)",23,30]];
   const rows=B.map(([l,a,b])=>{const list=published().filter(i=>{const d=pubDate(i);if(!d)return false;let h=d.getHours();if(h<6)h+=24;return h>=a&&h<b});
     const v=list.map(i=>(i.stats||{}).views).filter(x=>typeof x==="number");const c=list.map(i=>(i.stats||{}).completo).filter(x=>typeof x==="number");
-    return{l,n:list.length,v:v.length?v.reduce((x,y)=>x+y,0)/v.length:null,c:c.length?c.reduce((x,y)=>x+y,0)/c.length:null}});
-  $("hourTbl").innerHTML=`<table><thead><tr><th>Fascia</th><th>Video</th><th>Views medie</th><th>Completo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.l}</td><td>${r.n}</td><td>${fmtN(r.v)}</td><td>${pct(r.c)}</td></tr>`).join("")}</tbody></table>`;
+    const ss=list.map(i=>scoreOf(i.stats)).filter(Boolean).map(x=>x.total);
+    return{l,n:list.length,s:ss.length?Math.round(ss.reduce((x,y)=>x+y,0)/ss.length):null,v:v.length?v.reduce((x,y)=>x+y,0)/v.length:null,c:c.length?c.reduce((x,y)=>x+y,0)/c.length:null}});
+  $("hourTbl").innerHTML=`<table><thead><tr><th>Fascia</th><th>Video</th><th>Punteggio</th><th>Views medie</th><th>Completo</th></tr></thead><tbody>${rows.map(r=>`<tr><td>${r.l}</td><td>${r.n}</td><td>${r.s??"–"}</td><td>${fmtN(r.v)}</td><td>${pct(r.c)}</td></tr>`).join("")}</tbody></table>`;
   const reps=[...reports].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
   const li=a=>Array.isArray(a)?a.map(x=>`<li>${esc(x)}</li>`).join(""):"";
   $("reps").innerHTML=reps.length?reps.map(r=>`<article class="rep"><h3>${esc(r.titolo)}</h3><div class="per">${esc(r.periodo||"")}</div>${r.sintesi?`<p>${esc(r.sintesi)}</p>`:""}${r.funziona&&r.funziona.length?`<h4>Cosa funziona</h4><ul>${li(r.funziona)}</ul>`:""}${r.non_funziona&&r.non_funziona.length?`<h4>Cosa non funziona</h4><ul>${li(r.non_funziona)}</ul>`:""}${r.azioni&&r.azioni.length?`<h4>Prossime mosse</h4><ul>${li(r.azioni)}</ul>`:""}</article>`).join(""):`<div class="empty">Nessun report. Chiedi a Claude “fai il report”.</div>`;
@@ -549,6 +593,9 @@ function renderAna(){
 
 /* ---------- interazioni ---------- */
 document.addEventListener("click",async e=>{
+  const cp=e.target.closest("[data-copy]");if(cp){e.stopPropagation();const it=items.find(x=>x.id===cp.dataset.copy);if(it)copyText(captionOf(it),"Caption copiata: incollala su TikTok");return}
+  const pt=e.target.closest("[data-parts]");if(pt){e.stopPropagation();const el=$("parts-"+pt.dataset.parts);if(el){el.classList.toggle("on");pt.textContent=el.classList.contains("on")?"Nascondi dettaglio":"Dettaglio punteggio"}return}
+  const cl=e.target.closest("[data-clone]");if(cl){e.stopPropagation();const it=items.find(x=>x.id===cl.dataset.clone);if(it)openEditor(null,{titolo:it.titolo+" (nuova versione)",format:it.format||"",testo:it.testo||"",scena:it.scena||"",hashtag:it.hashtag||"",stato:"idea",note:"Variante di “"+it.titolo+"”"+(scoreOf(it.stats)?" ("+scoreOf(it.stats).total+"/100). Da migliorare: "+weakest(scoreOf(it.stats)).k.toLowerCase()+".":"")});return}
   const adv=e.target.closest("[data-adv]");if(adv){e.stopPropagation();const it=items.find(x=>x.id===adv.dataset.adv);if(it)await advance(it);return}
   const sc=e.target.closest("[data-sched]");if(sc){const it=items.find(x=>x.id===sc.dataset.sched);if(it)await patch(it,{data:sc.dataset.d,orario:sc.dataset.h},"Messo in calendario");return}
   const sl=e.target.closest("[data-slot]");if(sl){openPicker(...sl.dataset.slot.split("|"));return}
@@ -576,12 +623,16 @@ function openEditor(it,preset){
   for(const k of F)$("f-"+k).value=f[k]??"";
   const done=new Set(Array.isArray(f.checklist)?f.checklist:[]);
   $("checks").innerHTML=`<div class="ttl">Prima di pubblicare</div>`+CHECKS.map((c,i)=>`<label for="ck${i}"><input type="checkbox" id="ck${i}" value="${esc(c)}"${done.has(c)?" checked":""}>${esc(c)}</label>`).join("");
-  $("dlg").showModal();
+  hashCheck();$("dlg").showModal();
 }
 $("add").addEventListener("click",()=>openEditor(null));
 $("close").addEventListener("click",()=>$("dlg").close());
-$("copy").addEventListener("click",async()=>{const t=[$("f-descrizione").value.trim(),$("f-hashtag").value.trim()].filter(Boolean).join("\n\n");
-  try{await navigator.clipboard.writeText(t);$("edMsg").textContent="Descrizione e hashtag copiati."}catch(err){$("edMsg").textContent="Copia non riuscita: tieni premuto sul campo per copiarlo a mano."}});
+$("copy").addEventListener("click",()=>copyText([$("f-descrizione").value.trim(),$("f-hashtag").value.trim()].filter(Boolean).join("\n\n"),"Caption copiata: incollala su TikTok"));
+$("cpTesto").addEventListener("click",()=>copyText($("f-testo").value.trim(),"Testo a schermo copiato"));
+function hashCheck(){const tags=($("f-hashtag").value.match(/#[^\s#]+/g)||[]);const msgs=[];
+  if(tags.length>5)msgs.push(`${tags.length} hashtag: meglio 3-5 pertinenti.`);
+  $("hashHint").textContent=msgs.join(" ");}
+$("f-hashtag").addEventListener("input",hashCheck);
 $("form").addEventListener("submit",async e=>{
   e.preventDefault();const data={};for(const k of F)data[k]=$("f-"+k).value.trim();
   if(!data.titolo){$("edMsg").textContent="Serve almeno un titolo.";return}
@@ -598,10 +649,10 @@ $("del").addEventListener("click",async()=>{if(!editing)return;if(!delArmed){del
 
 /* ---------- obiettivi ---------- */
 $("editGoals").addEventListener("click",()=>{const g={...DEFAULT_GOALS,...(goals||{})};
-  $("g-ft").value=g.follower_target;$("g-fs").value=g.follower_scadenza||"";$("g-vs").value=g.views_settimana;$("g-ps").value=g.post_settimana;$("g-ct").value=Math.round(g.completamento_target*100);$("goalMsg").textContent="";$("goalDlg").showModal()});
+  $("g-ft").value=g.follower_target;$("g-fs").value=g.follower_scadenza||"";$("g-vs").value=g.views_settimana;$("g-ps").value=g.post_settimana;$("g-ct").value=Math.round(g.completamento_target*100);$("g-sc").value=g.punteggio_target;$("goalMsg").textContent="";$("goalDlg").showModal()});
 $("goalClose").addEventListener("click",()=>$("goalDlg").close());
 $("goalForm").addEventListener("submit",async e=>{e.preventDefault();
-  const row={follower_target:+$("g-ft").value||DEFAULT_GOALS.follower_target,follower_scadenza:$("g-fs").value||null,views_settimana:+$("g-vs").value||DEFAULT_GOALS.views_settimana,post_settimana:+$("g-ps").value||DEFAULT_GOALS.post_settimana,completamento_target:(+$("g-ct").value||30)/100,updated_at:new Date().toISOString()};
+  const row={follower_target:+$("g-ft").value||DEFAULT_GOALS.follower_target,follower_scadenza:$("g-fs").value||null,views_settimana:+$("g-vs").value||DEFAULT_GOALS.views_settimana,post_settimana:+$("g-ps").value||DEFAULT_GOALS.post_settimana,completamento_target:(+$("g-ct").value||30)/100,punteggio_target:+$("g-sc").value||60,updated_at:new Date().toISOString()};
   const res=await sb.from("tiktok_obiettivi").upsert(row);if(res.error){$("goalMsg").textContent="Salvataggio non riuscito.";return}$("goalDlg").close();toast("Obiettivi salvati");load()});
 
 /* ---------- dati ---------- */
