@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Piano TikTok">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#F2F1ED">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<title>Piano TikTok</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* Layout: una colonna stretta da telefono, che su PC diventa due colonne di schede. Testi a schermo resi come i riquadri delle didascalie TikTok. */
+  --paper:#F2F1ED; --card:#FFFFFF; --ink:#151515; --muted:#6C6A65; --line:#DFDDD6; --accent:#E3352C;
+  --good:#1F8A4C; --warn:#B7791F; --bad:#C2362E;
+  --display:"Bricolage Grotesque", "Arial Black", system-ui, sans-serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#111111; --card:#1B1B1B; --ink:#F1F0EC; --muted:#9C9A94; --line:#2D2D2B; --accent:#FF4B3E;
+    --good:#4CC27E; --warn:#E3A84A; --bad:#FF6B5E; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#111111; --card:#1B1B1B; --ink:#F1F0EC; --muted:#9C9A94; --line:#2D2D2B; --accent:#FF4B3E;
+  --good:#4CC27E; --warn:#E3A84A; --bad:#FF6B5E; color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.wrap{max-width:980px;margin:0 auto;padding:calc(20px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) calc(80px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left))}
+#gate{min-height:100vh;display:grid;place-items:center;padding:24px}
+.gbox{width:min(380px,100%);background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px;display:flex;flex-direction:column;gap:12px}
+.gbox h1{font-size:30px}
+.out{font:500 12px var(--body);color:var(--muted);background:none;border:none;text-decoration:underline;cursor:pointer;padding:0}
+header{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(28px,7vw,40px);line-height:1;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.sub{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center}
+.times{font-family:var(--mono);font-size:12px;display:inline-flex;gap:4px}
+.times b{background:var(--ink);color:var(--paper);padding:1px 6px;border-radius:3px;font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0 18px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.kpi .n{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:12px;color:var(--muted)}
+@media (max-width:520px){.kpis{grid-template-columns:repeat(2,1fr)}}
+nav{display:flex;gap:6px;position:sticky;top:0;background:var(--paper);padding:8px 0;z-index:5;border-bottom:1px solid var(--line);margin-bottom:16px}
+nav button{font:600 14px var(--body);background:transparent;color:var(--muted);border:1px solid transparent;border-radius:999px;padding:7px 14px;cursor:pointer}
+nav button[aria-selected="true"]{background:var(--ink);color:var(--paper)}
+nav button:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.spacer{flex:1}
+.btn{font:600 14px var(--body);border-radius:8px;padding:8px 14px;cursor:pointer;border:1px solid var(--ink);background:var(--ink);color:var(--paper)}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.danger{background:transparent;color:var(--bad);border-color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.notice{background:var(--card);border:1px dashed var(--line);border-radius:10px;padding:14px;color:var(--muted);margin-bottom:14px}
+section.stage{margin-bottom:22px}
+.stage h2{font-family:var(--display);font-weight:600;font-size:18px;margin:0 0 8px;display:flex;align-items:baseline;gap:8px}
+.stage h2 .c{font-family:var(--mono);font-size:12px;color:var(--muted);font-weight:500}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.card{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--muted);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;font:inherit;color:inherit;width:100%}
+.card:hover{border-color:var(--ink)}
+.card[data-s="idea"]{border-left-color:var(--line)}
+.card[data-s="da_girare"]{border-left-color:var(--accent)}
+.card[data-s="da_montare"]{border-left-color:var(--warn)}
+.card[data-s="pronto"]{border-left-color:var(--good)}
+.card .t{font-weight:600;font-size:15px}
+.cap{display:inline;background:#000;color:#fff;font-weight:600;font-size:13px;padding:2px 6px;border-radius:4px;box-decoration-break:clone;-webkit-box-decoration-break:clone;line-height:1.9}
+.meta{display:flex;flex-wrap:wrap;gap:6px;font-size:12px;color:var(--muted);align-items:center}
+.chip{border:1px solid var(--line);border-radius:999px;padding:1px 8px;font-size:12px;color:var(--muted)}
+.chip.when{font-family:var(--mono);color:var(--ink)}
+.empty{color:var(--muted);font-size:14px;padding:6px 0}
+/* Pubblicati */
+.pub{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.pub .head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.pub .t{font-weight:600}
+.pub .d{font-family:var(--mono);font-size:12px;color:var(--muted);white-space:nowrap}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.stat{border-top:1px solid var(--line);padding-top:6px}
+.stat .v{font-family:var(--mono);font-size:15px;font-variant-numeric:tabular-nums}
+.stat .k{font-size:11px;color:var(--muted)}
+.bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden}
+.bar i{display:block;height:100%}
+.verdict{font-size:13px;border-left:3px solid var(--muted);padding:2px 0 2px 8px}
+.verdict.good{border-color:var(--good)} .verdict.mid{border-color:var(--warn)} .verdict.bad{border-color:var(--bad)}
+.legend{font-size:12px;color:var(--muted);margin:-4px 0 12px;display:flex;gap:12px;flex-wrap:wrap}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
+/* Report */
+.rep{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;margin-bottom:12px}
+.rep h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0 0 2px;text-wrap:balance}
+.rep .per{font-family:var(--mono);font-size:12px;color:var(--muted);margin-bottom:10px}
+.rep p{margin:0 0 10px;max-width:65ch}
+.rep h4{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:12px 0 6px}
+.rep ul{margin:0;padding-left:18px;max-width:65ch}
+.rep li{margin-bottom:4px}
+/* Editor */
+dialog{border:none;padding:0;border-radius:14px;background:var(--card);color:var(--ink);width:min(640px,calc(100% - 24px));max-height:calc(100% - 24px)}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.ed{padding:18px;display:flex;flex-direction:column;gap:12px}
+.ed h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:520px){.row{grid-template-columns:1fr}}
+label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted);font-weight:500}
+input,select,textarea{font:15px var(--body);color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 10px;width:100%}
+textarea{resize:vertical;min-height:64px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.msg{font-size:13px;color:var(--muted)}
+.hide{display:none!important}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div id="gate" class="hide">
+  <form class="gbox" id="gForm">
+    <h1>Piano TikTok</h1>
+    <div class="msg">Accedi con lo stesso account di Tasky.</div>
+    <label for="gE">Email<input id="gE" type="email" autocomplete="username" required></label>
+    <label for="gP">Password<input id="gP" type="password" autocomplete="current-password" required></label>
+    <button class="btn" type="submit" id="gGo">Accedi</button>
+    <div class="msg" id="gMsg"></div>
+  </form>
+</div>
+<div class="wrap hide" id="app">
+  <header>
+    <h1>Piano TikTok</h1>
+    <div class="sub">
+      <span>@francescozampaglione</span>
+      <span class="times">Orari migliori <b>10:00</b><b>12:00</b><b>18:00</b></span>
+      <span>Mer e gio i giorni più forti</span>
+      <button class="out" id="logout" type="button">Esci</button>
+    </div>
+  </header>
+
+  <div class="kpis" id="kpis">
+    <div class="kpi"><div class="n" id="k1">–</div><div class="l">Da girare o montare</div></div>
+    <div class="kpi"><div class="n" id="k2">–</div><div class="l">Pronti da pubblicare</div></div>
+    <div class="kpi"><div class="n" id="k3">–</div><div class="l">Pubblicati ultimi 7 giorni</div></div>
+    <div class="kpi"><div class="n" id="k4">–</div><div class="l">Completamento medio</div></div>
+  </div>
+
+  <nav role="tablist">
+    <button role="tab" id="t-fare" aria-selected="true" data-v="fare">Da fare</button>
+    <button role="tab" id="t-pub" aria-selected="false" data-v="pub">Pubblicati</button>
+    <button role="tab" id="t-rep" aria-selected="false" data-v="rep">Report</button>
+    <span class="spacer"></span>
+    <button class="btn" id="add" type="button">+ Idea</button>
+  </nav>
+
+  <div id="status" class="notice">Caricamento dei contenuti…</div>
+
+  <div id="v-fare"></div>
+  <div id="v-pub" class="hide">
+    <div class="legend">
+      <span><span class="dot" style="background:var(--good)"></span>completo oltre 30%</span>
+      <span><span class="dot" style="background:var(--warn)"></span>20–30%</span>
+      <span><span class="dot" style="background:var(--bad)"></span>sotto 20%</span>
+    </div>
+    <div class="grid" id="pubList"></div>
+  </div>
+  <div id="v-rep" class="hide"></div>
+</div>
+
+<dialog id="dlg">
+  <form class="ed" id="form">
+    <h3 id="edTitle">Nuova idea</h3>
+    <label for="f-titolo">Titolo<input id="f-titolo" required></label>
+    <div class="row">
+      <label for="f-stato">Stato
+        <select id="f-stato">
+          <option value="idea">Idea</option>
+          <option value="da_girare">Da girare</option>
+          <option value="da_montare">Da montare</option>
+          <option value="pronto">Pronto</option>
+          <option value="pubblicato">Pubblicato</option>
+        </select>
+      </label>
+      <label for="f-format">Format<input id="f-format" placeholder="POV 30 anni, Stitch, Carosello…"></label>
+    </div>
+    <label for="f-testo">Testo a schermo<input id="f-testo"></label>
+    <label for="f-scena">Scena<textarea id="f-scena"></textarea></label>
+    <label for="f-descrizione">Descrizione<input id="f-descrizione"></label>
+    <label for="f-hashtag">Hashtag<input id="f-hashtag" placeholder="#sharm #vacanza"></label>
+    <div class="row">
+      <label for="f-data">Data di pubblicazione<input id="f-data" type="date"></label>
+      <label for="f-orario">Orario
+        <select id="f-orario"><option value="">–</option><option>10:00</option><option>12:00</option><option>18:00</option><option>altro</option></select>
+      </label>
+    </div>
+    <label for="f-note">Note<textarea id="f-note"></textarea></label>
+    <div class="actions">
+      <button class="btn" type="submit" id="save">Salva</button>
+      <button class="btn ghost" type="button" id="copy">Copia descrizione</button>
+      <span class="spacer"></span>
+      <button class="btn danger" type="button" id="del">Elimina</button>
+      <button class="btn ghost" type="button" id="close">Chiudi</button>
+    </div>
+    <div class="msg" id="edMsg"></div>
+  </form>
+</dialog>
+
+<script src="../supabase.js"></script>
+<script>
+const STAGES=[["da_girare","Da girare"],["da_montare","Da montare"],["pronto","Pronti"],["idea","Idee"]];
+const STATO_LABEL={idea:"Idea",da_girare:"Da girare",da_montare:"Da montare",pronto:"Pronto",pubblicato:"Pubblicato"};
+let db=null, items=[], reports=[], editing=null, canWrite=true, delArmed=false;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtN=n=>n==null?"–":n>=1000?(n/1000).toFixed(n>=10000?0:1).replace(".",",")+"k":String(Math.round(n));
+const pct=x=>x==null?"–":Math.round(x*100)+"%";
+const DAYS=["dom","lun","mar","mer","gio","ven","sab"];
+function fmtDate(d,t){ if(!d) return ""; const dt=new Date(d+"T12:00:00"); if(isNaN(dt)) return d; return DAYS[dt.getDay()]+" "+dt.getDate()+"/"+(dt.getMonth()+1)+(t?" · "+t:""); }
+function fmtPub(iso){ if(!iso) return ""; const dt=new Date(iso); if(isNaN(dt)) return iso; return DAYS[dt.getDay()]+" "+dt.getDate()+"/"+(dt.getMonth()+1)+" "+String(dt.getHours()).padStart(2,"0")+":"+String(dt.getMinutes()).padStart(2,"0"); }
+function tone(r){ if(r==null) return "var(--muted)"; return r>=.3?"var(--good)":r>=.2?"var(--warn)":"var(--bad)"; }
+
+function setView(v){
+  for(const b of document.querySelectorAll("nav [role=tab]")) b.setAttribute("aria-selected", String(b.dataset.v===v));
+  $("v-fare").classList.toggle("hide",v!=="fare"); $("v-pub").classList.toggle("hide",v!=="pub"); $("v-rep").classList.toggle("hide",v!=="rep");
+  try{ history.replaceState(null,"","#"+v); }catch(e){}
+}
+for(const b of document.querySelectorAll("nav [role=tab]")) b.addEventListener("click",()=>setView(b.dataset.v));
+const h=(location.hash||"").slice(1); if(["fare","pub","rep"].includes(h)) setView(h);
+
+function render(){
+  const todo=items.filter(i=>i.stato!=="pubblicato");
+  const pub=items.filter(i=>i.stato==="pubblicato").sort((a,b)=>String(b.pubblicato_il||"").localeCompare(String(a.pubblicato_il||"")));
+  $("k1").textContent=todo.filter(i=>i.stato==="da_girare"||i.stato==="da_montare").length;
+  $("k2").textContent=todo.filter(i=>i.stato==="pronto").length;
+  const week=Date.now()-7*864e5;
+  const recent=pub.filter(i=>i.pubblicato_il && new Date(i.pubblicato_il).getTime()>=week);
+  $("k3").textContent=recent.length;
+  const rates=recent.map(i=>i.stats&&i.stats.completo).filter(x=>typeof x==="number");
+  $("k4").textContent=rates.length?Math.round(rates.reduce((a,b)=>a+b,0)/rates.length*100)+"%":"–";
+
+  let html="";
+  for(const [k,label] of STAGES){
+    const list=todo.filter(i=>(i.stato||"idea")===k).sort((a,b)=>String(a.data||"9").localeCompare(String(b.data||"9"))||(a.ordine||0)-(b.ordine||0));
+    if(k==="idea" && !list.length) continue;
+    html+=`<section class="stage"><h2>${label} <span class="c">${list.length}</span></h2>`;
+    if(!list.length){ html+=`<div class="empty">Niente qui.</div></section>`; continue; }
+    html+=`<div class="grid">`+list.map(i=>`<button class="card" type="button" data-s="${esc(i.stato)}" data-id="${esc(i.id)}">
+      <span class="t">${esc(i.titolo)}</span>
+      ${i.testo?`<span><span class="cap">${esc(i.testo)}</span></span>`:""}
+      <span class="meta">${i.format?`<span class="chip">${esc(i.format)}</span>`:""}${i.data?`<span class="chip when">${esc(fmtDate(i.data,i.orario))}</span>`:""}${i.descrizione?`<span>“${esc(i.descrizione)}”</span>`:""}</span>
+    </button>`).join("")+`</div></section>`;
+  }
+  $("v-fare").innerHTML=html||`<div class="empty">Nessun contenuto in lavorazione. Tocca “+ Idea” o chiedilo a Claude.</div>`;
+
+  $("pubList").innerHTML=pub.length?pub.map(i=>{ const s=i.stats||{}; const v=i.verdetto||null;
+    const likeRate=(s.views&&s.likes!=null)?s.likes/s.views:null;
+    return `<article class="pub">
+      <div class="head"><div><div class="t">${esc(i.titolo)}</div>${i.descrizione?`<div class="meta">“${esc(i.descrizione)}”</div>`:""}</div><div class="d">${esc(fmtPub(i.pubblicato_il))}</div></div>
+      <div>
+        <div class="meta" style="justify-content:space-between"><span>Guardato fino alla fine</span><span style="color:${tone(s.completo)};font-family:var(--mono)">${pct(s.completo)}</span></div>
+        <div class="bar"><i style="width:${Math.min(100,Math.round((s.completo||0)*100))}%;background:${tone(s.completo)}"></i></div>
+      </div>
+      <div class="stats">
+        <div class="stat"><div class="v">${fmtN(s.views)}</div><div class="k">views</div></div>
+        <div class="stat"><div class="v">${s.tempo_medio!=null?s.tempo_medio.toFixed(1).replace(".",",")+"s":"–"}${s.durata?`<span style="color:var(--muted)">/${Math.round(s.durata)}</span>`:""}</div><div class="k">tempo medio</div></div>
+        <div class="stat"><div class="v">${likeRate!=null?(likeRate*100).toFixed(1).replace(".",",")+"%":"–"}</div><div class="k">like/views</div></div>
+        <div class="stat"><div class="v">${s.follower??"–"}</div><div class="k">follower</div></div>
+        <div class="stat"><div class="v">${s.likes??"–"}</div><div class="k">like</div></div>
+        <div class="stat"><div class="v">${s.commenti??"–"}</div><div class="k">commenti</div></div>
+        <div class="stat"><div class="v">${s.condivisioni??"–"}</div><div class="k">condivisioni</div></div>
+        <div class="stat"><div class="v">${s.salvataggi??"–"}</div><div class="k">salvataggi</div></div>
+      </div>
+      ${v?`<div class="verdict ${esc(v.tono||"")}">${esc(v.testo||"")}</div>`:""}
+      ${i.aggiornato?`<div class="meta">Dati al ${esc(i.aggiornato)}</div>`:""}
+    </article>`;}).join(""):`<div class="empty">Ancora nessun video pubblicato registrato.</div>`;
+
+  const reps=[...reports].sort((a,b)=>String(b.data||"").localeCompare(String(a.data||"")));
+  $("v-rep").innerHTML=reps.length?reps.map(r=>`<article class="rep">
+    <h3>${esc(r.titolo)}</h3><div class="per">${esc(r.periodo||"")}</div>
+    ${r.sintesi?`<p>${esc(r.sintesi)}</p>`:""}
+    ${Array.isArray(r.funziona)&&r.funziona.length?`<h4>Cosa funziona</h4><ul>${r.funziona.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+    ${Array.isArray(r.non_funziona)&&r.non_funziona.length?`<h4>Cosa non funziona</h4><ul>${r.non_funziona.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+    ${Array.isArray(r.azioni)&&r.azioni.length?`<h4>Prossime mosse</h4><ul>${r.azioni.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`:""}
+  </article>`).join(""):`<div class="empty">Nessun report ancora. Chiedi a Claude “fai il report”.</div>`;
+}
+
+document.addEventListener("click",e=>{ const c=e.target.closest(".card"); if(c) openEditor(items.find(i=>i.id===c.dataset.id)); });
+$("add").addEventListener("click",()=>openEditor(null));
+$("close").addEventListener("click",()=>$("dlg").close());
+
+function openEditor(it){
+  editing=it; delArmed=false; $("del").textContent="Elimina"; $("edMsg").textContent="";
+  $("edTitle").textContent=it?"Modifica contenuto":"Nuova idea";
+  $("del").classList.toggle("hide",!it);
+  const f={titolo:"",stato:"idea",format:"",testo:"",scena:"",descrizione:"",hashtag:"",data:"",orario:"",note:"",...(it||{})};
+  for(const k of ["titolo","stato","format","testo","scena","descrizione","hashtag","data","orario","note"]) $("f-"+k).value=f[k]??"";
+  $("save").disabled=!canWrite||!db;
+  
+  try{ $("dlg").showModal(); }catch(err){ $("dlg").setAttribute("open",""); }
+}
+
+$("copy").addEventListener("click",async()=>{
+  const txt=[$("f-descrizione").value.trim(),$("f-hashtag").value.trim()].filter(Boolean).join("\n\n");
+  try{ await navigator.clipboard.writeText(txt); $("edMsg").textContent="Descrizione e hashtag copiati."; }
+  catch(err){ $("edMsg").textContent="Copia non riuscita: tieni premuto sul campo per copiarlo a mano."; }
+});
+
+$("form").addEventListener("submit",async e=>{
+  e.preventDefault(); if(!db) return;
+  const data={}; for(const k of ["titolo","stato","format","testo","scena","descrizione","hashtag","data","orario","note"]) data[k]=$("f-"+k).value.trim();
+  if(!data.titolo){ $("edMsg").textContent="Serve almeno un titolo."; return; }
+  $("save").disabled=true; $("edMsg").textContent="Salvataggio…";
+  try{
+    const row={...data,data:data.data||null};
+    if(data.stato==="pubblicato" && !(editing&&editing.pubblicato_il)) row.pubblicato_il=new Date().toISOString();
+    const res=editing? await sb.from("tiktok_contenuti").update(row).eq("id",editing.id) : await sb.from("tiktok_contenuti").insert(row);
+    if(res.error) throw res.error;
+    $("dlg").close(); load();
+  }catch(err){
+    $("edMsg").textContent="Salvataggio non riuscito. Riprova tra poco.";
+  }finally{ $("save").disabled=!canWrite; }
+});
+
+$("del").addEventListener("click",async()=>{
+  if(!editing||!db) return;
+  if(!delArmed){ delArmed=true; $("del").textContent="Conferma eliminazione"; return; }
+  try{ const res=await sb.from("tiktok_contenuti").delete().eq("id",editing.id); if(res.error) throw res.error; $("dlg").close(); load(); }
+  catch(err){ $("edMsg").textContent="Eliminazione non riuscita."; }
+});
+
+render();
+const SB_URL="https://ureljyilauscbhhlwcep.supabase.co";
+const SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVyZWxqeWlsYXVzY2JoaGx3Y2VwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MjIyNTksImV4cCI6MjEwODA5ODI1OX0.hVegSO4drVvjjYl3HCFzVgLIFh9HYCHql2zUbqfj5Gs";
+const sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:"tbm-auth"}});
+let started=false, loading=false;
+async function load(){
+  if(loading) return; loading=true;
+  try{
+    const [c,r]=await Promise.all([sb.from("tiktok_contenuti").select("*"), sb.from("tiktok_report").select("*")]);
+    if(c.error) throw c.error; if(r.error) throw r.error;
+    items=c.data.map(x=>({...x,data:x.data||""})); reports=r.data;
+    $("status").classList.add("hide"); render();
+  }catch(e){ $("status").textContent="Impossibile leggere i contenuti: controlla la connessione."; $("status").classList.remove("hide"); }
+  finally{ loading=false; }
+}
+function start(){
+  if(started) return; started=true; db=true;
+  $("gate").classList.add("hide"); $("app").classList.remove("hide");
+  load();
+  sb.channel("tiktok").on("postgres_changes",{event:"*",schema:"public",table:"tiktok_contenuti"},()=>load())
+    .on("postgres_changes",{event:"*",schema:"public",table:"tiktok_report"},()=>load()).subscribe();
+  document.addEventListener("visibilitychange",()=>{ if(!document.hidden) load(); });
+  setInterval(()=>{ if(!document.hidden) load(); },60000);
+}
+function gate(){ $("app").classList.add("hide"); $("gate").classList.remove("hide"); }
+$("gForm").addEventListener("submit",async e=>{
+  e.preventDefault(); $("gGo").disabled=true; $("gMsg").textContent="Accesso…";
+  const {error}=await sb.auth.signInWithPassword({email:$("gE").value.trim(),password:$("gP").value});
+  $("gGo").disabled=false;
+  if(error){ $("gMsg").textContent=/Invalid login/i.test(error.message)?"Email o password sbagliate.":"Errore: "+error.message; return; }
+  $("gMsg").textContent="";
+});
+$("logout").addEventListener("click",()=>{ sb.auth.signOut().finally(()=>location.reload()); });
+sb.auth.onAuthStateChange((ev,s)=>{ if(s) start(); });
+sb.auth.getSession().then(r=>{ if(r.data&&r.data.session) start(); else gate(); });
+</script>
+</body>
+</html>
