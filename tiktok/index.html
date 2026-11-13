@@ -162,6 +162,7 @@ dialog::backdrop{background:rgba(0,0,0,.5)}
 .sheet-h h3{font-family:var(--display);font-weight:600;font-size:19px;margin:0;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .x{width:40px;height:40px;border-radius:50%;border:none;background:var(--paper);color:var(--ink);font-size:20px;line-height:1;cursor:pointer;flex:none}
 .sheet-b{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:16px 16px calc(24px + env(safe-area-inset-bottom));display:flex;flex-direction:column;gap:14px}
+.sheet-b>*{flex-shrink:0}
 .ed{padding:18px;display:flex;flex-direction:column;gap:12px}
 .ed h3{font-family:var(--display);font-weight:600;font-size:20px;margin:0}
 input[type=date]{-webkit-appearance:none;appearance:none;min-height:44px;display:block;min-width:0}
@@ -180,6 +181,10 @@ a.btn{display:inline-flex;align-items:center;text-decoration:none}
 .lst{display:flex;flex-direction:column;gap:6px}
 .lst .r{display:flex;justify-content:space-between;align-items:center;gap:10px;background:var(--paper);border-radius:10px;padding:9px 10px;font-size:14px}
 .lst .r span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.legend2{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted)}
+.legend2 i{display:inline-block;width:18px;height:0;border-top:2.5px solid;vertical-align:middle;margin-right:5px}
+#detBody th,#detBody td{padding:8px 6px;font-size:13px}
+td.pos{color:var(--good)} td.neg{color:var(--bad)}
 .edit-goal{border-top:1px solid var(--line);padding-top:14px;display:flex;flex-direction:column;gap:10px}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 @media (max-width:520px){.two{grid-template-columns:1fr}}
@@ -197,11 +202,11 @@ textarea{resize:vertical;min-height:64px}
 .pick button{text-align:left;background:var(--paper);border:1px solid var(--line);border-radius:9px;padding:9px 10px;cursor:pointer}
 #gate{min-height:100vh;display:grid;place-items:center;padding:24px}
 .gbox{width:min(380px,100%);background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px;display:flex;flex-direction:column;gap:12px}
-#ptr{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 8px);z-index:30;transform:translate(-50%,-70px);display:flex;align-items:center;gap:8px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 14px 7px 10px;font-size:13px;font-weight:500;box-shadow:0 4px 14px rgba(0,0,0,.12);pointer-events:none;opacity:0}
-#ptr svg{width:18px;height:18px;transition:transform .15s}
-#ptr.ready svg{transform:rotate(180deg)}
-#ptr.spin svg{animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
+.hbtns{display:flex;align-items:center;gap:12px}
+#refresh{display:inline-flex;align-items:center;gap:6px}
+#refresh svg{width:16px;height:16px}
+#refresh.spinning svg{animation:spin .8s linear infinite}
 body{overscroll-behavior-y:contain}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom));background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:999px;font-size:14px;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s}
 .toast.on{opacity:1}
@@ -227,7 +232,10 @@ body{overscroll-behavior-y:contain}
       <h1>MyTiktok</h1>
       <div class="sub">@francescozampaglione · <span id="sync">…</span></div>
     </div>
-    <button class="link" id="logout" type="button">Esci</button>
+    <div class="hbtns">
+      <button class="btn ghost sm" id="refresh" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 12a8 8 0 1 1-2.3-5.6M20 4v5h-5"/></svg>Aggiorna</button>
+      <button class="link" id="logout" type="button">Esci</button>
+    </div>
   </header>
   <div id="status" class="notice">Caricamento…</div>
 
@@ -384,7 +392,6 @@ body{overscroll-behavior-y:contain}
   </form>
 </dialog>
 
-<div id="ptr" aria-live="polite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 4v13M6 11l6 6 6-6"/></svg><span id="ptrTxt">Trascina per aggiornare</span></div>
 <div class="toast" id="toast"></div>
 
 <script src="../supabase.js"></script>
@@ -722,6 +729,42 @@ function lineSvg(pts,target){const W=340,H=150,pb=20,pt=12;const vals=pts.map(p=
   const l=pts.length-1;o+=`<circle cx="${X(l)}" cy="${Y(pts[l].v)}" r="4" fill="var(--cyan)"/>`;
   pts.forEach((p,i)=>{if(i%3===0||i===l){const d=parseD(p.d);o+=`<text x="${X(i)}" y="${H-5}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${d.getDate()}/${d.getMonth()+1}</text>`}});
   return o+"</svg>"}
+const MESI=["gen","feb","mar","apr","mag","giu","lug","ago","set","ott","nov","dic"];
+const dayDiff=(a,b)=>Math.round((parseD(b)-parseD(a))/864e5);
+function followerPlan(g,f){
+  if(!g.follower_scadenza||!f.length)return null;
+  const cur=f[f.length-1];
+  const sD=g.follower_inizio_data||f[0].data,sV=g.follower_inizio??f[0].follower_totali,eD=g.follower_scadenza,eV=g.follower_target;
+  const tot=Math.max(1,dayDiff(sD,eD));
+  const plan=d=>sV+(eV-sV)*Math.max(0,Math.min(1,dayDiff(sD,d)/tot));
+  const remain=Math.max(1,dayDiff(cur.data,eD));
+  const adapt=d=>cur.follower_totali+(eV-cur.follower_totali)*Math.max(0,Math.min(1,dayDiff(cur.data,d)/remain));
+  const last14=f.filter(x=>x.data>=isoD(addDays(parseD(cur.data),-14)));const p0=last14[0]||cur;const pace=dayDiff(p0.data,cur.data)>0?(cur.follower_totali-p0.follower_totali)/dayDiff(p0.data,cur.data):0;
+  const proj=d=>cur.follower_totali+pace*Math.max(0,dayDiff(cur.data,d));
+  // fine di ogni mese dal mese di inizio alla scadenza
+  const months=[];let d=parseD(sD);d=new Date(d.getFullYear(),d.getMonth()+1,0);
+  while(isoD(d)<eD){months.push(isoD(d));d=new Date(d.getFullYear(),d.getMonth()+2,0)}
+  months.push(eD);
+  const rows=months.map(m=>{const md=parseD(m);const mStart=isoD(new Date(md.getFullYear(),md.getMonth(),1));
+    const inMonth=f.filter(x=>x.data>=mStart&&x.data<=m);const real=inMonth.length?inMonth[inMonth.length-1]:null;
+    const state=m<cur.data?"chiuso":(mStart<=cur.data?"in corso":"futuro");
+    return{m,label:MESI[md.getMonth()]+(md.getFullYear()!==new Date().getFullYear()?" "+String(md.getFullYear()).slice(2):""),plan:Math.round(plan(m)),real:state==="futuro"?null:(real?real.follower_totali:null),state,adapt:state==="chiuso"?null:Math.round(adapt(m)),proj:Math.round(proj(m))}});
+  return{sD,sV,eD,eV,cur,pace,plan,adapt,proj,rows};
+}
+function planSvg(P,f){
+  const W=340,H=190,pl=36,pr=8,pt=12,pb=22;const x0=P.sD,x1=P.eD,span=Math.max(1,dayDiff(x0,x1));
+  const vals=[P.sV,P.eV,P.proj(x1),...f.map(x=>x.follower_totali)];const lo=Math.min(...vals),hi=Math.max(...vals);const pad2=Math.max(10,(hi-lo)*.08);const mn=lo-pad2,mx=hi+pad2;
+  const X=d=>pl+(W-pl-pr)*Math.max(0,Math.min(1,dayDiff(x0,d)/span)),Y=v=>pt+(H-pt-pb)*(1-(v-mn)/(mx-mn));
+  let o=`<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block" role="img" aria-label="Follower: piano, reale e proiezione">`;
+  for(const v of [mn+(mx-mn)*.15,(mn+mx)/2,mx-(mx-mn)*.15]){o+=`<line x1="${pl}" x2="${W-pr}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${pl-4}" y="${Y(v)+3}" text-anchor="end" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${fmtN(v)}</text>`}
+  P.rows.forEach(r=>{o+=`<line x1="${X(r.m)}" x2="${X(r.m)}" y1="${pt}" y2="${H-pb}" stroke="var(--line)" stroke-dasharray="2 3"/><text x="${X(r.m)}" y="${H-6}" text-anchor="middle" font-size="9" fill="var(--muted)" font-family="IBM Plex Mono">${r.label}</text>`});
+  o+=`<line x1="${X(x0)}" y1="${Y(P.sV)}" x2="${X(x1)}" y2="${Y(P.eV)}" stroke="var(--muted)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  const c=P.cur;o+=`<line x1="${X(c.data)}" y1="${Y(c.follower_totali)}" x2="${X(x1)}" y2="${Y(P.eV)}" stroke="var(--accent)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  o+=`<line x1="${X(c.data)}" y1="${Y(c.follower_totali)}" x2="${X(x1)}" y2="${Y(P.proj(x1))}" stroke="var(--cyan)" stroke-width="2" stroke-dasharray="2 3" opacity=".8"/>`;
+  const fr=f.filter(x=>x.data>=x0);if(fr.length)o+=`<path d="${fr.map((x,i)=>(i?"L":"M")+X(x.data)+" "+Y(x.follower_totali)).join(" ")}" fill="none" stroke="var(--cyan)" stroke-width="3" stroke-linejoin="round"/>`;
+  o+=`<circle cx="${X(c.data)}" cy="${Y(c.follower_totali)}" r="4.5" fill="var(--cyan)"/><circle cx="${X(x1)}" cy="${Y(P.eV)}" r="4" fill="var(--accent)"/>`;
+  return o+"</svg>";
+}
 function openGoal(key){detKey=key;const g={...DEFAULT_GOALS,...(goals||{})};const t=todayIso();let title="",html="";
   const ws=weekStart(0);const wDays=[...Array(7)].map((_,i)=>isoD(addDays(ws,i)));const wl=["L","M","M","G","V","S","D"];
   if(key==="follower"){title="Follower";
@@ -735,6 +778,12 @@ function openGoal(key){detKey=key;const g={...DEFAULT_GOALS,...(goals||{})};cons
       html=`<div><div class="big">${fmtInt(cur.follower_totali)}</div><div class="sub">al ${fmtDay(cur.data)} · obiettivo ${fmtInt(g.follower_target)}</div></div>
       <div class="box">${lineSvg(f.map(x=>({d:x.data,v:x.follower_totali})))}</div>
       <div class="kv"><div><b>${d7>=0?"+":""}${d7}</b><span>ultimi 7 giorni</span></div><div><b>${gap>0?fmtInt(gap):"0"}</b><span>mancano</span></div><div><b>${need}</b><span>servono per la scadenza</span></div><div><b>${proj}</b><span>previsione alla scadenza</span></div></div>
+      ${(()=>{const P=followerPlan(g,f);if(!P)return `<div class="notice">Imposta una scadenza qui sotto per vedere il piano mese per mese.</div>`;
+        return `<h2 style="margin:4px 0 0">Piano mese per mese</h2>
+        <div class="box">${planSvg(P,f)}<div class="legend2" style="margin-top:6px"><span><i style="border-color:var(--cyan)"></i>Reale</span><span><i style="border-color:var(--muted);border-top-style:dashed"></i>Piano iniziale</span><span><i style="border-color:var(--accent);border-top-style:dashed"></i>Piano adattato</span><span><i style="border-color:var(--cyan);border-top-style:dotted"></i>Al ritmo attuale</span></div></div>
+        <div class="tbl-wrap"><table><thead><tr><th>Mese</th><th>Piano</th><th>Reale</th><th>Diff.</th><th>Ricalcolato</th></tr></thead><tbody>${P.rows.map(r=>{const diff=r.real!=null?r.real-r.plan:null;
+          return `<tr><td>${esc(r.label)}${r.state==="in corso"?' <span class="chip">in corso</span>':""}</td><td>${fmtInt(r.plan)}</td><td>${r.real!=null?fmtInt(r.real):"–"}</td><td class="${diff==null?"":diff>=0?"pos":"neg"}">${diff==null?"–":(diff>=0?"+":"")+fmtInt(diff)}</td><td>${r.adapt!=null?fmtInt(r.adapt):"–"}</td></tr>`}).join("")}</tbody></table></div>
+        <div class="sub">Piano iniziale: da ${fmtInt(P.sV)} il ${esc(fmtDay(P.sD))} a ${fmtInt(P.eV)} il ${esc(fmtDay(P.eD))}. La colonna “Ricalcolato” ricalcola ogni mese quanti follower servono partendo dal dato reale di oggi, così il piano si adatta ai risultati. Ritmo attuale: ${P.pace>=0?"+":""}${P.pace.toFixed(1).replace(".",",")} al giorno.</div>`})()}
       <div class="box insight">${perDay<=0?"Al ritmo attuale i follower non crescono. Il motivo più probabile: i video portano views ma non un motivo per seguirti. Serie con titolo fisso e un nome per la community sono le leve più forti.":"Al ritmo attuale raggiungi l'obiettivo "+esc(when)+"."}</div>`}
     html+=`<div class="edit-goal"><div class="two"><label for="d-ft">Follower da raggiungere<input id="d-ft" type="number" min="0" step="100" inputmode="numeric" value="${g.follower_target}"></label><label for="d-fs">Entro il<input id="d-fs" type="date" value="${g.follower_scadenza||""}"></label></div></div>`}
   if(key==="views"){title="Views della settimana";
@@ -773,6 +822,8 @@ $("detBody").addEventListener("click",e=>{const r=e.target.closest("[data-open]"
 $("detForm").addEventListener("submit",async e=>{e.preventDefault();const g={...DEFAULT_GOALS,...(goals||{})};const v=id=>$(id)?$(id).value:null;
   const row={follower_target:g.follower_target,follower_scadenza:g.follower_scadenza,views_settimana:g.views_settimana,post_settimana:g.post_settimana,completamento_target:g.completamento_target,punteggio_target:g.punteggio_target,updated_at:new Date().toISOString()};
   if(detKey==="follower"){row.follower_target=+v("d-ft")||row.follower_target;row.follower_scadenza=v("d-fs")||null}
+  row.follower_inizio=g.follower_inizio??null;row.follower_inizio_data=g.follower_inizio_data||null;
+  if(row.follower_target!==g.follower_target||row.follower_scadenza!==g.follower_scadenza){const f=giorni.filter(x=>x.follower_totali!=null).sort((a,b)=>a.data.localeCompare(b.data));const c=f[f.length-1];if(c){row.follower_inizio=c.follower_totali;row.follower_inizio_data=c.data}}
   if(detKey==="views")row.views_settimana=+v("d-vs")||row.views_settimana;
   if(detKey==="post")row.post_settimana=+v("d-ps")||row.post_settimana;
   if(detKey==="score"){row.punteggio_target=+v("d-sc")||row.punteggio_target;row.completamento_target=(+v("d-ct")||30)/100}
@@ -783,7 +834,8 @@ $("editGoals").addEventListener("click",()=>{const g={...DEFAULT_GOALS,...(goals
   $("g-ft").value=g.follower_target;$("g-fs").value=g.follower_scadenza||"";$("g-vs").value=g.views_settimana;$("g-ps").value=g.post_settimana;$("g-ct").value=Math.round(g.completamento_target*100);$("g-sc").value=g.punteggio_target;$("goalMsg").textContent="";openDlg("goalDlg")});
 $("goalClose").addEventListener("click",()=>closeDlg("goalDlg"));
 $("goalForm").addEventListener("submit",async e=>{e.preventDefault();
-  const row={follower_target:+$("g-ft").value||DEFAULT_GOALS.follower_target,follower_scadenza:$("g-fs").value||null,views_settimana:+$("g-vs").value||DEFAULT_GOALS.views_settimana,post_settimana:+$("g-ps").value||DEFAULT_GOALS.post_settimana,completamento_target:(+$("g-ct").value||30)/100,punteggio_target:+$("g-sc").value||60,updated_at:new Date().toISOString()};
+  const row={follower_target:+$("g-ft").value||DEFAULT_GOALS.follower_target,follower_scadenza:$("g-fs").value||null,views_settimana:+$("g-vs").value||DEFAULT_GOALS.views_settimana,post_settimana:+$("g-ps").value||DEFAULT_GOALS.post_settimana,completamento_target:(+$("g-ct").value||30)/100,punteggio_target:+$("g-sc").value||60,follower_inizio:(goals||{}).follower_inizio??null,follower_inizio_data:(goals||{}).follower_inizio_data||null,updated_at:new Date().toISOString()};
+  {const g0={...DEFAULT_GOALS,...(goals||{})};if(row.follower_target!==g0.follower_target||row.follower_scadenza!==g0.follower_scadenza){const f=giorni.filter(x=>x.follower_totali!=null).sort((a,b)=>a.data.localeCompare(b.data));const c=f[f.length-1];if(c){row.follower_inizio=c.follower_totali;row.follower_inizio_data=c.data}}}
   const res=await sb.from("tiktok_obiettivi").upsert(row);if(res.error){$("goalMsg").textContent="Salvataggio non riuscito.";return}closeDlg("goalDlg");toast("Obiettivi salvati");load()});
 
 /* ---------- dati ---------- */
@@ -805,17 +857,9 @@ function start(){
   document.addEventListener("visibilitychange",()=>{if(!document.hidden)load()});
   setInterval(()=>{if(!document.hidden)load()},120000);
 }
-/* ---------- trascina in basso per aggiornare ---------- */
-(function(){const el=$("ptr"),txt=$("ptrTxt"),TH=75;let y0=null,dy=0,busy=false;
-  const anyOpen=()=>[...document.querySelectorAll("dialog")].some(d=>d.open);
-  const set=(d)=>{const k=Math.min(d,TH*1.6);el.style.transform=`translate(-50%,${-70+k}px)`;el.style.opacity=Math.min(1,k/40);el.classList.toggle("ready",d>=TH);txt.textContent=d>=TH?"Rilascia per aggiornare":"Trascina per aggiornare"};
-  const reset=()=>{el.style.transition="transform .25s, opacity .25s";el.style.transform="translate(-50%,-70px)";el.style.opacity=0;setTimeout(()=>{el.style.transition="";el.classList.remove("ready","spin")},260)};
-  window.addEventListener("touchstart",e=>{if(busy||anyOpen()||window.scrollY>0||$("app").classList.contains("hide")){y0=null;return}y0=e.touches[0].clientY;dy=0},{passive:true});
-  window.addEventListener("touchmove",e=>{if(y0==null)return;dy=(e.touches[0].clientY-y0)*.55;if(dy>0&&window.scrollY<=0)set(dy);else if(dy<=0){y0=null;reset()}},{passive:true});
-  window.addEventListener("touchend",async()=>{if(y0==null)return;y0=null;if(dy<TH){reset();return}
-    busy=true;el.classList.remove("ready");el.classList.add("spin");txt.textContent="Aggiornamento…";el.style.transform="translate(-50%,0)";el.style.opacity=1;
-    const t0=Date.now();await load();const wait=Math.max(0,600-(Date.now()-t0));setTimeout(()=>{txt.textContent="Aggiornato";setTimeout(()=>{reset();busy=false},450)},wait)});
-})();
+/* ---------- pulsante aggiorna ---------- */
+$("refresh").addEventListener("click",async()=>{const b=$("refresh");if(b.disabled)return;b.disabled=true;b.classList.add("spinning");
+  const t0=Date.now();await load();setTimeout(()=>{b.disabled=false;b.classList.remove("spinning");toast("Aggiornato")},Math.max(0,500-(Date.now()-t0)))});
 function gate(){$("app").classList.add("hide");$("gate").classList.remove("hide")}
 $("gForm").addEventListener("submit",async e=>{e.preventDefault();$("gGo").disabled=true;$("gMsg").textContent="Accesso…";
   const {error}=await sb.auth.signInWithPassword({email:$("gE").value.trim(),password:$("gP").value});$("gGo").disabled=false;
