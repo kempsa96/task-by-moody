@@ -413,11 +413,14 @@ const DEFAULT_GOALS={follower_target:8000,follower_scadenza:null,views_settimana
 function complTarget(d){if(!d)return .35;if(d<=10)return .45;if(d<=20)return .35;if(d<=45)return .25;return .15}
 function scoreOf(s){
   if(!s||!s.views)return null;const v=s.views,c=x=>Math.max(0,Math.min(1,x));
-  const ct=complTarget(s.durata);const comp=typeof s.completo==="number"?c(s.completo/ct):0;
+  const ct=complTarget(s.durata);const hasC=typeof s.completo==="number";const comp=hasC?c(s.completo/ct):null;
   const watch=(s.durata&&s.tempo_medio!=null)?c((s.tempo_medio/s.durata)/.6):null;
-  const ret=watch==null?comp:.6*comp+.4*watch;
+  /* Caroselli e foto (niente durata né completamento): conta il tempo medio in secondi, pieno a 15 s. Un dato mancante non vale mai zero. */
+  const watchAbs=(!s.durata&&s.tempo_medio!=null)?c(s.tempo_medio/15):null;
+  const ret=comp!=null&&watch!=null?.6*comp+.4*watch:comp!=null?comp:watch!=null?watch:watchAbs!=null?watchAbs:0;
+  const dV=hasC?`${pct(s.completo)} fino alla fine (atteso ${pct(ct)})${watch!=null?" · "+pct(s.tempo_medio/s.durata)+" guardato in media":""}`:watchAbs!=null?`guardato in media ${Math.round(s.tempo_medio)} s (pieno a 15 s) · completamento non disponibile`:watch!=null?`${pct(s.tempo_medio/s.durata)} guardato in media · completamento non disponibile`:"dati di visione non ancora disponibili";
   const parts=[
-    {k:"Visione",w:45,r:ret,d:`${pct(s.completo)} fino alla fine (atteso ${pct(ct)})${watch!=null?" · "+pct(s.tempo_medio/s.durata)+" guardato in media":""}`},
+    {k:"Visione",w:45,r:ret,d:dV},
     {k:"Condivisioni",w:20,r:c((s.condivisioni||0)/v/.01),d:pct((s.condivisioni||0)/v,2)+" (pieno a 1%)"},
     {k:"Salvataggi",w:10,r:c((s.salvataggi||0)/v/.005),d:pct((s.salvataggi||0)/v,2)+" (pieno a 0,5%)"},
     {k:"Commenti",w:10,r:c((s.commenti||0)/v/.005),d:pct((s.commenti||0)/v,2)+" (pieno a 0,5%)"},
@@ -426,7 +429,7 @@ function scoreOf(s){
   const total=Math.round(parts.reduce((a,p)=>a+p.w*p.r,0));
   return{total,parts,few:v<200};
 }
-const scoreColor=t=>t==null?"var(--muted)":t>=65?"var(--good)":t>=45?"var(--warn)":"var(--bad)";
+const scoreColor=t=>t==null?"var(--muted)":t>=60?"var(--good)":t>=40?"var(--warn)":"var(--bad)";
 function weakest(sc){return [...sc.parts].sort((a,b)=>(a.w*(1-a.r))<(b.w*(1-b.r))?1:-1)[0]}
 const ADVICE={Visione:"Accorcia e anticipa la battuta: gancio scritto nel primo secondo.",Condivisioni:"Rendilo più riconoscibile: una situazione che fa pensare a un amico preciso.",Salvataggi:"Aggiungi un motivo per rivederlo: un dettaglio nascosto o una lista utile.",Commenti:"Chiudi con una domanda o una presa di posizione che divide.",Follower:"Fai capire che è una serie: titolo fisso e “pt.” nel testo.",Like:"Cura il finale: la battuta deve arrivare negli ultimi 2 secondi."};
 async function copyText(t,okMsg){if(!t){toast("Niente da copiare");return}try{await navigator.clipboard.writeText(t);toast(okMsg||"Copiato")}catch(e){toast("Copia non riuscita")}}
